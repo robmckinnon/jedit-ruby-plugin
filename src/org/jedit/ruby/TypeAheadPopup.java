@@ -2,6 +2,7 @@
  * TypeAheadPopup.java - Type ahead popup
  *
  * Copyright 2005 Robert McKinnon
+ *           2000, 2001 Slava Pestov
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,6 +37,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
+ * Altered version of Slava Pestov's
+ * org.gjt.sp.jedit.gui.CompleteWord.
+ *
  * @author robmckinnon at users,sourceforge,net
  */
 public class TypeAheadPopup extends JWindow {
