@@ -33,6 +33,8 @@
 
 	<path id="project.class.path">
  		<pathelement location="${install.dir}/jedit.jar"/>
+ 		<pathelement location="${install.dir}/SideKick.jar"/>
+ 		<pathelement location="${install.dir}/ErrorList.jar"/>
  		<pathelement location="."/>
 	</path>
 
