@@ -20,65 +20,42 @@
 package org.jedit.ruby;
 
 import gnu.regexp.REException;
-import gnu.regexp.REMatch;
-import gnu.regexp.RE;
 
 import java.util.*;
-import java.io.File;
 
 import org.jruby.lexer.yacc.SourcePosition;
 import org.gjt.sp.jedit.View;
 
 /**
- * Parses ruby file
+ * <p>Parses ruby file.</p>
+ * <p><i>
+ * Not thread safe.</i>
+ * Should only be accessed by one thread at a time.
+ * </p>
+ *
  * @author robmckinnon at users.sourceforge.net
  */
 public class RubyParser {
 
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
 
-    private static String lastFilePath;
-    private static int lastTextLength;
-    private static Member[] lastMembers;
+    private static final RubyParser instance = new RubyParser();
 
-    private static RubyParser.WarningListener logListener = new LogWarningListener();
+    private final RubyParser.LogWarningListener logListener;
+    private final MemberMatcher moduleMatcher;
+    private final MemberMatcher classMatcher;
+    private final MemberMatcher methodMatcher;
 
-    public static interface Matcher {
-        List<REMatch> getMatches(String text) throws REException;
-        Member createMember(String name, String filePath, int index);
+    private String lastFilePath;
+    private Member[] lastMembers;
+    private int lastTextLength;
+
+    private RubyParser() {
+        logListener = new LogWarningListener();
+        moduleMatcher = new MemberMatcher.ModuleMatcher();
+        classMatcher = new MemberMatcher.ClassMatcher();
+        methodMatcher = new MemberMatcher.MethodMatcher();
     }
-
-    private static final Matcher moduleMatcher = new Matcher() {
-        public List<REMatch> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(module[ ]+)(\\w+.*)", text);
-        }
-
-        public Member createMember(String name, String filePath, int index) {
-            return new Member.Module(name, index);
-        }
-    };
-
-    private static final Matcher classMatcher = new Matcher() {
-        public List<REMatch> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(class[ ]+)(\\w+.*)", text);
-        }
-
-        public Member createMember(String name, String filePath, int index) {
-            System.out.println("class: " + name);
-            return new Member.Class(name, index);
-        }
-    };
-
-    private static final Matcher methodMatcher = new Matcher() {
-        public List<REMatch> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(def[ ]+)(.*)", text);
-        }
-
-        public Member createMember(String name, String filePath, int index) {
-            String fileName = (new File(filePath)).getName();
-            return new Member.Method(name, filePath, fileName, index);
-        }
-    };
 
     public static RubyMembers getMembers(View view) {
         String text = view.getTextArea().getText();
@@ -91,31 +68,43 @@ public class RubyParser {
     }
 
     public static RubyMembers getMembers(String text, String filePath, WarningListener listener, boolean forceReparse) {
+        return instance.createMembers(text, filePath, listener, forceReparse);
+    }
+
+    public static List<Member> getMembersAsList(String text, String filePath, WarningListener listener) {
+        return instance.createMembersAsList(text, filePath, listener);
+    }
+
+    private RubyMembers createMembers(String text, String filePath, WarningListener listener, boolean forceReparse) {
         Member[] members;
 
         if(!forceReparse && filePath == lastFilePath && text.length() == lastTextLength) {
             members = lastMembers;
         } else {
-            members = getMembersAsList(text, filePath, listener).toArray(EMPTY_MEMBER_ARRAY);
-            lastMembers = members;
-            lastFilePath = filePath;
-            lastTextLength = text.length();
+            List<Member> memberList = createMembersAsList(text, filePath, listener);
+
+            if (memberList != null) {
+                members = memberList.toArray(EMPTY_MEMBER_ARRAY);
+                lastMembers = members;
+                lastFilePath = filePath;
+                lastTextLength = text.length();
+            } else {
+                members = null;
+            }
         }
 
-        return new RubyMembers(members);
+        return new RubyMembers(members, logListener.getProblems());
     }
 
-    public static List<Member> getMembersAsList(String text, String filePath, WarningListener listener) {
+    private List<Member> createMembersAsList(String text, String filePath, WarningListener listener) {
         List<Member> members = null;
 
         try {
             List<Member> modules = createMembers(text, filePath, moduleMatcher);
             List<Member> classes = createMembers(text, filePath, classMatcher);
             List<Member> methods = createMembers(text, filePath, methodMatcher);
-            if(listener == null) {
-                listener = logListener;
-            }
-            members = JRubyParser.getMembers(text, modules, classes, methods, listener);
+
+            members = JRubyParser.getMembers(text, modules, classes, methods, getListeners(listener), filePath);
         } catch (REException e) {
             e.printStackTrace();
         }
@@ -123,53 +112,27 @@ public class RubyParser {
         return members;
     }
 
-    private static List<Member> createMembers(String text, String filePath, Matcher matcher) throws REException {
-        List<REMatch> matches = matcher.getMatches(text);
+    private List<WarningListener> getListeners(WarningListener listener) {
+        logListener.clear();
+        List<WarningListener> listeners = new ArrayList<WarningListener>();
+        listeners.add(logListener);
+        if(listener != null) {
+            listeners.add(listener);
+        }
+        return listeners;
+    }
+
+    private List<Member> createMembers(String text, String filePath, MemberMatcher matcher) throws REException {
+        List<MemberMatcher.Match> matches = matcher.getMatches(text);
         List<Member> members = new ArrayList<Member>();
 
-        for(REMatch match : matches) {
-            String name = match.toString(3).trim();
-            int index = match.getStartIndex(3);
+        for(MemberMatcher.Match match : matches) {
+            String name = match.value.trim();
+            int index = match.startOffset;
             members.add(matcher.createMember(name, filePath, index));
         }
 
         return members;
-    }
-
-    private static REMatch[] getMatches(String expression, String text) throws REException {
-        RE re = new RE(expression, 0);
-        return re.getAllMatches(text);
-    }
-
-    private static List<REMatch> getMatchList(String pattern, String text) throws REException {
-        REMatch[] matches = getMatches(pattern, text);
-        List<REMatch> matchList = new ArrayList<REMatch>();
-
-        for(REMatch match : matches) {
-            if(onlySpacesBeforeMatch(match, text)) {
-                matchList.add(match);
-            }
-        }
-
-        return matchList;
-    }
-
-    private static boolean onlySpacesBeforeMatch(REMatch match, String text) {
-        int index = match.getStartIndex() - 1;
-        boolean onlySpaces = true;
-
-        if(index >= 0) {
-            char nextCharacter = text.charAt(index);
-
-            while(onlySpaces && index >= 0 && nextCharacter != '\n' && nextCharacter != '\r') {
-                char character = text.charAt(index--);
-                onlySpaces = character == ' ' || character == '\t';
-                if(index >= 0) {
-                    nextCharacter = text.charAt(index);
-                }
-            }
-        }
-        return onlySpaces;
     }
 
     /**
@@ -177,6 +140,7 @@ public class RubyParser {
      * with parsing warnings.
      */
     public static interface WarningListener {
+
         void warn(SourcePosition position, String message);
 
         void warn(String message);
@@ -186,35 +150,59 @@ public class RubyParser {
         void warning(String message);
 
         void error(SourcePosition position, String message);
+
+        void clear();
     }
 
     private static class LogWarningListener implements WarningListener {
+
+        private List<Member.Problem> problems = new ArrayList<Member.Problem>();
+
+        public List<Member.Problem> getProblems() {
+            return problems;
+        }
+
         public void warn(SourcePosition position, String message) {
+            problems.add(new Member.Warning(message, getLine(position)));
             log(position, message);
         }
 
         public void warn(String message) {
+            problems.add(new Member.Warning(message, 0));
             log(message);
         }
 
         public void warning(SourcePosition position, String message) {
+            problems.add(new Member.Warning(message, getLine(position)));
             log(position, message);
         }
 
         public void warning(String message) {
+            problems.add(new Member.Warning(message, 0));
             log(message);
         }
 
         public void error(SourcePosition position, String message) {
-            System.out.println("error:" + position.getFile() + " " + position.getLine() + " " + message);
+            problems.add(new Member.Error(message, getLine(position)));
+            System.out.println("error: " + position.getFile() + " " + position.getLine() + " " + message);
+        }
+
+        public void clear() {
+            problems.clear();
         }
 
         private void log(SourcePosition position, String message) {
-            System.out.println("warn:" + position.getFile() + " " + position.getLine() + " " + message);
+            System.out.println("warn:  " + position.getFile() + " " + position.getLine() + " " + message);
+        }
+
+        private int getLine(SourcePosition position) {
+            return position == null ? 0 : position.getLine() - 1;
         }
 
         private void log(String message) {
-            System.out.println("warn : " + message);
+            System.out.println("warn:  " + message);
         }
+
     }
+
 }

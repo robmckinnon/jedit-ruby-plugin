@@ -22,6 +22,8 @@ package org.jedit.ruby;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
+import errorlist.ErrorList;
+
 /**
  * @author robmckinnon at users.sourceforge.net
  */
@@ -47,6 +49,14 @@ public class MemberIcon extends Member.VisitorAdapter {
 
     public void handleMethod(Member.Method method) {
         icon = loadIcon("method");
+    }
+
+    public void handleWarning(Member.Warning warning) {
+        icon = ErrorList.ERROR_ICON;
+    }
+
+    public void handleError(Member.Error warning) {
+        icon = ErrorList.WARNING_ICON;
     }
 
     private Icon loadIcon(String name) {

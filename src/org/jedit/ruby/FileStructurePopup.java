@@ -53,17 +53,23 @@ public class FileStructurePopup {
 
     private void showPopup(View view) {
         start = now();
+        JEditTextArea textArea = view.getTextArea();
+        textArea.scrollToCaret(false);
+        Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
+
         RubyMembers members = RubyParser.getMembers(view);
 
-        if (members.size() > 0) {
-            JEditTextArea textArea = view.getTextArea();
-            textArea.scrollToCaret(false);
-            Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
-
+        if (!members.containsErrors() && members.size() > 0) {
             int caretPosition = view.getTextArea().getCaretPosition();
             Member selectedMember = members.getCurrentMember(caretPosition);
 
             new TypeAheadPopup(view, members.getMembers(), null, selectedMember, location);
+        } else {
+            Member.Problem[] problems = members.getProblems();
+
+            if(problems.length > 0) {
+                new TypeAheadPopup(view, members.getProblems(), null, problems[0], location);
+            }
         }
     }
 

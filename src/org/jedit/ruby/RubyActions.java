@@ -85,29 +85,36 @@ public class RubyActions {
 
     public static void nextMethod(View view) {
         RubyMembers members = RubyParser.getMembers(view);
-        JEditTextArea textArea = view.getTextArea();
-        int caretPosition = textArea.getCaretPosition();
-        Member member = members.getNextMember(caretPosition);
-        if (member != null) {
-            textArea.setCaretPosition(member.getStartOffset(), true);
-        } else {
-            textArea.setCaretPosition(textArea.getBufferLength() - 1, true);
+
+        if(!members.containsErrors()) {
+            JEditTextArea textArea = view.getTextArea();
+            int caretPosition = textArea.getCaretPosition();
+            Member member = members.getNextMember(caretPosition);
+
+            if (member != null) {
+                textArea.setCaretPosition(member.getStartOffset(), true);
+            } else {
+                textArea.setCaretPosition(textArea.getBufferLength() - 1, true);
+            }
         }
     }
 
     public static void previousMethod(View view) {
         RubyMembers members = RubyParser.getMembers(view);
-        JEditTextArea textArea = view.getTextArea();
-        int caretPosition = textArea.getCaretPosition();
-        Member member = members.getCurrentMember(caretPosition);
-        if (member != null && caretPosition == member.getStartOffset()) {
-            member = members.getPreviousMember(caretPosition);
-        }
-        
-        if (member != null) {
-            textArea.setCaretPosition(member.getStartOffset(), true);
-        } else {
-            textArea.setCaretPosition(0, true);
+
+        if(!members.containsErrors()) {
+            JEditTextArea textArea = view.getTextArea();
+            int caretPosition = textArea.getCaretPosition();
+            Member member = members.getCurrentMember(caretPosition);
+            if (member != null && caretPosition == member.getStartOffset()) {
+                member = members.getPreviousMember(caretPosition);
+            }
+
+            if (member != null) {
+                textArea.setCaretPosition(member.getStartOffset(), true);
+            } else {
+                textArea.setCaretPosition(0, true);
+            }
         }
     }
 

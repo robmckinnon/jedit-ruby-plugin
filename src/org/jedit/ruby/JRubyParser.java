@@ -22,8 +22,6 @@ import java.util.LinkedList;
 import java.io.StringReader;
 import java.io.Reader;
 
-import errorlist.ErrorSource;
-
 /**
  * @author robmckinnon at users.sourceforge.net
  */
@@ -45,45 +43,29 @@ public class JRubyParser {
         JRubyParser.nothing = nothing;
     }
 
-    public static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, RubyParser.WarningListener listener) {
+    public static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath) {
         Reader content = new StringReader(text);
-        return getMembers(content, moduleMembers, classMembers, methodMembers, listener);
-    }
-
-    public static List<Member> getMembers(Reader content, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, RubyParser.WarningListener listener) {
         List<Member> members;
-        Parser parser = new Parser(listener);
-        MockNodeVisitor visitor = new MockNodeVisitor(moduleMembers, classMembers, methodMembers);
+        Parser parser = new Parser(listeners);
+        RubyNodeVisitor visitor = new RubyNodeVisitor(moduleMembers, classMembers, methodMembers, listeners);
 
         try {
-            Node node = parser.parse("", content);
+            Node node = parser.parse(filePath, content);
             if (node != null) {
                 node.accept(visitor);
             }
             members = visitor.getMembers();
         } catch (SyntaxException e) {
-            // JRubyParser.Parser informs listener of syntax error
-            members = new ArrayList<Member>();
-
-            // todo add generic error handling
-//            ErrorSource.Error[] errors = RubySideKickParser.getErrors();
-//            for (ErrorSource.Error error : errors) {
-//                if (error.getErrorType() == ErrorSource.ERROR) {
-//                    int line = error.getLineNumber() - 1;
-//                    int startOffset = jEdit.getActiveView().getBuffer().getLineStartOffset(line);
-//                    int endOffset = jEdit.getActiveView().getBuffer().getLineEndOffset(line);
-//                    String message = error.getErrorMessage();
-//                    members.add(new Member.Error(message, startOffset, endOffset));
-//                }
-//            }
+            System.out.println(e.getPosition().getLine() + ": " + e.getMessage());
+            members = null; // listeners already informed of syntax error
         }
 
         return members;
     }
 
-    private static class MockNodeVisitor extends AbstractVisitor {
+    private static class RubyNodeVisitor extends AbstractVisitor {
 
-        private List<String> moduleNames;
+        private List<String> namespaceNames;
         private LinkedList<Member> currentMember;
         private int moduleIndex;
         private int classIndex;
@@ -92,14 +74,13 @@ public class JRubyParser {
         private List<Member> modules;
         private List<Member> classes;
         private List<Member> methods;
+        private List<RubyParser.WarningListener> problemListeners;
 
-        public MockNodeVisitor() {
-        }
-
-        public MockNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers) {
-            moduleNames = new ArrayList<String>();
+        public RubyNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
+            namespaceNames = new ArrayList<String>();
             currentMember = new LinkedList<Member>();
             currentMember.add(new Member.Root(getEndOfFileOffset()));
+            problemListeners = listeners;
             modules = moduleMembers;
             classes = classMembers;
             methods = methodMembers;
@@ -166,16 +147,20 @@ public class JRubyParser {
             visitNode(node);
             String moduleName = node.getName();
             System.out.print(": " + moduleName);
-            moduleNames.add(moduleName);
 
-            Member module = modules.get(moduleIndex++);
+            Member module = getMember("module", moduleIndex, modules, node.getName(), node.getPosition());
+            moduleIndex++;
             module.setEndOffset(getEndOffset(node));
-            currentMember.getLast().addChildMember(module);
+            populateNamespace(module);
+
+            namespaceNames.add(moduleName);
+            Member parent = currentMember.getLast();
+            parent.addChildMember(module);
             currentMember.add(module);
 
             node.getBodyNode().accept(this);
 
-            moduleNames.remove(moduleName);
+            namespaceNames.remove(moduleName);
             currentMember.removeLast();
             System.out.println("]");
         }
@@ -185,14 +170,19 @@ public class JRubyParser {
             String className = node.getClassName();
             System.out.print(": " + className);
 
-            Member clas = classes.get(classIndex++);
+            Member clas = getMember("class", classIndex, classes, node.getClassName(), node.getPosition());
+            classIndex++;
             clas.setEndOffset(getEndOffset(node));
             populateNamespace(clas);
-            currentMember.getLast().addChildMember(clas);
+
+            namespaceNames.add(className);
+            Member parent = currentMember.getLast();
+            parent.addChildMember(clas);
             currentMember.add(clas);
 
             node.getBodyNode().accept(this);
 
+            namespaceNames.remove(className);
             currentMember.removeLast();
         }
 
@@ -201,9 +191,11 @@ public class JRubyParser {
             String methodName = node.getName();
             System.out.print(": " + methodName);
 
-            Member method = methods.get(methodIndex++);
+            Member method = getMember("method", methodIndex, methods, node.getName(), node.getPosition());
+            methodIndex++;
             method.setEndOffset(getEndOffset(node));
-            currentMember.getLast().addChildMember(method);
+            Member parent = currentMember.getLast();
+            parent.addChildMember(method);
 
         }
 
@@ -232,14 +224,31 @@ public class JRubyParser {
             currentMember.removeLast();
         }
 
-        private void populateNamespace(Member clas) {
-            if (moduleNames.size() > 0) {
+        private void populateNamespace(Member member) {
+            if (namespaceNames.size() > 0) {
                 String namespace = "";
-                for (String module : moduleNames) {
+                for (String module : namespaceNames) {
                     namespace += module + "::";
                 }
-                clas.setNamespace(namespace);
+                member.setNamespace(namespace);
             }
+        }
+
+        private Member getMember(String memberType, int index, List<Member> members, String memberName, SourcePosition position) {
+            Member member = null;
+            try {
+                member = members.get(index);
+                if(!memberName.equals(member.getShortName())) {
+                    throw new Exception();
+                }
+            } catch (Exception e) {
+                String message = "parser can't find " + memberType + " " + memberName;
+                for (RubyParser.WarningListener listener : problemListeners) {
+                    listener.error(position, message);
+                }
+                throw new SyntaxException(position, message);
+            }
+            return member;
         }
 
         public void visitScopeNode(ScopeNode node) {
@@ -288,37 +297,45 @@ public class JRubyParser {
     }
 
     private static class Warnings extends NullWarnings {
-        private RubyParser.WarningListener listener;
+        private List<RubyParser.WarningListener> listeners;
 
-        public Warnings(RubyParser.WarningListener listener) {
-            this.listener = listener;
+        public Warnings(List<RubyParser.WarningListener> listeners) {
+            this.listeners = listeners;
         }
 
         public void warn(SourcePosition position, String message) {
-            listener.warn(position, message);
+            for (RubyParser.WarningListener listener : listeners) {
+                listener.warn(position, message);
+            }
         }
 
         public void warn(String message) {
-            listener.warn(message);
+            for (RubyParser.WarningListener listener : listeners) {
+                listener.warn(message);
+            }
         }
 
         public void warning(SourcePosition position, String message) {
-            listener.warning(position, message);
+            for (RubyParser.WarningListener listener : listeners) {
+                listener.warning(position, message);
+            }
         }
 
         public void warning(String message) {
-            listener.warning(message);
+            for (RubyParser.WarningListener listener : listeners) {
+                listener.warning(message);
+            }
         }
     }
 
     private static class Parser {
 
         private RubyWarnings warnings;
-        private RubyParser.WarningListener listener;
+        private List<RubyParser.WarningListener> listeners;
 
-        public Parser(RubyParser.WarningListener listener) {
-            this(new Warnings(listener));
-            this.listener = listener;
+        public Parser(List<RubyParser.WarningListener> listeners) {
+            this(new Warnings(listeners));
+            this.listeners = listeners;
         }
 
         public Parser(RubyWarnings warnings) {
@@ -340,7 +357,9 @@ public class JRubyParser {
                         super.yyerror(message, syntaxErrorState);
                     } catch (SyntaxException e) {
                         String errorMessage = formatErrorMessage(message, syntaxErrorState);
-                        listener.error(e.getPosition(), errorMessage);
+                        for (RubyParser.WarningListener listener : listeners) {
+                            listener.error(e.getPosition(), errorMessage);
+                        }
                         throw e;
                     }
                 }

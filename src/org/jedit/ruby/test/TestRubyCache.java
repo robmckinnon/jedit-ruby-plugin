@@ -45,6 +45,7 @@ public class TestRubyCache extends TestCase {
         List<Member.Method> methods = RubyCache.getMethods("red");
 
         assertEquals("Assert file name correct", methods.get(0).getFileName(), "CLASS");
+        assertEquals("Assert file name correct", methods.get(0).getName(), "red");
     }
 
     public void testGetClassByMethod() {

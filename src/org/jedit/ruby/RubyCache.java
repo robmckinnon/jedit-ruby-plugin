@@ -41,7 +41,10 @@ public class RubyCache {
 
     public static void add(String text, String path) {
         RubyMembers members = RubyParser.getMembers(text, path, null, true);
-        instance.add(path, members);
+
+        if(!members.containsErrors()) {
+            instance.add(path, members);
+        }
     }
 
     public static List<Member.Method> getMethods(String method) {

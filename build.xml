@@ -21,16 +21,16 @@
 -->
 
 <project name="ruby" default="dist" basedir=".">
-	
+
 	<property file="build.properties"/>
-	
+
 	<property name="jar.name" value="RubyPlugin.jar"/>
-	
+
 	<property name="src.dir" value="src"/>
 	<property name="build.dir" value="build"/>
 	<property name="install.dir" value=".."/>
 
-	
+
 	<path id="project.class.path">
 		<pathelement location="${install.dir}/junit.jar"/>
 		<pathelement location="${install.dir}/jedit.jar"/>
@@ -72,8 +72,8 @@
 			</classpath>
 		</java>
 	</target>
-	
-	<target name="dist" depends="retroweave">
+
+	<target name="jar">
 		<mkdir dir="${install.dir}"/>
 		<jar jarfile="${install.dir}/${jar.name}">
 			<fileset dir="${build.dir}"/>
@@ -88,6 +88,13 @@
 				<include name="**/*.html"/>
 			</fileset>
 		</jar>
+	</target>
+	
+	<target name="dist" depends="retroweave, jar">
+	</target>
+
+	<target name="dist15" depends="compile, jar">
+		<copy file="${install.dir}/${jar.name}" todir="/home/a/.jedit/jars"/>
 	</target>
 
 	<!-- Generate docs with xsltproc tool from www.xmlsoft.org -->
@@ -109,8 +116,8 @@
 		<delete dir="${build.dir}"/>
 		<delete>
 			<fileset dir="." includes="**/*~" defaultexcludes="no"/>
-			<fileset dir="." includes="**/*.html" defaultexcludes="no"/>
-		</delete>
+<!-- 			<fileset dir="." includes="**/*.html" defaultexcludes="no"/>
+ -->		</delete>
 	</target>
 
 </project>

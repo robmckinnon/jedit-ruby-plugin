@@ -29,11 +29,23 @@ public class RubyMembers {
 
     private Member[] members;
     private List<Member> memberList;
+    private List<Member.Problem> problems;
 
-    public RubyMembers(Member[] members) {
+    public RubyMembers(Member[] members, List<Member.Problem> problems) {
         this.members = members;
-        memberList = new ArrayList<Member>();
-        populateMemberList(members, memberList);
+        this.problems = problems;
+        if (members != null) {
+            memberList = new ArrayList<Member>();
+            populateMemberList(members, memberList);
+        }
+    }
+
+    public boolean containsErrors() {
+        return members == null;
+    }
+
+    public Member.Problem[] getProblems() {
+        return problems.toArray(new Member.Problem[0]);
     }
 
     private void populateMemberList(Member[] members, List<Member> list) {
@@ -45,6 +57,10 @@ public class RubyMembers {
         }
     }
 
+    /**
+     *
+     * @throws RuntimeException if {@link #containsErrors()} returns true
+     */
     public int size() {
         return members.length;
     }

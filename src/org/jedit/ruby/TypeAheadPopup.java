@@ -302,27 +302,7 @@ public class TypeAheadPopup extends JWindow {
             }
         });
 
-        list.setCellRenderer(new DefaultListCellRenderer() {
-            public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus);
-                Member member = (Member)value;
-                if(member == toParentMember) {
-                    setText("[ " + UP_TO_PARENT_TEXT + " ]");
-                } else if (showAllMembers) {
-                    StringBuffer buffer = new StringBuffer();
-                    for (int i = 0; i < member.getParentCount(); i++) {
-                        buffer.append("  ");
-                    }
-                    buffer.append(member.toString());
-                    setText(buffer.toString());
-                } else {
-                    setText(value.toString());
-                }
-                MemberIcon memberIcon = new MemberIcon(member);
-                setIcon(memberIcon.getIcon());
-                return this;
-            }
-        });
+        list.setCellRenderer(new PopupListCellRenderer());
     }
 
     public void dispose() {
@@ -644,4 +624,27 @@ public class TypeAheadPopup extends JWindow {
         Log.log(Log.DEBUG, this, msg);
     }
 
+    private class PopupListCellRenderer extends DefaultListCellRenderer {
+
+        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus);
+
+            Member member = (Member)value;
+            if(member == toParentMember) {
+                setText("[ " + UP_TO_PARENT_TEXT + " ]");
+            } else if (showAllMembers) {
+                StringBuffer buffer = new StringBuffer();
+                for (int i = 0; i < member.getParentCount(); i++) {
+                    buffer.append("  ");
+                }
+                buffer.append(member.getFullName());
+                setText(buffer.toString());
+            } else {
+                setText(value.toString());
+            }
+            MemberIcon memberIcon = new MemberIcon(member);
+            setIcon(memberIcon.getIcon());
+            return this;
+        }
+    }
 }

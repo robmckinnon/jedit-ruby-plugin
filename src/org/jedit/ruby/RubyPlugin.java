@@ -21,6 +21,8 @@ package org.jedit.ruby;
 
 import org.gjt.sp.jedit.EditPlugin;
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.View;
+import org.gjt.sp.jedit.Buffer;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -38,4 +40,51 @@ public class RubyPlugin extends EditPlugin {
         super.stop();
     }
 
+    public static int getNonSpaceStartOffset(int line) {
+        int offset = 0;
+        View view = jEdit.getActiveView();
+        if (view != null) {
+            Buffer buffer = view.getBuffer();
+            if (buffer != null) {
+                offset = buffer.getLineStartOffset(line);
+                int end = buffer.getLineEndOffset(line);
+                String text = buffer.getLineText(line);
+
+                if(text.length() > 0) {
+                    int index = 0;
+                    while (text.charAt(index) == ' ' && (offset - index) < end) {
+                        index++;
+                    }
+                    offset += index;
+                }
+            }
+        }
+
+        return offset;
+    }
+
+    public static int getEndOffset(int line) {
+        int offset = 0;
+        View view = jEdit.getActiveView();
+        if (view != null) {
+            Buffer buffer = view.getBuffer();
+            if (buffer != null) {
+                offset = buffer.getLineEndOffset(line) - 1;
+            }
+        }
+
+        return offset;
+    }
+
+    public static int getStartOffset(int line) {
+        int startOffset = 0;
+        View view = jEdit.getActiveView();
+        if (view != null) {
+            Buffer buffer = view.getBuffer();
+            if (buffer != null) {
+                startOffset = buffer.getLineStartOffset(line);
+            }
+        }
+        return startOffset;
+    }
 }

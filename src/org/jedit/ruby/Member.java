@@ -19,6 +19,10 @@
  */
 package org.jedit.ruby;
 
+import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.View;
+import org.gjt.sp.jedit.Buffer;
+
 import java.util.*;
 
 /**
@@ -353,9 +357,48 @@ public abstract class Member implements Comparable<Member> {
         }
     }
 
-    public static class Warning extends Member {
-        public Warning(String message, int startOffset, int endOffset) {
-            super(message, startOffset, endOffset);
+    public static abstract class Problem extends Member {
+        private int line;
+
+        /**
+         * @param message warning message
+         * @param line line number starting at 0
+         */
+        public Problem(String message, int line) {
+            super(message, 0);
+            this.line = line;
+        }
+
+        public String getName() {
+            return " " + (line + 1) + ": " + super.getName();
+        }
+
+        public String getFullName() {
+            return getName();
+        }
+
+        public String getShortName() {
+            return super.getName();
+        }
+
+        public int getStartOffset() {
+            return RubyPlugin.getNonSpaceStartOffset(line);
+        }
+
+        /** don't like using jEdit View here */
+        public int getEndOffset() {
+            return RubyPlugin.getEndOffset(line);
+        }
+
+    }
+
+    public static class Warning extends Problem {
+        /**
+         * @param message warning message
+         * @param line line number starting at 0
+         */
+        public Warning(String message, int line) {
+            super(message, line);
         }
 
         public void accept(Visitor visitor) {
@@ -363,9 +406,13 @@ public abstract class Member implements Comparable<Member> {
         }
     }
 
-    public static class Error extends Member {
-        public Error(String message, int startOffset, int endOffset) {
-            super(message, startOffset, endOffset);
+    public static class Error extends Problem {
+        /**
+         * @param message error message
+         * @param line line number starting at 0
+         */
+        public Error(String message, int line) {
+            super(message, line);
         }
 
         public void accept(Visitor visitor) {

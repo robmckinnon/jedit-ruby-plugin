@@ -24,13 +24,13 @@ import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
+import org.gjt.sp.jedit.View;
+import org.gjt.sp.jedit.jEdit;
 import org.jruby.lexer.yacc.SourcePosition;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-
-import java.util.List;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -57,12 +57,16 @@ public class RubySideKickParser extends SideKickParser {
         String text = buffer.getText(0, buffer.getLength());
         RubySideKickParser.errorSource = errorSource;
 
-        RubyParser.WarningListener listener = new RubySideKickWarningListener(buffer, errorSource);
+        RubyParser.WarningListener listener = new RubySideKickWarningListener(errorSource);
         SideKickParsedData data = new RubyParsedData(buffer.getName());
         DefaultMutableTreeNode parentNode = data.root;
-        Member[] members = RubyParser.getMembers(text, buffer.getPath(), listener, true).getMembers();
-        addNodes(parentNode, members, buffer);
+        RubyMembers members = RubyParser.getMembers(text, buffer.getPath(), listener, true);
+        if (!members.containsErrors()) {
+            addNodes(parentNode, members.getMembers(), buffer);
 //        SideKickParsedData.setParsedData(jEdit.getActiveView(), data);
+        } else {
+            addNodes(parentNode, members.getProblems(), buffer);
+        }
 
         return data;
     }
@@ -88,23 +92,26 @@ public class RubySideKickParser extends SideKickParser {
         }
     }
 
-    private void addWarning(String message, SourcePosition position, Buffer buffer, DefaultErrorSource errorSource) {
-        addToErrorList(ErrorSource.WARNING, position, buffer, errorSource, message);
+    private void addWarning(String message, SourcePosition position, DefaultErrorSource errorSource) {
+        addToErrorList(ErrorSource.WARNING, position, errorSource, message);
     }
 
-    private void addError(String message, SourcePosition position, Buffer buffer, DefaultErrorSource errorSource) {
-        addToErrorList(ErrorSource.ERROR, position, buffer, errorSource, message);
+    private void addError(String message, SourcePosition position, DefaultErrorSource errorSource) {
+        addToErrorList(ErrorSource.ERROR, position, errorSource, message);
     }
 
-    private void addToErrorList(int type, SourcePosition position, Buffer buffer, DefaultErrorSource errorSource, String message) {
+    private void addToErrorList(int type, SourcePosition position, DefaultErrorSource errorSource, String message) {
         int line = position == null ? 0 : position.getLine() - 1;
-        String lineText = buffer.getLineText(line);
-        if(lineText.length() == 0) {
-//            buffer.insert(buffer.getLineStartOffset(line), "---");
-        }
-        int startOffsetInLine = 0;
-        int endOffsetInLine = 0;
-        errorSource.addError(type, buffer.getPath(), line, startOffsetInLine, endOffsetInLine, message);
+
+        int startOffset = RubyPlugin.getStartOffset(line);
+        int nonSpaceStartOffset = RubyPlugin.getNonSpaceStartOffset(line);
+        int endOffset = RubyPlugin.getEndOffset(line);
+
+        int startOffsetInLine = nonSpaceStartOffset - startOffset;
+        int endOffsetInLine = endOffset - startOffset;
+
+        System.out.println("start " + startOffsetInLine + ", end " + endOffsetInLine);
+        errorSource.addError(type, position.getFile(), line, startOffsetInLine, endOffsetInLine, message);
     }
 
     private void addNodes(DefaultMutableTreeNode parentNode, Member[] members, Buffer buffer) {
@@ -124,29 +131,34 @@ public class RubySideKickParser extends SideKickParser {
     }
 
     private class RubySideKickWarningListener implements RubyParser.WarningListener {
-        private final Buffer buffer;
+
         private final DefaultErrorSource errorSource;
 
-        public RubySideKickWarningListener(Buffer buffer, DefaultErrorSource errorSource) {
-            this.buffer = buffer;
+        public RubySideKickWarningListener(DefaultErrorSource errorSource) {
             this.errorSource = errorSource;
         }
 
         public void warn(SourcePosition position, String message) {
-            addWarning(message, position, buffer, errorSource);
+            addWarning(message, position, errorSource);
         }
+
         public void warn(String message) {
-            addWarning(message, null, buffer, errorSource);
+            addWarning(message, null, errorSource);
         }
+
         public void warning(SourcePosition position, String message) {
-            addWarning(message, position, buffer, errorSource);
+            addWarning(message, position, errorSource);
         }
+
         public void warning(String message) {
-            addWarning(message, null, buffer, errorSource);
+            addWarning(message, null, errorSource);
         }
 
         public void error(SourcePosition position, String message) {
-            addError(message, position, buffer, errorSource);
+            addError(message, position, errorSource);
+        }
+
+        public void clear() {
         }
     }
 }
