@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE ACTIONS SYSTEM "actions.dtd">
+<ACTIONS>
+	<ACTION NAME="file-structure-popup">
+		<CODE>
+			org.jedit.ruby.RubyActions.fileStructurePopup(view);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="auto-indent-and-insert-end">
+		<CODE>
+			org.jedit.ruby.RubyActions.autoIndentAndInsertEnd(view);
+		</CODE>
+	</ACTION>
+</ACTIONS>
