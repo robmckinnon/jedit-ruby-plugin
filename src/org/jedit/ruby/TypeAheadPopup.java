@@ -64,7 +64,7 @@ public class TypeAheadPopup extends JWindow {
     private Point position;
     private boolean handleFocusOnDispose;
 
-    public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Point location) {
+    public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
         super(editorView);
         view = editorView;
         textArea = editorView.getTextArea();
@@ -84,7 +84,7 @@ public class TypeAheadPopup extends JWindow {
         validCharacters = "_(),";
         handleFocusOnDispose = true;
         searchLabel = new JLabel("");
-        popupList = initPopupList(displayMembers);
+        popupList = initPopupList(displayMembers, selectedMember);
 
         // stupid scrollbar policy is an attempt to work around
         // bugs people have been seeing with IBM's JDK -- 7 Sep 2000
@@ -105,7 +105,7 @@ public class TypeAheadPopup extends JWindow {
         editorView.setKeyEventInterceptor(keyHandler);
     }
 
-    private JList initPopupList(Member[] members) {
+    private JList initPopupList(Member[] members, Member selectedMember) {
         if(parentsList.size() > 0) {
             Member[] memberArray = new Member[members.length + 1];
             memberArray[0] = PREVIOUS_POPUP;
@@ -117,7 +117,11 @@ public class TypeAheadPopup extends JWindow {
         }
         JList list = new JList(members);
         list.setVisibleRowCount(VISIBLE_LIST_SIZE);
-        list.setSelectedIndex(0);
+        if(selectedMember != null) {
+            list.setSelectedValue(selectedMember, true);
+        } else {
+            list.setSelectedIndex(0);
+        }
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         list.addMouseListener(new MouseAdapter() {
@@ -162,15 +166,16 @@ public class TypeAheadPopup extends JWindow {
         if (member == PREVIOUS_POPUP) {
             handleFocusOnDispose = false;
             dispose();
+            Member selectedMember = members[0].getParentMember();
             Member[] displayMembers = parentsList.removeLast();
-            new TypeAheadPopup(view, displayMembers, parentsList, position);
+            new TypeAheadPopup(view, displayMembers, parentsList, selectedMember, position);
 
         } else if (member.hasChildMembers()) {
             Member[] childMembers = member.getChildMembers();
             handleFocusOnDispose = false;
             dispose();
             parentsList.add(members);
-            new TypeAheadPopup(view, childMembers, parentsList, position);
+            new TypeAheadPopup(view, childMembers, parentsList, null, position);
 
         } else {
             int offset = member.getOffset();

@@ -33,6 +33,7 @@ public class Member {
     private String namespace;
     private String name;
     private int offset;
+    private Member parentMember;
     private ArrayList<Member> childMembers;
 
     public Member(String name) {
@@ -93,5 +94,14 @@ public class Member {
             childMembers = new ArrayList<Member>();
         }
         childMembers.add(member);
+        member.setParentMember(this);
+    }
+
+    public Member getParentMember() {
+        return parentMember;
+    }
+
+    private void setParentMember(Member parentMember) {
+        this.parentMember = parentMember;
     }
 }

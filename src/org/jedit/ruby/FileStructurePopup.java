@@ -60,7 +60,7 @@ public class FileStructurePopup {
             JEditTextArea textArea = view.getTextArea();
             textArea.scrollToCaret(false);
             Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
-            new TypeAheadPopup(view, members, null, location);
+            new TypeAheadPopup(view, members, null, null, location);
         }
     }
 
