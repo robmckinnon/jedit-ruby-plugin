@@ -15,6 +15,7 @@ import org.jruby.common.NullWarnings;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.io.StringReader;
 import java.io.Reader;
 
@@ -23,11 +24,11 @@ import java.io.Reader;
  */
 public class JRubyParser {
 
-    public static Member[] getMembers(String ruby, Member[] members) {
+    public static List<Member> getMembers(String ruby, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers) {
         Parser parser = new Parser();
         Node node = parser.parse("", ruby);
 
-        MockNodeVisitor visitor = new MockNodeVisitor(members);
+        MockNodeVisitor visitor = new MockNodeVisitor(moduleMembers, classMembers, methodMembers);
         if (node != null) {
             node.accept(visitor);
         }
@@ -36,21 +37,33 @@ public class JRubyParser {
 
     private static class MockNodeVisitor extends AbstractVisitor {
 
-        private List<String> modules;
-        private Member[] members;
-        private int index;
+        private List<String> moduleNames;
+        private LinkedList<Member> currentMember;
+        private int moduleIndex;
+        private int classIndex;
+        private int methodIndex;
+
+        private List<Member> modules;
+        private List<Member> classes;
+        private List<Member> methods;
 
         public MockNodeVisitor() {
         }
 
-        public MockNodeVisitor(Member[] members) {
-            modules = new ArrayList<String>();
-            this.members = members;
-            index = 0;
+        public MockNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers) {
+            moduleNames = new ArrayList<String>();
+            currentMember = new LinkedList<Member>();
+            currentMember.add(new Member("root", 0));
+            modules = moduleMembers;
+            classes = classMembers;
+            methods = methodMembers;
+            moduleIndex = 0;
+            classIndex = 0;
+            methodIndex = 0;
         }
 
-        public Member[] getMembers() {
-            return members;
+        public List<Member> getMembers() {
+            return currentMember.getFirst().getChildMembersAsList();
         }
 
         protected void visitNode(Node node) {
@@ -95,12 +108,19 @@ public class JRubyParser {
         public void visitModuleNode(ModuleNode node) {
             System.out.print("[");
             visitNode(node);
-            String module = node.getName();
-            System.out.println(": " + module);
-            modules.add(module);
+            String moduleName = node.getName();
+            System.out.println(": " + moduleName);
+            moduleNames.add(moduleName);
+
+            Member module = modules.get(moduleIndex++);
+            currentMember.getLast().addChildMember(module);
+            currentMember.add(module);
+
             node.getBodyNode().accept(this);
+
+            moduleNames.remove(moduleName);
+            currentMember.removeLast();
             System.out.println("]");
-            modules.remove(module);
         }
 
         public void visitClassNode(ClassNode node) {
@@ -108,15 +128,48 @@ public class JRubyParser {
             String className = node.getClassName();
             System.out.println(": " + className);
 
-            if(modules.size() > 0) {
+            Member clas = classes.get(classIndex++);
+            populateNamespace(clas);
+            currentMember.getLast().addChildMember(clas);
+            currentMember.add(clas);
+
+            node.getBodyNode().accept(this);
+
+            currentMember.removeLast();
+        }
+
+        public void visitDefnNode(DefnNode node) {
+            visitNode(node);
+            String methodName = node.getName();
+            System.out.println(": " + methodName);
+
+            Member method = methods.get(methodIndex++);
+            currentMember.getLast().addChildMember(method);
+
+        }
+
+        public void visitDefsNode(DefsNode node) {
+            visitNode(node);
+            String methodName = node.getName();
+            System.out.println(": " + methodName);
+
+            Member method = methods.get(methodIndex++);
+            currentMember.getLast().addChildMember(method);
+            currentMember.add(method);
+
+            node.getBodyNode().accept(this);
+
+            currentMember.removeLast();
+        }
+
+        private void populateNamespace(Member clas) {
+            if(moduleNames.size() > 0) {
                 String namespace = "";
-                for(String module : modules) {
+                for(String module : moduleNames) {
                     namespace += module + "::";
                 }
-                members[index].setNamespace(namespace);
+                clas.setNamespace(namespace);
             }
-            index++;
-            node.getBodyNode().accept(this);
         }
 
         public void visitScopeNode(ScopeNode node) {
@@ -133,13 +186,6 @@ public class JRubyParser {
             node.getBodyNode().accept(this);
         }
 
-        public void visitDefnNode(DefnNode node) {
-            visitNode(node);
-            String method = node.getName();
-            System.out.println(": " + method);
-            index++;
-        }
-
         public void visitFCallNode(FCallNode node) {
             visitNode(node);
             System.out.println(": " + node.getName());
@@ -153,12 +199,6 @@ public class JRubyParser {
         public void visitClassVarAsgnNode(ClassVarAsgnNode node) {
             visitNode(node);
             System.out.println(": " + node.getName());
-        }
-
-        public void visitDefsNode(DefsNode node) {
-            visitNode(node);
-            System.out.println(": " + node.getName());
-            node.getBodyNode().accept(this);
         }
 
     }
@@ -200,13 +240,6 @@ public class JRubyParser {
                 pool.returnParser(parser);
             }
             return result.getAST();
-        }
-
-        /**
-         * @param b
-         */
-        public static void setDebugging(boolean b) {
-            // FIXME Enable/Disable debug logging!
         }
 
     }

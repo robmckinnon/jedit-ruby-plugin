@@ -19,15 +19,21 @@
  */
 package org.jedit.ruby;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Ruby file structure member
  * @author robmckinnon at users.sourceforge.net
  */
 public class Member {
 
+    private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
+
     private String namespace;
     private String name;
     private int offset;
+    private ArrayList<Member> childMembers;
 
     public Member(String name) {
         this.name = name;
@@ -64,5 +70,28 @@ public class Member {
 
     public String toString() {
         return getDisplayName();
+    }
+
+    public boolean hasChildMembers() {
+        return childMembers != null;
+    }
+
+    public Member[] getChildMembers() {
+        if(hasChildMembers()) {
+            return childMembers.toArray(EMPTY_MEMBER_ARRAY);
+        } else {
+            return null;
+        }
+    }
+
+    public List<Member> getChildMembersAsList() {
+        return childMembers;
+    }
+
+    public void addChildMember(Member member) {
+        if(childMembers == null) {
+            childMembers = new ArrayList<Member>();
+        }
+        childMembers.add(member);
     }
 }

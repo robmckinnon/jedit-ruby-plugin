@@ -22,9 +22,8 @@ package org.jedit.ruby;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
-import gnu.regexp.REException;
 
-import java.awt.*;
+import java.awt.Point;
 
 /**
  * Shows file structure popup to allow user to navigate
@@ -61,7 +60,7 @@ public class FileStructurePopup {
             JEditTextArea textArea = view.getTextArea();
             textArea.scrollToCaret(false);
             Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
-            new TypeAheadPopup(view, members, location, "_(),");
+            new TypeAheadPopup(view, members, location);
         }
     }
 

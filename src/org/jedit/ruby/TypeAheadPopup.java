@@ -58,16 +58,20 @@ public class TypeAheadPopup extends JWindow {
     private String searchPrefix;
     private JLabel searchLabel;
     private int mismatchCharacters;
+    private Point position;
+    private boolean handleFocusOnDispose;
 
-    public TypeAheadPopup(View editorView, Member[] fileMembers, Point location, String validChars) {
+    public TypeAheadPopup(View editorView, Member[] fileMembers, Point location) {
         super(editorView);
         searchPrefix = jEdit.getProperty("file-structure-popup.search.label");
         mismatchCharacters = 0;
         searchText = "";
-        validCharacters = validChars;
+        validCharacters = "_(),";
         members = fileMembers;
+        position = location;
         setContentPane(new NonTraversablePanel(new BorderLayout()));
 
+        handleFocusOnDispose = true;
         view = editorView;
         textArea = editorView.getTextArea();
         searchLabel = new JLabel("");
@@ -99,7 +103,7 @@ public class TypeAheadPopup extends JWindow {
 
         list.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
-                moveToSelected();
+                handleSelection();
             }
         });
 
@@ -124,19 +128,29 @@ public class TypeAheadPopup extends JWindow {
     public void dispose() {
         view.setKeyEventInterceptor(null);
         super.dispose();
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                textArea.requestFocus();
-            }
-        });
+        if(handleFocusOnDispose) {
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    textArea.requestFocus();
+                }
+            });
+        }
     }
 
-    private void moveToSelected() {
-        Member nember = (Member) popupList.getSelectedValue();
-        int offset = nember.getOffset();
-        view.goToBuffer(view.getBuffer());
-        view.getTextArea().setCaretPosition(offset);
-        dispose();
+    private void handleSelection() {
+        Member member = (Member) popupList.getSelectedValue();
+
+        if (member.hasChildMembers()) {
+            Member[] members = member.getChildMembers();
+            handleFocusOnDispose = false;
+            dispose();
+            new TypeAheadPopup(view, members, position);
+        } else {
+            int offset = member.getOffset();
+            view.goToBuffer(view.getBuffer());
+            view.getTextArea().setCaretPosition(offset);
+            dispose();
+        }
     }
 
     private void updateMatchedMembers(char typed) {
@@ -205,10 +219,6 @@ public class TypeAheadPopup extends JWindow {
 
         public void keyPressed(KeyEvent event) {
             switch (event.getKeyCode()) {
-                case KeyEvent.VK_TAB:
-                case KeyEvent.VK_ENTER:
-                    handleSelection(event); break;
-
                 case KeyEvent.VK_ESCAPE:
                     handleEscapePressed(event); break;
 
@@ -250,14 +260,20 @@ public class TypeAheadPopup extends JWindow {
         public void keyTyped(KeyEvent event) {
             char character = event.getKeyChar();
             int keyCode = event.getKeyCode();
-            event = KeyEventWorkaround.processKeyEvent(event);
 
-            if (event != null && !ignoreKeyTyped(keyCode, character)) {
-                if (Character.isDigit(character)) {
-                    handleDigitTyped(character, event);
+            if (keyCode == KeyEvent.VK_TAB || keyCode == KeyEvent.VK_ENTER) {
+                handleSelection(event);
 
-                } else {
-                    handleCharacterTyped(character, event);
+            } else {
+                event = KeyEventWorkaround.processKeyEvent(event);
+
+                if (event != null && !ignoreKeyTyped(keyCode, character)) {
+                    if (Character.isDigit(character)) {
+                        handleDigitTyped(character, event);
+
+                    } else {
+                        handleCharacterTyped(character, event);
+                    }
                 }
             }
         }
@@ -322,8 +338,8 @@ public class TypeAheadPopup extends JWindow {
         }
 
         private void handleSelection(KeyEvent event) {
-            moveToSelected();
             event.consume();
+            TypeAheadPopup.this.handleSelection();
         }
 
         private void handleCharacterTyped(char character, KeyEvent event) {

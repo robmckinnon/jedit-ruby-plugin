@@ -39,11 +39,11 @@ public class RubyParser {
         List<REMatch> getMatches(String text) throws REException;
     }
 
-//    private static final Matcher moduleMatcher = new Matcher() {
-//        public List<REMatch> getMatches(String text) throws REException {
-//            return getMatchList("([ ]*)(module[ ]+)(\\w+.*)", text);
-//        }
-//    };
+    private static final Matcher moduleMatcher = new Matcher() {
+        public List<REMatch> getMatches(String text) throws REException {
+            return getMatchList("([ ]*)(module[ ]+)(\\w+.*)", text);
+        }
+    };
 
     private static final Matcher classMatcher = new Matcher() {
         public List<REMatch> getMatches(String text) throws REException {
@@ -53,73 +53,40 @@ public class RubyParser {
 
     private static final Matcher methodMatcher = new Matcher() {
         public List<REMatch> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(def[ ]+)(\\w+.*)", text);
+            return getMatchList("([ ]*)(def[ ]+)(.*)", text);
         }
     };
 
     public static Member[] getMembers(String text) {
-        Member[] members;
+        return getMembersAsList(text).toArray(EMPTY_MEMBER_ARRAY);
+    }
+
+    public static List<Member> getMembersAsList(String text) {
+        List<Member> members = null;
 
         try {
-            List<Member> memberList = getMemberList(text);
-            members = memberList.toArray(EMPTY_MEMBER_ARRAY);
-            if(members.length > 0) {
-                members = JRubyParser.getMembers(text, members);
-            }
+            List<Member> modules = createMembers(text, moduleMatcher);
+            List<Member> classes = createMembers(text, classMatcher);
+            List<Member> methods = createMembers(text, methodMatcher);
+            members = JRubyParser.getMembers(text, modules, classes, methods);
         } catch (REException e) {
-            members = EMPTY_MEMBER_ARRAY;
             e.printStackTrace();
         }
 
         return members;
     }
 
-    private static List<Member> getMemberList(String text) throws REException {
-//        return getMemberSubList(text, moduleMatcher, classMatcher, 0);
-        return getMemberSubList(text, classMatcher, methodMatcher, 0);
-    }
+    private static List<Member> createMembers(String text, Matcher matcher) throws REException {
+        List<REMatch> matches = matcher.getMatches(text);
+        List<Member> members = new ArrayList<Member>();
 
-    private static List<Member> getMemberSubList(String text, Matcher matcher, Matcher subMatcher, int indexAdjustment) throws REException {
-        List<Member> memberList = new ArrayList<Member>();
-        List<REMatch> memberMatches = matcher.getMatches(text);
-
-        if (memberMatches.size() == 0) {
-//            if (matcher == moduleMatcher) {
-//                memberList = getMemberSubList(text, classMatcher, methodMatcher, 0);
-//            } else {
-                List<REMatch> matches = subMatcher.getMatches(text);
-                List<Member> members = createMembers(matches, 3, false, indexAdjustment);
-                memberList.addAll(members);
-//            }
-        } else {
-            Iterator<REMatch> matches = memberMatches.iterator();
-            REMatch memberMatch = matches.next();
-            while (matches.hasNext()) {
-                REMatch nextMemberMatch = matches.next();
-                int end = nextMemberMatch.getStartIndex(3);
-                memberList = addMembers(memberMatch, text, end, matcher, memberList, subMatcher, indexAdjustment);
-                memberMatch = nextMemberMatch;
-            }
-
-            memberList = addMembers(memberMatch, text, text.length(), matcher, memberList, subMatcher, indexAdjustment);
+        for(REMatch match : matches) {
+            String name = match.toString(3);
+            int index = match.getStartIndex(3);
+            members.add(new Member(name, index));
         }
 
-        return memberList;
-    }
-
-    private static List<Member> addMembers(REMatch memberMatch, String text, int end, Matcher matcher, List<Member> memberList, Matcher subMatcher, int indexAdjustment) throws REException {
-        int start = memberMatch.getStartIndex(3);
-        indexAdjustment += start;
-        String subText = text.substring(start, end);
-
-//        if (matcher == moduleMatcher) {
-//            List<Member> subMembers = getMemberSubList(subText, classMatcher, methodMatcher, indexAdjustment);
-//            memberList = addMemberAndSubMembers(memberMatch, start, memberList, subMembers);
-//        } else {
-            memberList = addSubMembers(memberMatch, indexAdjustment, subText, memberList, subMatcher);
-//        }
-
-        return memberList;
+        return members;
     }
 
     private static REMatch[] getMatches(String expression, String text) throws REException {
@@ -141,42 +108,6 @@ public class RubyParser {
         }
 
         return matchList;
-    }
-
-    private static List<Member> sortMembers(List<Member> members) {
-        Collections.sort(members, new Comparator<Member>() {
-            public int compare(Member member, Member otherItem) {
-                return member.getLowerCaseName().compareTo(otherItem.getLowerCaseName());
-            }
-        });
-        return members;
-    }
-
-    private static List<Member> createMembers(List<REMatch> matchList, int matchIndex, boolean indent, int indexAdjustment) {
-        List<Member> members = new ArrayList<Member>();
-
-        for(REMatch match : matchList) {
-            String name = match.toString(matchIndex);
-            int index = indexAdjustment + match.getStartIndex(matchIndex);
-            members.add(new Member(name, index));
-        }
-
-        sortMembers(members);
-        return members;
-    }
-
-    private static List<Member> addSubMembers(REMatch memberMatch, int start, String text, List<Member> membersList, Matcher matcher) throws REException {
-        List<REMatch> subMemberMatches = matcher.getMatches(text);
-        List<Member> subMembers = createMembers(subMemberMatches, 3, true, start);
-        return addMemberAndSubMembers(memberMatch, start, membersList, subMembers);
-    }
-
-    private static List<Member> addMemberAndSubMembers(REMatch memberMatch, int start, List<Member> membersList, List<Member> subMembers) {
-        String memberName = memberMatch.toString(3);
-        Member member = new Member(memberName, start);
-        membersList.add(member);
-        membersList.addAll(subMembers);
-        return membersList;
     }
 
 }
