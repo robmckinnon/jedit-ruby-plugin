@@ -30,11 +30,22 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.awt.Point;
+import java.io.IOException;
 
 /**
  * @author robmckinnon at users,sourceforge,net
  */
 public class RubyActions {
+
+    public static void searchDocumentation(View view) {
+        try {
+            RDocSeacher.doSearch(view);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static void findDeclaration(View view) {
         JEditTextArea textArea = view.getTextArea();

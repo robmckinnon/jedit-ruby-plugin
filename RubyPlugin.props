@@ -2,7 +2,7 @@
 plugin.org.jedit.ruby.RubyPlugin.activate=defer
 plugin.org.jedit.ruby.RubyPlugin.name=Ruby Plugin
 plugin.org.jedit.ruby.RubyPlugin.author=Robert McKinnon
-plugin.org.jedit.ruby.RubyPlugin.version=0.2
+plugin.org.jedit.ruby.RubyPlugin.version=0.3
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.jars=
 plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.4
@@ -14,6 +14,7 @@ plugin.org.jedit.ruby.RubyPlugin.depend.3=plugin projectviewer.ProjectPlugin 2.1
 plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
 	ruby.structure-browser \
 	- \
+	ruby.search-documentation \
 	ruby.find-declaration \
 	- \
 	ruby.previous-method \
@@ -24,11 +25,12 @@ plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
 	- \
 	ruby.auto-indent-and-insert-end \
 	ruby.complete-method
-	
+
 ruby.file-structure-popup.label=File structure popup
 ruby.structure-browser.label=Structure browser
 
-ruby.find-declaration.label=Find declaration
+ruby.search-documentation.label=Search RDoc (using ri)
+ruby.find-declaration.label=Find declaration (experimental)
 
 ruby.previous-method.label=Go to previous method
 ruby.next-method.label=Go to next method
@@ -54,6 +56,9 @@ ruby.file-structure-popup.narrow-search.mnemonic=n
 ruby.file-structure-popup.show-all.label=Show all file structure members
 ruby.file-structure-popup.show-all.mnemonic=s
 ruby.file-structure-popup.search.label=Search for: 
+
+ruby.search-documentation.error=Error:\nri output overflowed native platform's standard input stream buffer.
+ruby.search-documentation.dialog.label=Search using ri for:
 
 ruby.syntax-error.found.label=found
 ruby.syntax-error.expected.label=expected

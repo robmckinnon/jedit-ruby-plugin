@@ -24,8 +24,6 @@ import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
-import org.gjt.sp.jedit.View;
-import org.gjt.sp.jedit.jEdit;
 import org.jruby.lexer.yacc.SourcePosition;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
