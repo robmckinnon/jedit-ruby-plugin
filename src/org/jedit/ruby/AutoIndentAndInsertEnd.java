@@ -64,27 +64,35 @@ public class AutoIndentAndInsertEnd {
         if(!buffer.getMode().getName().equals("ruby")) {
             area.insertEnterAndIndent();
         } else {
-            area.removeTrailingWhiteSpace();
-            int row = area.getCaretLine();
-            String line = area.getLineText(row);
-            String trimLine = line.trim();
-            int caretPosition = area.getCaretPosition() - area.getLineStartOffset(row);
-            boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
-            RE commentRegExp = new RE("(\\s*)(##?)(.*)", 0, RESearchMatcher.RE_SYNTAX_JEDIT);
+            buffer.writeLock();
+            buffer.beginCompoundEdit();
+            try {
+                area.removeTrailingWhiteSpace();
+                int row = area.getCaretLine();
+                String line = area.getLineText(row);
+                String trimLine = line.trim();
+                int caretPosition = area.getCaretPosition() - area.getLineStartOffset(row);
+                boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
+                RE commentRegExp = new RE("(\\s*)(##?)(.*)", 0, RESearchMatcher.RE_SYNTAX_JEDIT);
 
-            if(caretPosition != line.length() || openingBrace) {
-                if(commentRegExp.isMatch(line)) {
-                    handleComment(line, commentRegExp, row);
+                if(caretPosition != line.length() || openingBrace) {
+                    if(commentRegExp.isMatch(line)) {
+                        handleComment(line, commentRegExp, row);
+                    } else {
+                        area.insertEnterAndIndent();
+                    }
+                } else if(trimLine.startsWith("else") || trimLine.startsWith("elsif")) {
+                    handleElse(trimLine, row);
                 } else {
-                    area.insertEnterAndIndent();
+                    handleInsertEnter(trimLine, row, commentRegExp, line);
                 }
-            } else if(trimLine.startsWith("else") || trimLine.startsWith("elsif")) {
-                handleElse(trimLine, row);
-            } else {
-                handleInsertEnter(trimLine, row, commentRegExp, line);
+            } finally {
+                if(buffer.insideCompoundEdit()) {
+                    buffer.endCompoundEdit();
+                }
+                buffer.writeUnlock();                
             }
-
-        }        
+        }
     }
     void handleElse(String trimLine, int row) throws REException {
         area.insertEnterAndIndent();
