@@ -5,7 +5,7 @@ plugin.org.jedit.ruby.RubyPlugin.author=Robert McKinnon
 plugin.org.jedit.ruby.RubyPlugin.version=0.01
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.jars=
-plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.5
+plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.4
 plugin.org.jedit.ruby.RubyPlugin.depend.1=jedit 04.02.09.00
 plugin.org.jedit.ruby.RubyPlugin.depend.2=plugin sidekick.SideKickPlugin 0.3
 
@@ -21,8 +21,16 @@ auto-indent-and-insert-end.label=Auto indent and insert end
 #options.ruby.general.label=General
 #options.ruby.general.code=new org.jedit.ruby.options.GeneralOptionPane();
 
+file-structure-popup.narrow-search.label=Narrow down the list on typing
+file-structure-popup.narrow-search.mnemonic=n
+file-structure-popup.show-all.label=Show all file structure members
+file-structure-popup.show-all.mnemonic=s
 file-structure-popup.search.label=Search for: 
-S
+
+syntax-error.found.label=found
+syntax-error.expected.label=expected
+syntax-error.nothing.label=nothing
+
 # SideKick structure browser properties
 sidekick.parser.ruby.label=Ruby
 mode.ruby.sidekick.parser=ruby

@@ -21,6 +21,7 @@ package org.jedit.ruby;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * Ruby file structure member
@@ -29,20 +30,31 @@ import java.util.List;
 public class Member {
 
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
+    private String receiverName;
+    private int parentCount;
+    private List<Member> parentPath;
+
+    public static class Root extends Member {
+        public Root() {
+            super("root", 0);
+        }
+    }
+
+    private Member parentMember;
+    private List<Member> childMembers;
 
     private String namespace;
     private String name;
     private int offset;
-    private Member parentMember;
-    private ArrayList<Member> childMembers;
 
     public Member(String name) {
         this.name = name;
+        parentCount = -1;
     }
 
     public Member(String name, int offset) {
+        this(name);
         this.offset = offset;
-        this.name = name;
     }
 
     public void visitMember(Member.Visitor visitor) {
@@ -53,9 +65,20 @@ public class Member {
         this.namespace = namespace;
     }
 
+    public void setReceiver(String receiverName) {
+        this.receiverName = receiverName;
+        if(name.startsWith(receiverName)) {
+            name = name.substring(name.indexOf('.') + 1);
+        }
+    }
+
     public String getDisplayName() {
         if(namespace == null) {
-            return name;
+            if(receiverName == null) {
+                return name;
+            } else {
+                return receiverName + '.' + name;
+            }
         } else {
             return namespace + name;
         }
@@ -71,6 +94,19 @@ public class Member {
 
     public int getOffset() {
         return offset;
+    }
+
+    public boolean equals(Object obj) {
+        if(obj instanceof Member) {
+            Member member = ((Member) obj);
+            return name.equals(member.name) && offset == member.offset;
+        } else {
+            return false;
+        }
+    }
+
+    public int hashCode() {
+        return name.hashCode() + offset;
     }
 
     public String toString() {
@@ -101,11 +137,65 @@ public class Member {
         member.setParentMember(this);
     }
 
+    public boolean hasParentMember() {
+        return parentMember != null && !(parentMember instanceof Member.Root);
+    }
+
+    public Member getTopMostParent() {
+        if(hasParentMember()) {
+            return getTopMostParentOrSelf(getParentMember());
+        } else {
+            return null;
+        }
+    }
+
+    private Member getTopMostParentOrSelf(Member member) {
+        if (member.hasParentMember()) {
+            return getTopMostParentOrSelf(member.getParentMember());
+        } else {
+            return member;
+        }
+    }
+
+    /**
+     * Returns list of member parent hierarchy
+     * starting with top most parent, ending
+     * with the member itself.
+     *
+     * If this member has no parent, the list only
+     * contains this member.
+     */ 
+    public List<Member> getMemberPath() {
+        if (parentPath == null) {
+            List<Member> path = new ArrayList<Member>();
+            Member current = this;
+            path.add(current);
+
+            while(current.hasParentMember()) {
+                current = current.getParentMember();
+                path.add(current);
+            }
+
+            Collections.reverse(path);
+            parentPath = path;
+        }
+
+        return parentPath;
+    }
+
+    public int getParentCount() {
+        if (parentCount == -1) {
+            parentCount = getMemberPath().size() - 1;
+        }
+
+        return parentCount;
+    }
+
     public Member getParentMember() {
         return parentMember;
     }
 
-    private void setParentMember(Member parentMember) {
+    public void setParentMember(Member parentMember) {
         this.parentMember = parentMember;
     }
 

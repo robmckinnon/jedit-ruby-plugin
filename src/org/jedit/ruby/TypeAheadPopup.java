@@ -23,19 +23,14 @@ package org.jedit.ruby;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.gui.KeyEventWorkaround;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
+import java.util.*;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.LinkedList;
 
 /**
  * Altered version of Slava Pestov's
@@ -45,30 +40,46 @@ import java.util.LinkedList;
  */
 public class TypeAheadPopup extends JWindow {
 
-    private static final Member PREVIOUS_POPUP = new Member("..");
-    private static final int VISIBLE_LIST_SIZE = 9;
+    private static final String NARROW_LIST_ON_TYPING = "rubyplugin.file-structure-popup.narrow-list-on-typing";
+    private static final String SHOW_ALL = "rubyplugin.file-structure-popup.show-all";
+    private static final String UP_TO_PARENT_TEXT = "..";
+    private static final int VISIBLE_LIST_SIZE = 15;
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
     private static final char BACKSPACE_KEY = (char)-1;
     private static final char ESCAPE_KEY = (char)-2;
 
+    private Member toParentMember;
+    private Member[] members;
+    private Member[] displayMembers;
+    private Member[] originalMembers;
+    private LinkedList<Member[]> parentsList;
     private View view;
     private JEditTextArea textArea;
     private JList popupList;
     private String validCharacters;
-    private Member[] members;
-    private LinkedList<Member[]> parentsList;
     private String searchText;
     private String searchPrefix;
     private JLabel searchLabel;
-    private int mismatchCharacters;
     private Point position;
+    private int mismatchCharacters;
     private boolean handleFocusOnDispose;
+    private boolean narrowListOnTyping;
+    private boolean showAllMembers;
+    private char narrowListMnemonic;
+    private char showAllMnemonic;
+    private JCheckBox showAllCheckBox;
+    private JCheckBox narrowListCheckBox;
 
     public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
+        this(editorView, displayMembers, displayMembers, parentMembers, selectedMember, location);
+    }
+
+    private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
         super(editorView);
+        Log.log(Log.MESSAGE, this, "selected is: " + String.valueOf(selectedMember));
+
         view = editorView;
         textArea = editorView.getTextArea();
-        members = displayMembers;
 
         if (parentMembers != null) {
             parentsList = parentMembers;
@@ -77,81 +88,221 @@ public class TypeAheadPopup extends JWindow {
         }
 
         position = location;
-
-        searchPrefix = jEdit.getProperty("file-structure-popup.search.label");
+        searchPrefix = " " + jEdit.getProperty("file-structure-popup.search.label");
         mismatchCharacters = 0;
         searchText = "";
-        validCharacters = "_(),";
+        validCharacters = "_(),.[]";
         handleFocusOnDispose = true;
-        searchLabel = new JLabel("");
-        popupList = initPopupList(displayMembers, selectedMember);
 
-        // stupid scrollbar policy is an attempt to work around
-        // bugs people have been seeing with IBM's JDK -- 7 Sep 2000
-        JScrollPane scroller = new JScrollPane(popupList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        narrowListOnTyping = jEdit.getBooleanProperty(NARROW_LIST_ON_TYPING, false);
+        showAllMembers = jEdit.getBooleanProperty(SHOW_ALL, false);
 
-        setContentPane(new NonTraversablePanel(new BorderLayout()));
-        getContentPane().add(searchLabel, BorderLayout.NORTH);
-        getContentPane().add(scroller);
+        this.originalMembers = originalMembers;
+        if(showAllMembers) {
+            members = getExpandedMembers(displayMembers);
+        } else {
+            members = displayMembers;
+        }
+        popupList = initPopupList(selectedMember);
 
-        GUIUtilities.requestFocus(this, popupList);
-        pack();
-        setLocation(location);
-        setVisible(true);
-
-        TypeAheadPopup.KeyHandler keyHandler = new TypeAheadPopup.KeyHandler();
-        addKeyListener(keyHandler);
-        popupList.addKeyListener(keyHandler);
-        editorView.setKeyEventInterceptor(keyHandler);
+        if (popupList != null) {
+            setVisible(true);
+        }
     }
 
-    private JList initPopupList(Member[] members, Member selectedMember) {
-        if(parentsList.size() > 0) {
-            Member[] memberArray = new Member[members.length + 1];
-            memberArray[0] = PREVIOUS_POPUP;
-            int index = 1;
-            for(Member member : members) {
-                memberArray[index++] = member;
-            }
-            members = memberArray;
-        }
-        JList list = new JList(members);
-        list.setVisibleRowCount(VISIBLE_LIST_SIZE);
-        if(selectedMember != null) {
-            list.setSelectedValue(selectedMember, true);
+    private Member[] getExpandedMembers(Member[] members) {
+        List<Member> memberList = new ArrayList<Member>();
+        populateMemberList(members, memberList);
+        return memberList.toArray(new Member[0]);
+    }
+
+    public void setVisible(boolean visible) {
+        if (visible) {
+            searchLabel = new JLabel("");
+
+            JPanel topPanel = new JPanel(new GridLayout(2, 1));
+            showAllCheckBox = initShowAllCheckBox();
+            narrowListCheckBox = initNarrowListCheckBox();
+            topPanel.add(showAllCheckBox);
+            topPanel.add(narrowListCheckBox);
+
+            JPanel panel = new JPanel(new BorderLayout());
+            panel.add(topPanel, BorderLayout.NORTH);
+            panel.add(searchLabel, BorderLayout.SOUTH);
+            JScrollPane scroller = new JScrollPane(popupList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+            setContentPane(new NonTraversablePanel(new BorderLayout()));
+            getContentPane().add(panel, BorderLayout.NORTH);
+            getContentPane().add(scroller);
+
+            putFocusOnPopup();
+            pack();
+            setLocation(position);
+            super.setVisible(true);
+            Object selectedValue = popupList.getSelectedValue();
+            popupList.setSelectedIndex(0);
+            popupList.setSelectedValue(selectedValue, true);
+
+            KeyHandler keyHandler = new KeyHandler();
+            addKeyListener(keyHandler);
+            popupList.addKeyListener(keyHandler);
+            view.setKeyEventInterceptor(keyHandler);
         } else {
-            list.setSelectedIndex(0);
+            super.setVisible(false);
         }
+    }
+
+    private JCheckBox initNarrowListCheckBox() {
+        String label = jEdit.getProperty("file-structure-popup.narrow-search.label");
+        narrowListMnemonic = jEdit.getProperty("file-structure-popup.narrow-search.mnemonic").charAt(0);
+        final JCheckBox checkBox = new JCheckBox(label, narrowListOnTyping);
+        checkBox.setMnemonic(narrowListMnemonic);
+        checkBox.setFocusable(false);
+        checkBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setNarrowListOnTyping(checkBox.isSelected());
+            }
+        });
+        return checkBox;
+    }
+
+    private JCheckBox initShowAllCheckBox() {
+        String label = jEdit.getProperty("file-structure-popup.show-all.label");
+        showAllMnemonic = jEdit.getProperty("file-structure-popup.show-all.mnemonic").charAt(0);
+        final JCheckBox checkBox = new JCheckBox(label, showAllMembers);
+        checkBox.setMnemonic(showAllMnemonic);
+        checkBox.setFocusable(false);
+        checkBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                boolean selected = checkBox.isSelected();
+                setShowAllMembers(selected);
+            }
+        });
+        return checkBox;
+    }
+
+    private void setShowAllMembers(boolean selected) {
+        showAllMembers = selected;
+        jEdit.setProperty(SHOW_ALL, Boolean.toString(showAllMembers));
+        dispose();
+        new TypeAheadPopup(view, originalMembers, originalMembers, null, (Member)popupList.getSelectedValue(), position);
+    }
+
+    private void putFocusOnPopup() {
+        GUIUtilities.requestFocus(this, popupList);
+    }
+
+    private JList initPopupList(Member selectedMember) {
+        int selectedIndex = getSelectedIndex(selectedMember, members);
+
+        if(selectedIndex != -1) {
+            if (selectedMember != null && selectedMember.hasParentMember() && !showAllMembers) {
+                selectedIndex++;
+            }
+            return initPopupList(selectedIndex);
+        } else {
+            return null;
+        }
+    }
+
+    private int getSelectedIndex(Member selectedMember, Member[] members) {
+        int selectedIndex = 0;
+
+        if (selectedMember != null) {
+            List<Member> memberList = Arrays.asList(members);
+
+            if (memberList.contains(selectedMember)) {
+                selectedIndex = memberList.indexOf(selectedMember);
+            } else {
+                List<Member> memberPath = selectedMember.getMemberPath();
+                for (Member member : memberPath) {
+                    if (memberList.contains(member)) {
+                        Member[] childMembers = member.getChildMembers();
+                        handleFocusOnDispose = false;
+                        dispose();
+                        parentsList.add(members);
+                        new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position);
+                        selectedIndex = -1;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return selectedIndex;
+    }
+
+    private JList initPopupList(int index) {
+        displayMembers = initDisplayMembers(members, parentsList);
+        JList list = new JList(displayMembers);
+        configureList(list);
+        list.setSelectedValue(displayMembers[index], true);
+        return list;
+    }
+
+    private Member[] initDisplayMembers(Member[] members, LinkedList<Member[]> parentsList) {
+        if (!showAllMembers) {
+            if (parentsList.size() > 0) {
+                Member parentMember = members[0].getParentMember();
+                toParentMember = parentMember;
+                Member[] memberArray = new Member[members.length + 1];
+                memberArray[0] = toParentMember;
+                int index = 1;
+                for (Member member : members) {
+                    memberArray[index++] = member;
+                }
+                members = memberArray;
+            }
+        }
+        return members;
+    }
+
+    private void populateMemberList(Member[] members, List<Member> memberList) {
+        for(Member member : members) {
+            memberList.add(member);
+            if(member.hasChildMembers()) {
+                populateMemberList(member.getChildMembers(), memberList);
+            }
+        }
+    }
+
+    private void configureList(JList list) {
+        list.setVisibleRowCount(VISIBLE_LIST_SIZE);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         list.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
-                handleSelection();
+                handleSelection((Member) popupList.getSelectedValue(), true);
             }
         });
 
         list.setCellRenderer(new DefaultListCellRenderer() {
             public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus);
-
-                if (index < 9)
-                    setText((index + 1) + ": " + value);
-                else if (index == 9)
-                    setText("0: " + value);
-                else
+                Member member = (Member)value;
+                if(member == toParentMember) {
+                    setText("[ " + UP_TO_PARENT_TEXT + " ]");
+                } else if (showAllMembers) {
+                    StringBuffer buffer = new StringBuffer();
+                    for (int i = 0; i < member.getParentCount(); i++) {
+                        buffer.append("  ");
+                    }
+                    buffer.append(member.toString());
+                    setText(buffer.toString());
+                } else {
                     setText(value.toString());
-
+                }
+                MemberIcon memberIcon = new MemberIcon(member);
+                setIcon(memberIcon.getIcon());
                 return this;
             }
         });
-
-        return list;
     }
 
     public void dispose() {
         view.setKeyEventInterceptor(null);
         super.dispose();
-        if(handleFocusOnDispose) {
+        if (handleFocusOnDispose) {
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     textArea.requestFocus();
@@ -160,25 +311,23 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
-    private void handleSelection() {
-        Member member = (Member) popupList.getSelectedValue();
-
-        if (member == PREVIOUS_POPUP) {
+    private void handleSelection(Member member, boolean showMenu) {
+        if (member == toParentMember && showMenu) {
             handleFocusOnDispose = false;
             dispose();
-            Member selectedMember = members[0].getParentMember();
-            Member[] displayMembers = parentsList.removeLast();
-            new TypeAheadPopup(view, displayMembers, parentsList, selectedMember, position);
+            Member[] members = parentsList.removeLast();
+            new TypeAheadPopup(view, originalMembers, members, parentsList, member, position);
 
-        } else if (member.hasChildMembers()) {
+        } else if (member.hasChildMembers() && showMenu && !showAllMembers) {
             Member[] childMembers = member.getChildMembers();
             handleFocusOnDispose = false;
             dispose();
             parentsList.add(members);
-            new TypeAheadPopup(view, childMembers, parentsList, null, position);
+            new TypeAheadPopup(view, originalMembers, childMembers, parentsList, null, position);
 
         } else {
             int offset = member.getOffset();
+            log(member + ": " + offset);
             view.goToBuffer(view.getBuffer());
             view.getTextArea().setCaretPosition(offset);
             dispose();
@@ -203,17 +352,30 @@ public class TypeAheadPopup extends JWindow {
             }
         } else {
             searchLabel.setForeground(Color.black);
-            popupList.setListData(matches.toArray());
-            popupList.setSelectedIndex(0);
+            if (narrowListOnTyping) {
+                Member[] membersToShow = matches.toArray(new Member[matches.size()]);
+                resetList(membersToShow, membersToShow[0]);
+            } else {
+                resetList(displayMembers, matches.get(0));
+            }
+        }
+    }
+
+    private void resetList(Member[] membersToShow, Member selectedMember) {
+        popupList.setListData(membersToShow);
+        if (searchText.length() > 0) {
+            popupList.setVisibleRowCount(VISIBLE_LIST_SIZE + 1);
+        } else {
             popupList.setVisibleRowCount(VISIBLE_LIST_SIZE);
         }
+        popupList.setSelectedValue(selectedMember, true);
     }
 
     private void setSearchText(String text) {
         if (mismatchCharacters < MAX_MISMATCHED_CHARACTERS) {
             searchText = text;
 
-            if(searchText.length() == 0) {
+            if (searchText.length() == 0) {
                 searchLabel.setText(searchText);
             } else {
                 searchLabel.setText(searchPrefix + searchText);
@@ -222,7 +384,7 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private String getNewSearchText(char typed) {
-        switch(typed) {
+        switch (typed) {
             case BACKSPACE_KEY:
                 return searchText.substring(0, searchText.length() - 1);
 
@@ -234,12 +396,26 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
+    private void setNarrowListOnTyping(boolean narrow) {
+        narrowListOnTyping = narrow;
+        jEdit.setProperty(NARROW_LIST_ON_TYPING, Boolean.toString(narrow));
+        if(searchText.length() > 0) {
+            updateMatchedMembers(' '); // naive refresh
+            updateMatchedMembers(BACKSPACE_KEY);
+        }
+    }
+
     private List<Member> getMatchingMembers(String text) {
         text = text.toLowerCase();
         List<Member> visibleMembers = new ArrayList<Member>();
 
-        for (Member member : members) {
-            if (member.getDisplayName().toLowerCase().startsWith(text) || member.getName().toLowerCase().startsWith(text)) {
+        for (Member member : displayMembers) {
+            if (member == toParentMember) {
+                if(UP_TO_PARENT_TEXT.startsWith(text)) {
+                    visibleMembers.add(member);
+                }
+            } else if (member.getDisplayName().toLowerCase().startsWith(text) ||
+                    member.getName().toLowerCase().startsWith(text)) {
                 visibleMembers.add(member);
             }
         }
@@ -252,38 +428,54 @@ public class TypeAheadPopup extends JWindow {
         public void keyPressed(KeyEvent event) {
             switch (event.getKeyCode()) {
                 case KeyEvent.VK_ESCAPE:
-                    handleEscapePressed(event); break;
+                    handleEscapePressed(event);
+                    break;
 
                 case KeyEvent.VK_UP:
-                    incrementSelection(event, -1); break;
+                    incrementSelection(event, -1);
+                    break;
 
                 case KeyEvent.VK_DOWN:
-                    incrementSelection(event, 1); break;
+                    incrementSelection(event, 1);
+                    break;
 
                 case KeyEvent.VK_PAGE_UP:
                 case KeyEvent.VK_LEFT:
-                    incrementSelection(event, -1 * (VISIBLE_LIST_SIZE - 1)); break;
+                    incrementSelection(event, -1 * (VISIBLE_LIST_SIZE - 1));
+                    break;
 
                 case KeyEvent.VK_PAGE_DOWN:
                 case KeyEvent.VK_RIGHT:
-                    incrementSelection(event, (VISIBLE_LIST_SIZE - 1)); break;
+                    incrementSelection(event, (VISIBLE_LIST_SIZE - 1));
+                    break;
 
                 case KeyEvent.VK_HOME:
-                    incrementSelection(event, -1 * getListSize()); break;
+                    incrementSelection(event, -1 * getListSize());
+                    break;
 
                 case KeyEvent.VK_END:
-                    incrementSelection(event, getListSize()); break;
+                    incrementSelection(event, getListSize());
+                    break;
 
                 case KeyEvent.VK_BACK_SPACE:
-                    handleBackSpacePressed(event); break;
+                    handleBackSpacePressed(event);
+                    break;
+
+                case KeyEvent.VK_F4:
+                    handleSelection(event, false);
 
                 default:
-                    if (event.isActionKey()
-                            || event.isControlDown()
-                            || event.isAltDown()
-                            || event.isMetaDown()) {
-                        dispose();
-                        view.processKeyEvent(event);
+                    if(event.isAltDown() || event.isMetaDown()) {
+                        char keyChar = event.getKeyChar();
+                        if (keyChar == narrowListMnemonic) {
+                            narrowListCheckBox.setSelected(!narrowListOnTyping);
+                            setNarrowListOnTyping(!narrowListOnTyping);
+                            event.consume();
+                        } else if (keyChar == showAllMnemonic) {
+                            showAllCheckBox.setSelected(!showAllMembers);
+                            setShowAllMembers(!showAllMembers);
+                            event.consume();
+                        }
                     }
                     break;
             }
@@ -292,20 +484,14 @@ public class TypeAheadPopup extends JWindow {
         public void keyTyped(KeyEvent event) {
             char character = event.getKeyChar();
             int keyCode = event.getKeyCode();
-
-            if (keyCode == KeyEvent.VK_TAB || keyCode == KeyEvent.VK_ENTER) {
-                handleSelection(event);
+            int keyChar = event.getKeyChar();
+            if (keyCode == KeyEvent.VK_TAB || keyCode == KeyEvent.VK_ENTER ||
+                    keyChar == KeyEvent.VK_TAB || keyChar == KeyEvent.VK_ENTER) {
+                handleSelection(event, true);
 
             } else {
-                event = KeyEventWorkaround.processKeyEvent(event);
-
-                if (event != null && !ignoreKeyTyped(keyCode, character)) {
-                    if (Character.isDigit(character)) {
-                        handleDigitTyped(character, event);
-
-                    } else {
-                        handleCharacterTyped(character, event);
-                    }
+                if (event != null && !ignoreKeyTyped(keyCode, character, event)) {
+                    handleCharacterTyped(character, event);
                 }
             }
         }
@@ -330,7 +516,7 @@ public class TypeAheadPopup extends JWindow {
 
             if (selected >= size) {
                 selected = size - 1;
-            } else if(selected < 0) {
+            } else if (selected < 0) {
                 selected = 0;
             } else if (getFocusOwner() == popupList) {
                 return;
@@ -341,8 +527,10 @@ public class TypeAheadPopup extends JWindow {
             event.consume();
         }
 
-        private boolean ignoreKeyTyped(int keyCode, char keyChar) {
-            switch(keyCode) {
+        private boolean ignoreKeyTyped(int keyCode, char keyChar, KeyEvent event) {
+            boolean ignore;
+
+            switch (keyCode) {
                 case KeyEvent.VK_ENTER:
                 case KeyEvent.VK_ESCAPE:
                 case KeyEvent.VK_UP:
@@ -353,11 +541,17 @@ public class TypeAheadPopup extends JWindow {
                 case KeyEvent.VK_END:
                 case KeyEvent.VK_LEFT:
                 case KeyEvent.VK_RIGHT:
-                    return true;
+                    ignore = true;
                 default:
                     // for some reason have to match backspace and tab using keyChar
-                    return keyChar == KeyEvent.VK_BACK_SPACE || keyChar == KeyEvent.VK_TAB;
+                    ignore = keyChar == KeyEvent.VK_BACK_SPACE
+                            || keyChar == KeyEvent.VK_TAB
+                            || event.isActionKey()
+                            || event.isControlDown()
+                            || event.isAltDown()
+                            || event.isMetaDown();
             }
+            return ignore;
         }
 
         private void handleEscapePressed(KeyEvent event) {
@@ -369,9 +563,10 @@ public class TypeAheadPopup extends JWindow {
             event.consume();
         }
 
-        private void handleSelection(KeyEvent event) {
+        private void handleSelection(KeyEvent event, boolean showMenu) {
             event.consume();
-            TypeAheadPopup.this.handleSelection();
+            Member member = (Member)TypeAheadPopup.this.popupList.getSelectedValue();
+            TypeAheadPopup.this.handleSelection(member, showMenu);
         }
 
         private void handleCharacterTyped(char character, KeyEvent event) {
@@ -380,25 +575,9 @@ public class TypeAheadPopup extends JWindow {
 
             if (valid) {
                 updateMatchedMembers(character);
-            } else {
-                handleSelection(event);
-            }
-            event.consume();
-        }
-
-        private void handleDigitTyped(char digit, KeyEvent event) {
-            int index = digit - '0';
-            if (index == 0) {
-                index = 9;
-            } else {
-                index--;
-            }
-            if (index < getListSize()) {
-                popupList.setSelectedIndex(index);
-                handleSelection(event);
+                event.consume();
             }
         }
-
     }
 
     class NonTraversablePanel extends JPanel {

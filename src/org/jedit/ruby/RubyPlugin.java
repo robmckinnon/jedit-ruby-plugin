@@ -20,6 +20,7 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.EditPlugin;
+import org.gjt.sp.jedit.jEdit;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -28,6 +29,9 @@ public class RubyPlugin extends EditPlugin {
 
     public void start() {
         super.start();
+        JRubyParser.setExpectedLabel(jEdit.getProperty("syntax-error.expected.label"));
+        JRubyParser.setFoundLabel(jEdit.getProperty("syntax-error.found.label"));
+        JRubyParser.setNothingLabel(jEdit.getProperty("syntax-error.nothing.label"));
     }
 
     public void stop() {

@@ -28,6 +28,7 @@ import java.awt.Point;
 /**
  * Shows file structure popup to allow user to navigate
  * to member locations within a file.
+ *
  * @author robmckinnon at users,sourceforge,net
  */
 public class FileStructurePopup {
@@ -44,7 +45,7 @@ public class FileStructurePopup {
             log("showing file structure popup");
             view.showWaitCursor();
             showPopup(view);
-        } catch(Exception e) {
+        } catch (Exception e) {
         } finally {
             view.hideWaitCursor();
         }
@@ -52,15 +53,19 @@ public class FileStructurePopup {
 
     private void showPopup(View view) {
         String text = view.getTextArea().getText();
+        String bufferPath = view.getBuffer().getPath();
         start = now();
-        Member[] members = RubyParser.getMembers(text);
+        RubyMembers members = RubyParser.getMembers(text, bufferPath, null, false);
 
-        int count = members.length;
-        if(count > 0) {
+        if (members.size() > 0) {
             JEditTextArea textArea = view.getTextArea();
             textArea.scrollToCaret(false);
             Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
-            new TypeAheadPopup(view, members, null, null, location);
+
+            int caretPosition = view.getTextArea().getCaretPosition();
+            Member selectedMember = members.getPreviousMember(caretPosition);
+
+            new TypeAheadPopup(view, members.getMembers(), null, selectedMember, location);
         }
     }
 

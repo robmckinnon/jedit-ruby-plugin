@@ -25,7 +25,7 @@ import gnu.regexp.RE;
 
 import java.util.*;
 
-import org.gjt.sp.jedit.search.RESearchMatcher;
+import org.jruby.lexer.yacc.SourcePosition;
 
 /**
  * Parses ruby file
@@ -34,6 +34,9 @@ import org.gjt.sp.jedit.search.RESearchMatcher;
 public class RubyParser {
 
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
+    private static String lastBufferPath;
+    private static int lastTextLength;
+    private static Member[] lastMembers;
 
     public static interface Matcher {
         List<REMatch> getMatches(String text) throws REException;
@@ -56,6 +59,7 @@ public class RubyParser {
         }
 
         public Member createMember(String name, int index) {
+            System.out.println("class: " + name);
             return new Member.Class(name, index);
         }
     };
@@ -70,18 +74,29 @@ public class RubyParser {
         }
     };
 
-    public static Member[] getMembers(String text) {
-        return getMembersAsList(text).toArray(EMPTY_MEMBER_ARRAY);
+    public static RubyMembers getMembers(String text, String bufferPath, WarningListener listener, boolean forceReparse) {
+        Member[] members;
+
+        if(!forceReparse && bufferPath == lastBufferPath && text.length() == lastTextLength) {
+            members = lastMembers;
+        } else {
+            members = getMembersAsList(text, listener).toArray(EMPTY_MEMBER_ARRAY);
+            lastMembers = members;
+            lastBufferPath = bufferPath;
+            lastTextLength = text.length();
+        }
+
+        return new RubyMembers(members);
     }
 
-    public static List<Member> getMembersAsList(String text) {
+    public static List<Member> getMembersAsList(String text, WarningListener listener) {
         List<Member> members = null;
 
         try {
             List<Member> modules = createMembers(text, moduleMatcher);
             List<Member> classes = createMembers(text, classMatcher);
             List<Member> methods = createMembers(text, methodMatcher);
-            members = JRubyParser.getMembers(text, modules, classes, methods);
+            members = JRubyParser.getMembers(text, modules, classes, methods, listener);
         } catch (REException e) {
             e.printStackTrace();
         }
@@ -103,7 +118,7 @@ public class RubyParser {
     }
 
     private static REMatch[] getMatches(String expression, String text) throws REException {
-        RE re = new RE(expression, 0, RESearchMatcher.RE_SYNTAX_JEDIT);
+        RE re = new RE(expression, 0);
         return re.getAllMatches(text);
     }
 
@@ -112,10 +127,7 @@ public class RubyParser {
         List<REMatch> matchList = new ArrayList<REMatch>();
 
         for(REMatch match : matches) {
-            String openingText = match.toString(1).trim();
-            boolean isClass = openingText.length() == 0;
-
-            if(isClass) {
+            if(onlySpacesBeforeMatch(match, text)) {
                 matchList.add(match);
             }
         }
@@ -123,4 +135,37 @@ public class RubyParser {
         return matchList;
     }
 
+    private static boolean onlySpacesBeforeMatch(REMatch match, String text) {
+        int index = match.getStartIndex() - 1;
+        boolean onlySpaces = true;
+
+        if(index >= 0) {
+            char nextCharacter = text.charAt(index);
+
+            while(onlySpaces && index >= 0 && nextCharacter != '\n' && nextCharacter != '\r') {
+                char character = text.charAt(index--);
+                onlySpaces = character == ' ' || character == '\t';
+                if(index >= 0) {
+                    nextCharacter = text.charAt(index);
+                }
+            }
+        }
+        return onlySpaces;
+    }
+
+    /**
+     * Interface defining methods called back
+     * with parsing warnings.
+     */
+    public static interface WarningListener {
+        void warn(SourcePosition position, String message);
+
+        void warn(String message);
+
+        void warning(SourcePosition position, String message);
+
+        void warning(String message);
+
+        void error(SourcePosition position, String message);
+    }
 }

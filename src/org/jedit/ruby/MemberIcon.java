@@ -1,5 +1,5 @@
 /*
- * MemberNode.java - 
+ * MemberIcon.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -19,37 +19,37 @@
  */
 package org.jedit.ruby;
 
-import sidekick.Asset;
-
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MemberNode extends Asset {
+public class MemberIcon implements Member.Visitor {
 
     private Icon icon;
 
-    public MemberNode(Member member) {
-        super(member.getName());
-        MemberIcon memberIcon = new MemberIcon(member);
-        icon = memberIcon.getIcon();
-    }
-
-    public DefaultMutableTreeNode createTreeNode() {
-       return new DefaultMutableTreeNode(this, true);
+    public MemberIcon(Member member) {
+        member.visitMember(this);
     }
 
     public Icon getIcon() {
         return icon;
     }
 
-    public String getShortString() {
-        return name;
+    public void handleModule() {
+        icon = loadIcon("module");
     }
 
-    public String getLongString() {
-        return getShortString();
+    public void handleClass() {
+        icon = loadIcon("class");
+    }
+
+    public void handleMethod() {
+        icon = loadIcon("method");
+    }
+
+    private Icon loadIcon(String name) {
+       return new ImageIcon(MemberIcon.class.getResource("icons/" + name + ".png"));
     }
 }

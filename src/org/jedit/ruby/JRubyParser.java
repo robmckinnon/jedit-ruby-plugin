@@ -5,10 +5,10 @@ import org.jruby.ast.*;
 import org.jruby.lexer.yacc.SourcePosition;
 import org.jruby.lexer.yacc.LexerSource;
 import org.jruby.lexer.yacc.SyntaxException;
-import org.jruby.parser.RubyParserPool;
 import org.jruby.parser.RubyParserConfiguration;
 import org.jruby.parser.DefaultRubyParser;
 import org.jruby.parser.RubyParserResult;
+import org.jruby.parser.SyntaxErrorState;
 import org.jruby.common.RubyWarnings;
 import org.jruby.common.NullWarnings;
 
@@ -24,15 +24,38 @@ import java.io.Reader;
  */
 public class JRubyParser {
 
-    public static List<Member> getMembers(String ruby, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers) {
-        Parser parser = new Parser();
-        Node node = parser.parse("", ruby);
+    private static String found;
+    private static String expected;
+    private static String nothing;
 
+    public static void setFoundLabel(String found) {
+        JRubyParser.found = found;
+    }
+
+    public static void setExpectedLabel(String expected) {
+        JRubyParser.expected = expected;
+    }
+
+    public static void setNothingLabel(String nothing) {
+        JRubyParser.nothing = nothing;
+    }
+
+    public static List<Member> getMembers(String ruby, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, RubyParser.WarningListener listener) {
+        List<Member> members;
+        Parser parser = new Parser(listener);
         MockNodeVisitor visitor = new MockNodeVisitor(moduleMembers, classMembers, methodMembers);
-        if (node != null) {
-            node.accept(visitor);
+
+        try {
+            Node node = parser.parse("", ruby);
+            if (node != null) {
+                node.accept(visitor);
+            }
+            members = visitor.getMembers();
+        } catch (SyntaxException e) {
+            members = null;
         }
-        return visitor.getMembers();
+
+        return members;
     }
 
     private static class MockNodeVisitor extends AbstractVisitor {
@@ -53,7 +76,7 @@ public class JRubyParser {
         public MockNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers) {
             moduleNames = new ArrayList<String>();
             currentMember = new LinkedList<Member>();
-            currentMember.add(new Member("root", 0));
+            currentMember.add(new Member.Root());
             modules = moduleMembers;
             classes = classMembers;
             methods = methodMembers;
@@ -109,7 +132,7 @@ public class JRubyParser {
             System.out.print("[");
             visitNode(node);
             String moduleName = node.getName();
-            System.out.println(": " + moduleName);
+            System.out.print(": " + moduleName);
             moduleNames.add(moduleName);
 
             Member module = modules.get(moduleIndex++);
@@ -126,7 +149,7 @@ public class JRubyParser {
         public void visitClassNode(ClassNode node) {
             visitNode(node);
             String className = node.getClassName();
-            System.out.println(": " + className);
+            System.out.print(": " + className);
 
             Member clas = classes.get(classIndex++);
             populateNamespace(clas);
@@ -141,7 +164,7 @@ public class JRubyParser {
         public void visitDefnNode(DefnNode node) {
             visitNode(node);
             String methodName = node.getName();
-            System.out.println(": " + methodName);
+            System.out.print(": " + methodName);
 
             Member method = methods.get(methodIndex++);
             currentMember.getLast().addChildMember(method);
@@ -150,10 +173,20 @@ public class JRubyParser {
 
         public void visitDefsNode(DefsNode node) {
             visitNode(node);
-            String methodName = node.getName();
-            System.out.println(": " + methodName);
 
             Member method = methods.get(methodIndex++);
+
+            String methodName = node.getName();
+            String receiverName;
+            if(node.getReceiverNode() instanceof ConstNode) {
+                ConstNode constNode = (ConstNode)node.getReceiverNode();
+                receiverName = constNode.getName();
+                method.setReceiver(receiverName);
+            } else {
+                receiverName = "";
+            }
+            System.out.println(": " + receiverName + methodName);
+
             currentMember.getLast().addChildMember(method);
             currentMember.add(method);
 
@@ -203,18 +236,42 @@ public class JRubyParser {
 
     }
 
+    private static class Warnings extends NullWarnings {
+        private RubyParser.WarningListener listener;
+
+        public Warnings(RubyParser.WarningListener listener) {
+            this.listener = listener;
+        }
+
+        public void warn(SourcePosition position, String message) {
+            listener.warn(position, message);
+        }
+
+        public void warn(String message) {
+            listener.warn(message);
+        }
+
+        public void warning(SourcePosition position, String message) {
+            listener.warning(position, message);
+        }
+
+        public void warning(String message) {
+            listener.warning(message);
+        }
+    }
+
     private static class Parser {
 
-        private final RubyParserPool pool;
         private RubyWarnings warnings;
+        private RubyParser.WarningListener listener;
 
-        public Parser() {
-            this(new NullWarnings());
+        public Parser(RubyParser.WarningListener listener) {
+            this(new Warnings(listener));
+            this.listener = listener;
         }
 
         public Parser(RubyWarnings warnings) {
             this.warnings = warnings;
-            this.pool = RubyParserPool.getInstance();
         }
 
         public Node parse(String name, String content) {
@@ -226,20 +283,57 @@ public class JRubyParser {
         }
 
         private Node parse(String name, Reader content, RubyParserConfiguration config) {
-            DefaultRubyParser parser = null;
-            RubyParserResult result = null;
-            try {
-                parser = pool.borrowParser();
-                parser.setWarnings(warnings);
-                parser.init(config);
-                LexerSource lexerSource = LexerSource.getSource(name, content);
-                result = parser.parse(lexerSource);
-            } catch (SyntaxException e) {
-                throw e;
-            } finally {
-                pool.returnParser(parser);
-            }
+            DefaultRubyParser parser = new DefaultRubyParser() {
+                public void yyerror(String message, Object syntaxErrorState) {
+                    try {
+                        super.yyerror(message, syntaxErrorState);
+                    } catch (SyntaxException e) {
+                        String errorMessage = formatErrorMessage(message, syntaxErrorState);
+                        listener.error(e.getPosition(), errorMessage);
+                        throw e;
+                    }
+                }
+            };
+
+            parser.setWarnings(warnings);
+            parser.init(config);
+            LexerSource lexerSource = LexerSource.getSource(name, content);
+            RubyParserResult result = parser.parse(lexerSource);
             return result.getAST();
+        }
+
+        private String formatErrorMessage(String message, Object syntaxErrorState) {
+            if (message.equals("syntax error")) {
+                message = "";
+            } else {
+                message += ": ";
+            }
+
+            StringBuffer buffer = new StringBuffer(message);
+            if(syntaxErrorState instanceof SyntaxErrorState) {
+                SyntaxErrorState errorState = (SyntaxErrorState)syntaxErrorState;
+                String[] expectedValues = errorState.expected();
+                buffer.append(found + " " + reformatValue(errorState.found()));
+                buffer.append("; " + expected + " ");
+                if(expectedValues.length == 0) {
+                    buffer.append(nothing);
+                } else {
+                    for(String value : expectedValues) {
+                        value = reformatValue(value);
+                        buffer.append(value + ", ");
+                    }
+                }
+            }
+            return buffer.toString();
+        }
+
+        private String reformatValue(String value) {
+            if(value.startsWith("k")) {
+                value = "'" + value.substring(1).toLowerCase() + "'";
+            } else if(value.startsWith("t")) {
+                value = value.substring(1).toLowerCase();
+            }
+            return value;
         }
 
     }
