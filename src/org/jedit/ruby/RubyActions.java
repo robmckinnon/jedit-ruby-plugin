@@ -20,6 +20,7 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.View;
+import gnu.regexp.REException;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -32,6 +33,11 @@ public class RubyActions {
     }
 
     public static void autoIndentAndInsertEnd(View view) {
-
+        try {
+            AutoIndentAndInsertEnd indenter = new AutoIndentAndInsertEnd(view);
+            indenter.performIndent();
+        } catch (REException e) {
+            e.printStackTrace();
+        }
     }
 }
