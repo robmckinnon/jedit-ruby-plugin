@@ -39,11 +39,11 @@ public class RubyParser {
         List<REMatch> getMatches(String text) throws REException;
     }
 
-    private static final Matcher moduleMatcher = new Matcher() {
-        public List<REMatch> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(module[ ]+)(\\w+.*)", text);
-        }
-    };
+//    private static final Matcher moduleMatcher = new Matcher() {
+//        public List<REMatch> getMatches(String text) throws REException {
+//            return getMatchList("([ ]*)(module[ ]+)(\\w+.*)", text);
+//        }
+//    };
 
     private static final Matcher classMatcher = new Matcher() {
         public List<REMatch> getMatches(String text) throws REException {
@@ -63,6 +63,9 @@ public class RubyParser {
         try {
             List<Member> memberList = getMemberList(text);
             members = memberList.toArray(EMPTY_MEMBER_ARRAY);
+            if(members.length > 0) {
+                members = JRubyParser.getMembers(text, members);
+            }
         } catch (REException e) {
             members = EMPTY_MEMBER_ARRAY;
             e.printStackTrace();
@@ -72,7 +75,8 @@ public class RubyParser {
     }
 
     private static List<Member> getMemberList(String text) throws REException {
-        return getMemberSubList(text, moduleMatcher, classMatcher, 0);
+//        return getMemberSubList(text, moduleMatcher, classMatcher, 0);
+        return getMemberSubList(text, classMatcher, methodMatcher, 0);
     }
 
     private static List<Member> getMemberSubList(String text, Matcher matcher, Matcher subMatcher, int indexAdjustment) throws REException {
@@ -80,13 +84,13 @@ public class RubyParser {
         List<REMatch> memberMatches = matcher.getMatches(text);
 
         if (memberMatches.size() == 0) {
-            if (matcher == moduleMatcher) {
-                memberList = getMemberSubList(text, classMatcher, methodMatcher, 0);
-            } else {
+//            if (matcher == moduleMatcher) {
+//                memberList = getMemberSubList(text, classMatcher, methodMatcher, 0);
+//            } else {
                 List<REMatch> matches = subMatcher.getMatches(text);
                 List<Member> members = createMembers(matches, 3, false, indexAdjustment);
                 memberList.addAll(members);
-            }
+//            }
         } else {
             Iterator<REMatch> matches = memberMatches.iterator();
             REMatch memberMatch = matches.next();
@@ -108,12 +112,12 @@ public class RubyParser {
         indexAdjustment += start;
         String subText = text.substring(start, end);
 
-        if (matcher == moduleMatcher) {
-            List<Member> subMembers = getMemberSubList(subText, classMatcher, methodMatcher, indexAdjustment);
-            memberList = addMemberAndSubMembers(memberMatch, start, memberList, subMembers);
-        } else {
+//        if (matcher == moduleMatcher) {
+//            List<Member> subMembers = getMemberSubList(subText, classMatcher, methodMatcher, indexAdjustment);
+//            memberList = addMemberAndSubMembers(memberMatch, start, memberList, subMembers);
+//        } else {
             memberList = addSubMembers(memberMatch, indexAdjustment, subText, memberList, subMatcher);
-        }
+//        }
 
         return memberList;
     }
@@ -154,7 +158,7 @@ public class RubyParser {
         for(REMatch match : matchList) {
             String name = match.toString(matchIndex);
             int index = indexAdjustment + match.getStartIndex(matchIndex);
-            members.add(new Member(name, index, indent));
+            members.add(new Member(name, index));
         }
 
         sortMembers(members);
@@ -169,7 +173,7 @@ public class RubyParser {
 
     private static List<Member> addMemberAndSubMembers(REMatch memberMatch, int start, List<Member> membersList, List<Member> subMembers) {
         String memberName = memberMatch.toString(3);
-        Member member = new Member(memberName, start, false);
+        Member member = new Member(memberName, start);
         membersList.add(member);
         membersList.addAll(subMembers);
         return membersList;

@@ -193,7 +193,7 @@ public class TypeAheadPopup extends JWindow {
         List<Member> visibleMembers = new ArrayList<Member>();
 
         for (Member member : members) {
-            if (member.getLowerCaseName().startsWith(text)) {
+            if (member.getDisplayName().toLowerCase().startsWith(text) || member.getName().toLowerCase().startsWith(text)) {
                 visibleMembers.add(member);
             }
         }

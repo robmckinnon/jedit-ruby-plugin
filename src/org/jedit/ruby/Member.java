@@ -25,22 +25,33 @@ package org.jedit.ruby;
  */
 public class Member {
 
-    private String displayName;
+    private String namespace;
     private String name;
     private int offset;
 
-    public Member(String name, int offset, boolean indent) {
+    public Member(String name) {
+        this.name = name;
+    }
+
+    public Member(String name, int offset) {
         this.offset = offset;
-        if(indent) {
-            displayName = "    " + name;
-        } else {
-            displayName = name;
-        }
-        this.name = name.toLowerCase();
+        this.name = name;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 
     public String getDisplayName() {
-        return displayName;
+        if(namespace == null) {
+            return name;
+        } else {
+            return namespace + name;
+        }
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getLowerCaseName() {

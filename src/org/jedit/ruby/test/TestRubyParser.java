@@ -39,34 +39,34 @@ public class TestRubyParser extends TestCase {
             "end\n";
 
     public void testEmptyClassInModuleSize() {
-        assertSizeCorrect(2, EMPTY_CLASS_IN_MODULE);
+        assertSizeCorrect(1, EMPTY_CLASS_IN_MODULE);
     }
 
     public void testEmptyClassInModule() {
         Member[] members = RubyParser.getMembers(EMPTY_CLASS_IN_MODULE);
-        assertCorrect(0, "blue", 7, members);
-        assertCorrect(1, "green", 18, members);
+//        assertCorrect(0, "blue", 7, members);
+        assertCorrect(0, "Blue::Green", 18, members);
     }
 
     public void testClassInModuleSize() {
-        assertSizeCorrect(3, CLASS_IN_MODULE);
+        assertSizeCorrect(2, CLASS_IN_MODULE);
     }
 
     public void testClassInModule() {
         Member[] members = RubyParser.getMembers(CLASS_IN_MODULE);
-        assertCorrect(0, "blue", 7, members);
-        assertCorrect(1, "green", 18, members);
-        assertCorrect(2, "red", 28, members);
+//        assertCorrect(0, "blue", 7, members);
+        assertCorrect(0, "Blue::Green", 18, members);
+        assertCorrect(1, "red", 28, members);
     }
 
     public void testDefInModuleSize() {
-        assertSizeCorrect(2, DEF_IN_MODULE);
+        assertSizeCorrect(1, DEF_IN_MODULE);
     }
 
     public void testDefInModule() {
         Member[] members = RubyParser.getMembers(DEF_IN_MODULE);
-        assertCorrect(0, "blue", 7, members);
-        assertCorrect(1, "red", 16, members);
+//        assertCorrect(0, "blue", 7, members);
+        assertCorrect(0, "red", 16, members);
     }
 
     public void testParseDefSize() {
@@ -84,17 +84,17 @@ public class TestRubyParser extends TestCase {
 
     public void testParseEmptyClass() {
         Member[] members = RubyParser.getMembers(EMPTY_CLASS);
-        assertCorrect(0, "green", 6, members);
+        assertCorrect(0, "Green", 6, members);
     }
 
     public void testParseEmptyModuleSize() {
-        assertSizeCorrect(1, EMPTY_MODULE);
+        assertSizeCorrect(0, EMPTY_MODULE);
     }
 
-    public void testParseEmptyModule() {
-        Member[] members = RubyParser.getMembers(EMPTY_MODULE);
-        assertCorrect(0, "blue", 7, members);
-    }
+//    public void testParseEmptyModule() {
+//        Member[] members = RubyParser.getMembers(EMPTY_MODULE);
+//        assertCorrect(0, "blue", 7, members);
+//    }
 
     public void testParseClassSize() {
         assertSizeCorrect(2, CLASS);
@@ -102,7 +102,7 @@ public class TestRubyParser extends TestCase {
 
     public void testParseClass() {
         Member[] members = RubyParser.getMembers(CLASS);
-        assertCorrect(0, "green", 6, members);
+        assertCorrect(0, "Green", 6, members);
         assertCorrect(1, "red", 16, members);
     }
 
@@ -112,7 +112,7 @@ public class TestRubyParser extends TestCase {
 
     public void testParseClassAndDef() {
         Member[] members = RubyParser.getMembers(CLASS_AND_DEF);
-        assertCorrect(0, "green", 6, members);
+        assertCorrect(0, "Green", 6, members);
         assertCorrect(1, "red", 20, members);
     }
 
@@ -124,7 +124,7 @@ public class TestRubyParser extends TestCase {
     private void assertCorrect(int index, String name, int offset, Member[] members) {
         try {
             Member member = members[index];
-            assertEquals("Assert name correct", name, member.getLowerCaseName());
+            assertEquals("Assert name correct", name, member.getDisplayName());
             assertEquals("Assert offset correct", offset, member.getOffset());
         } catch (Exception e) {
             fail("Member not in result: " + name);
