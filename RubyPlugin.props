@@ -14,21 +14,30 @@ plugin.org.jedit.ruby.RubyPlugin.depend.3=plugin projectviewer.ProjectPlugin 2.1
 plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
 	ruby.structure-browser \
 	- \
+	ruby.find-declaration \
+	- \
 	ruby.previous-method \
 	ruby.next-method \
 	- \
 	ruby.previous-error \
 	ruby.next-error \
 	- \
-	ruby.auto-indent-and-insert-end
+	ruby.auto-indent-and-insert-end \
+	ruby.complete-method
 	
 ruby.file-structure-popup.label=File structure popup
 ruby.structure-browser.label=Structure browser
-ruby.auto-indent-and-insert-end.label=Auto indent and insert end
-ruby.previous-error.label=Go to previous error
-ruby.next-error.label=Go to next error
+
+ruby.find-declaration.label=Find declaration
+
 ruby.previous-method.label=Go to previous method
 ruby.next-method.label=Go to next method
+
+ruby.previous-error.label=Go to previous error
+ruby.next-error.label=Go to next error
+
+ruby.auto-indent-and-insert-end.label=Auto indent and insert end
+ruby.complete-method.label=Complete method
 
 # Option panes
 #plugin.org.jedit.ruby.RubyPlugin.option-group=ruby.general

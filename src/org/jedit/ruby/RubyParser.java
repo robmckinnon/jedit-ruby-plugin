@@ -24,6 +24,7 @@ import gnu.regexp.REMatch;
 import gnu.regexp.RE;
 
 import java.util.*;
+import java.io.File;
 
 import org.jruby.lexer.yacc.SourcePosition;
 import org.gjt.sp.jedit.View;
@@ -74,7 +75,8 @@ public class RubyParser {
         }
 
         public Member createMember(String name, String filePath, int index) {
-            return new Member.Method(name, filePath, index);
+            String fileName = (new File(filePath)).getName();
+            return new Member.Method(name, filePath, fileName, index);
         }
     };
 
@@ -126,7 +128,7 @@ public class RubyParser {
         List<Member> members = new ArrayList<Member>();
 
         for(REMatch match : matches) {
-            String name = match.toString(3);
+            String name = match.toString(3).trim();
             int index = match.getStartIndex(3);
             members.add(matcher.createMember(name, filePath, index));
         }

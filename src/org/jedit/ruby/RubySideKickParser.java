@@ -21,12 +21,16 @@ package org.jedit.ruby;
 
 import sidekick.SideKickParser;
 import sidekick.SideKickParsedData;
+import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.EditPane;
 import org.jruby.lexer.yacc.SourcePosition;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+
+import java.util.List;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -54,13 +58,34 @@ public class RubySideKickParser extends SideKickParser {
         RubySideKickParser.errorSource = errorSource;
 
         RubyParser.WarningListener listener = new RubySideKickWarningListener(buffer, errorSource);
-        SideKickParsedData data = new SideKickParsedData(buffer.getName());
+        SideKickParsedData data = new RubyParsedData(buffer.getName());
         DefaultMutableTreeNode parentNode = data.root;
         Member[] members = RubyParser.getMembers(text, buffer.getPath(), listener, true).getMembers();
         addNodes(parentNode, members, buffer);
 //        SideKickParsedData.setParsedData(jEdit.getActiveView(), data);
 
         return data;
+    }
+
+    public static class RubyParsedData extends SideKickParsedData {
+        public RubyParsedData(String fileName) {
+            super(fileName);
+        }
+    }
+
+    public boolean supportsCompletion() {
+        return true;
+    }
+
+    public SideKickCompletion complete(EditPane editPane, int caret) {
+        System.out.println("completing");
+        CodeCompletor completor = new CodeCompletor(editPane.getView());
+
+        if(completor.isInsertionPoint()) {
+            return new RubyCompletion(editPane.getView(), completor);
+        } else {
+            return null;
+        }
     }
 
     private void addWarning(String message, SourcePosition position, Buffer buffer, DefaultErrorSource errorSource) {
@@ -75,7 +100,7 @@ public class RubySideKickParser extends SideKickParser {
         int line = position == null ? 0 : position.getLine() - 1;
         String lineText = buffer.getLineText(line);
         if(lineText.length() == 0) {
-            buffer.insert(buffer.getLineStartOffset(line), "---");
+//            buffer.insert(buffer.getLineStartOffset(line), "---");
         }
         int startOffsetInLine = 0;
         int endOffsetInLine = 0;

@@ -19,26 +19,50 @@
  */
 package org.jedit.ruby;
 
+import errorlist.ErrorSource;
 import gnu.regexp.REException;
-import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
-import errorlist.ErrorSource;
 
-import java.util.*;
-import java.io.*;
-
-import projectviewer.ProjectViewer;
-import projectviewer.event.ProjectViewerListener;
-import projectviewer.event.ProjectViewerEvent;
-import projectviewer.vpt.VPTNode;
+import javax.swing.SwingUtilities;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.awt.Point;
 
 /**
  * @author robmckinnon at users,sourceforge,net
  */
 public class RubyActions {
+
+    public static void findDeclaration(View view) {
+        JEditTextArea textArea = view.getTextArea();
+        int caretPosition = textArea.getCaretPosition();
+        textArea.selectWord();
+        String text = textArea.getSelectedText();
+        textArea.setCaretPosition(caretPosition);
+
+        System.out.println("looking for methods named: " + text);
+        List<Member.Method> methods = RubyCache.getMethods(text);
+        System.out.println("found: " + methods.size());
+
+        if (methods.size() > 0) {
+            Member[] displayMembers = methods.toArray(new Member[0]);
+
+            textArea.scrollToCaret(false);
+            Point location = textArea.offsetToXY(textArea.getCaretPosition());
+            location.y += textArea.getPainter().getFontMetrics().getHeight();
+            SwingUtilities.convertPointToScreen(location, textArea.getPainter());
+
+            new TypeAheadPopup(view, displayMembers, displayMembers[0], location);
+        }
+    }
+
+    public static void completeMethod(View view) {
+        CodeCompletor codeCompletor = new CodeCompletor(view);
+        codeCompletor.completeRubyMethod();
+    }
 
     public static void fileStructurePopup(View view) {
         FileStructurePopup fileStructurePopup = new FileStructurePopup(view);

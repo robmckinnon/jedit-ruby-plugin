@@ -37,23 +37,20 @@ public abstract class Member implements Comparable<Member> {
 
     private String namespace;
     private String name;
+    private String shortName;
     private int startOffset;
     private int endOffset;
 
-    public Member(String name) {
-        this.name = name;
-        parentCount = -1;
-    }
-
     public Member(String name, int startOffset) {
-        this(name);
-        this.startOffset = startOffset;
+        this(name, startOffset, startOffset);
     }
 
     public Member(String name, int startOffset, int endOffset) {
+        parentCount = -1;
         this.name = name;
-        this.endOffset = endOffset;
         this.startOffset = startOffset;
+        this.endOffset = endOffset;
+        this.shortName = (new StringTokenizer(name, " (")).nextToken();
     }
 
     public int compareTo(Member member) {
@@ -107,6 +104,16 @@ public abstract class Member implements Comparable<Member> {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Returns member name excluding
+     * any namespace and excluding
+     * any parameter list or class
+     * extended from.
+     */
+    public String getShortName() {
+        return shortName;
     }
 
     public String getLowerCaseName() {
@@ -307,10 +314,12 @@ public abstract class Member implements Comparable<Member> {
 
 	public static class Method extends Member {
         private String filePath;
+        private String fileName;
 
-        public Method(String name, String filePath, int startOffset) {
+        public Method(String name, String filePath, String fileName, int startOffset) {
             super(name, startOffset);
             this.filePath = filePath;
+            this.fileName = fileName;
         }
 
         public void accept(Visitor visitor) {
@@ -319,6 +328,19 @@ public abstract class Member implements Comparable<Member> {
 
         public String getFilePath() {
             return filePath;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public int compareTo(Member member) {
+            int comparison = super.compareTo(member);
+            if(comparison == 0 && member instanceof Method) {
+                Method method = (Method)member;
+                comparison = fileName.compareTo(method.fileName);
+            }
+            return comparison;
         }
     }
 

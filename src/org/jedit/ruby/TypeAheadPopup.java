@@ -23,6 +23,7 @@ package org.jedit.ruby;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 
@@ -65,21 +66,33 @@ public class TypeAheadPopup extends JWindow {
     private boolean handleFocusOnDispose;
     private boolean narrowListOnTyping;
     private boolean showAllMembers;
+    private boolean showFileStructure;
     private char narrowListMnemonic;
     private char showAllMnemonic;
     private JCheckBox showAllCheckBox;
     private JCheckBox narrowListCheckBox;
 
-    public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
-        this(editorView, displayMembers, displayMembers, parentMembers, selectedMember, location);
+    /**
+     * Use when not displaying file structure.
+     */
+    public TypeAheadPopup(View editorView, Member[] displayMembers, Member selectedMember, Point location) {
+        this(editorView, displayMembers, displayMembers, null, selectedMember, location, false);
     }
 
-    private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
+    /**
+     * Use when displaying file structure.
+     */
+    public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
+        this(editorView, displayMembers, displayMembers, parentMembers, selectedMember, location, true);
+    }
+
+    private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location, boolean showStructure) {
         super(editorView);
         Log.log(Log.MESSAGE, this, "selected is: " + String.valueOf(selectedMember));
 
         view = editorView;
         textArea = editorView.getTextArea();
+        showFileStructure = showStructure;
 
         if (parentMembers != null) {
             parentsList = parentMembers;
@@ -95,7 +108,12 @@ public class TypeAheadPopup extends JWindow {
         handleFocusOnDispose = true;
 
         narrowListOnTyping = jEdit.getBooleanProperty(NARROW_LIST_ON_TYPING, false);
-        showAllMembers = jEdit.getBooleanProperty(SHOW_ALL, false);
+
+        if(showFileStructure) {
+            showAllMembers = jEdit.getBooleanProperty(SHOW_ALL, false);
+        } else {
+            showAllMembers = false;
+        }
 
         this.originalMembers = originalMembers;
         if(showAllMembers) {
@@ -121,9 +139,13 @@ public class TypeAheadPopup extends JWindow {
             searchLabel = new JLabel("");
 
             JPanel topPanel = new JPanel(new GridLayout(2, 1));
-            showAllCheckBox = initShowAllCheckBox();
+
+            if (showFileStructure) {
+                showAllCheckBox = initShowAllCheckBox();
+                topPanel.add(showAllCheckBox);
+            }
+
             narrowListCheckBox = initNarrowListCheckBox();
-            topPanel.add(showAllCheckBox);
             topPanel.add(narrowListCheckBox);
 
             JPanel panel = new JPanel(new BorderLayout());
@@ -185,7 +207,7 @@ public class TypeAheadPopup extends JWindow {
         showAllMembers = selected;
         jEdit.setProperty(SHOW_ALL, Boolean.toString(showAllMembers));
         dispose();
-        new TypeAheadPopup(view, originalMembers, originalMembers, null, (Member)popupList.getSelectedValue(), position);
+        new TypeAheadPopup(view, originalMembers, originalMembers, null, (Member)popupList.getSelectedValue(), position, true);
     }
 
     private void putFocusOnPopup() {
@@ -196,7 +218,11 @@ public class TypeAheadPopup extends JWindow {
         int selectedIndex = getSelectedIndex(selectedMember, members);
 
         if(selectedIndex != -1) {
-            if (selectedMember != null && selectedMember.hasParentMember() && !showAllMembers) {
+            boolean parentLinkAtTop = selectedMember != null
+                                && selectedMember.hasParentMember()
+                                && !showAllMembers
+                                && showFileStructure;
+            if (parentLinkAtTop) {
                 selectedIndex++;
             }
             return initPopupList(selectedIndex);
@@ -221,7 +247,7 @@ public class TypeAheadPopup extends JWindow {
                         handleFocusOnDispose = false;
                         dispose();
                         parentsList.add(members);
-                        new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position);
+                        new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position, true);
                         selectedIndex = -1;
                         break;
                     }
@@ -316,22 +342,35 @@ public class TypeAheadPopup extends JWindow {
             handleFocusOnDispose = false;
             dispose();
             Member[] members = parentsList.removeLast();
-            new TypeAheadPopup(view, originalMembers, members, parentsList, member, position);
+            new TypeAheadPopup(view, originalMembers, members, parentsList, member, position, true);
 
         } else if (member.hasChildMembers() && showMenu && !showAllMembers) {
             Member[] childMembers = member.getChildMembers();
             handleFocusOnDispose = false;
             dispose();
             parentsList.add(members);
-            new TypeAheadPopup(view, originalMembers, childMembers, parentsList, null, position);
+            new TypeAheadPopup(view, originalMembers, childMembers, parentsList, null, position, true);
 
+        } else if (showFileStructure) {
+            Buffer buffer = view.getBuffer();
+            goToMember(member, buffer);
         } else {
-            int offset = member.getStartOffset();
-            log(member + ": " + offset);
-            view.goToBuffer(view.getBuffer());
-            view.getTextArea().setCaretPosition(offset);
-            dispose();
+            member.accept(new Member.VisitorAdapter() {
+                public void handleMethod(Member.Method method) {
+                    String path = method.getFilePath();
+                    Buffer buffer = jEdit.getBuffer(path);
+                    goToMember(method, buffer);
+                }
+            });
         }
+    }
+
+    private void goToMember(Member member, Buffer buffer) {
+        int offset = member.getStartOffset();
+        log(member + ": " + offset);
+        view.goToBuffer(buffer);
+        view.getTextArea().setCaretPosition(offset);
+        dispose();
     }
 
     private void updateMatchedMembers(char typed) {
