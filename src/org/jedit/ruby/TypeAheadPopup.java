@@ -53,13 +53,13 @@ public class TypeAheadPopup extends JWindow {
     private JEditTextArea textArea;
     private JList popupList;
     private String validCharacters;
-    private FileStructurePopup.Member[] members;
+    private Member[] members;
     private String searchText;
     private String searchPrefix;
     private JLabel searchLabel;
     private int mismatchCharacters;
 
-    public TypeAheadPopup(View editorView, FileStructurePopup.Member[] fileMembers, Point location, String validChars) {
+    public TypeAheadPopup(View editorView, Member[] fileMembers, Point location, String validChars) {
         super(editorView);
         searchPrefix = jEdit.getProperty("file-structure-popup.search.label");
         mismatchCharacters = 0;
@@ -91,7 +91,7 @@ public class TypeAheadPopup extends JWindow {
         editorView.setKeyEventInterceptor(keyHandler);
     }
 
-    private JList initPopupList(FileStructurePopup.Member[] members) {
+    private JList initPopupList(Member[] members) {
         JList list = new JList(members);
         list.setVisibleRowCount(VISIBLE_LIST_SIZE);
         list.setSelectedIndex(0);
@@ -132,7 +132,7 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private void moveToSelected() {
-        FileStructurePopup.Member nember = (FileStructurePopup.Member) popupList.getSelectedValue();
+        Member nember = (Member) popupList.getSelectedValue();
         int offset = nember.getOffset();
         view.goToBuffer(view.getBuffer());
         view.getTextArea().setCaretPosition(offset);
@@ -148,7 +148,7 @@ public class TypeAheadPopup extends JWindow {
 
         String newSearchText = getNewSearchText(typed);
         setSearchText(newSearchText);
-        List<FileStructurePopup.Member> matches = getMatchingMembers(newSearchText);
+        List<Member> matches = getMatchingMembers(newSearchText);
 
         if (matches.size() == 0) {
             searchLabel.setForeground(Color.red);
@@ -188,11 +188,11 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
-    private List<FileStructurePopup.Member> getMatchingMembers(String text) {
+    private List<Member> getMatchingMembers(String text) {
         text = text.toLowerCase();
-        List<FileStructurePopup.Member> visibleMembers = new ArrayList<FileStructurePopup.Member>();
+        List<Member> visibleMembers = new ArrayList<Member>();
 
-        for (FileStructurePopup.Member member : members) {
+        for (Member member : members) {
             if (member.getLowerCaseName().startsWith(text)) {
                 visibleMembers.add(member);
             }
