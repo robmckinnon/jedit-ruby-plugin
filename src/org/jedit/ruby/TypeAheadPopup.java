@@ -35,6 +35,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * Altered version of Slava Pestov's
@@ -44,6 +45,7 @@ import java.util.ArrayList;
  */
 public class TypeAheadPopup extends JWindow {
 
+    private static final Member PREVIOUS_POPUP = new Member("..");
     private static final int VISIBLE_LIST_SIZE = 9;
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
     private static final char BACKSPACE_KEY = (char)-1;
@@ -54,6 +56,7 @@ public class TypeAheadPopup extends JWindow {
     private JList popupList;
     private String validCharacters;
     private Member[] members;
+    private LinkedList<Member[]> parentsList;
     private String searchText;
     private String searchPrefix;
     private JLabel searchLabel;
@@ -61,26 +64,33 @@ public class TypeAheadPopup extends JWindow {
     private Point position;
     private boolean handleFocusOnDispose;
 
-    public TypeAheadPopup(View editorView, Member[] fileMembers, Point location) {
+    public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Point location) {
         super(editorView);
+        view = editorView;
+        textArea = editorView.getTextArea();
+        members = displayMembers;
+
+        if (parentMembers != null) {
+            parentsList = parentMembers;
+        } else {
+            parentsList = new LinkedList<Member[]>();
+        }
+
+        position = location;
+
         searchPrefix = jEdit.getProperty("file-structure-popup.search.label");
         mismatchCharacters = 0;
         searchText = "";
         validCharacters = "_(),";
-        members = fileMembers;
-        position = location;
-        setContentPane(new NonTraversablePanel(new BorderLayout()));
-
         handleFocusOnDispose = true;
-        view = editorView;
-        textArea = editorView.getTextArea();
         searchLabel = new JLabel("");
-        popupList = initPopupList(fileMembers);
+        popupList = initPopupList(displayMembers);
 
         // stupid scrollbar policy is an attempt to work around
         // bugs people have been seeing with IBM's JDK -- 7 Sep 2000
         JScrollPane scroller = new JScrollPane(popupList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
+        setContentPane(new NonTraversablePanel(new BorderLayout()));
         getContentPane().add(searchLabel, BorderLayout.NORTH);
         getContentPane().add(scroller);
 
@@ -96,6 +106,15 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private JList initPopupList(Member[] members) {
+        if(parentsList.size() > 0) {
+            Member[] memberArray = new Member[members.length + 1];
+            memberArray[0] = PREVIOUS_POPUP;
+            int index = 1;
+            for(Member member : members) {
+                memberArray[index++] = member;
+            }
+            members = memberArray;
+        }
         JList list = new JList(members);
         list.setVisibleRowCount(VISIBLE_LIST_SIZE);
         list.setSelectedIndex(0);
@@ -140,11 +159,19 @@ public class TypeAheadPopup extends JWindow {
     private void handleSelection() {
         Member member = (Member) popupList.getSelectedValue();
 
-        if (member.hasChildMembers()) {
-            Member[] members = member.getChildMembers();
+        if (member == PREVIOUS_POPUP) {
             handleFocusOnDispose = false;
             dispose();
-            new TypeAheadPopup(view, members, position);
+            Member[] displayMembers = parentsList.removeLast();
+            new TypeAheadPopup(view, displayMembers, parentsList, position);
+
+        } else if (member.hasChildMembers()) {
+            Member[] childMembers = member.getChildMembers();
+            handleFocusOnDispose = false;
+            dispose();
+            parentsList.add(members);
+            new TypeAheadPopup(view, childMembers, parentsList, position);
+
         } else {
             int offset = member.getOffset();
             view.goToBuffer(view.getBuffer());
