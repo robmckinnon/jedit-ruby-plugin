@@ -58,7 +58,7 @@ public class RubySideKickParser extends SideKickParser {
         RubyParser.WarningListener listener = new RubySideKickWarningListener(errorSource);
         SideKickParsedData data = new RubyParsedData(buffer.getName());
         DefaultMutableTreeNode parentNode = data.root;
-        RubyMembers members = RubyParser.getMembers(text, buffer.getPath(), listener, true);
+        RubyMembers members = RubyParser.getMembers(text, buffer.getPath(), listener, false);
         if (!members.containsErrors()) {
             addNodes(parentNode, members.getMembers(), buffer);
 //        SideKickParsedData.setParsedData(jEdit.getActiveView(), data);

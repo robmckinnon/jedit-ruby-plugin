@@ -46,15 +46,19 @@ public class RubyParser {
     private final MemberMatcher classMatcher;
     private final MemberMatcher methodMatcher;
 
-    private String lastFilePath;
-    private Member[] lastMembers;
-    private int lastTextLength;
+    private Map<String, Integer> fileToLengthMap;
+    private Map<String, Member[]> fileToMembersMap;
+//    private String lastFilePath;
+//    private Member[] lastMembers;
+//    private int lastTextLength;
 
     private RubyParser() {
         logListener = new LogWarningListener();
         moduleMatcher = new MemberMatcher.ModuleMatcher();
         classMatcher = new MemberMatcher.ClassMatcher();
         methodMatcher = new MemberMatcher.MethodMatcher();
+        fileToLengthMap = new HashMap<String, Integer>();
+        fileToMembersMap = new HashMap<String, Member[]>();
     }
 
     public static RubyMembers getMembers(View view) {
@@ -78,16 +82,17 @@ public class RubyParser {
     private RubyMembers createMembers(String text, String filePath, WarningListener listener, boolean forceReparse) {
         Member[] members;
 
-        if(!forceReparse && filePath == lastFilePath && text.length() == lastTextLength) {
-            members = lastMembers;
+        if(!forceReparse
+                && fileToMembersMap.containsKey(filePath)
+                && fileToLengthMap.get(filePath) == text.length()) {
+            members = fileToMembersMap.get(filePath);
         } else {
             List<Member> memberList = createMembersAsList(text, filePath, listener);
 
             if (memberList != null) {
                 members = memberList.toArray(EMPTY_MEMBER_ARRAY);
-                lastMembers = members;
-                lastFilePath = filePath;
-                lastTextLength = text.length();
+                fileToMembersMap.put(filePath, members);
+                fileToLengthMap.put(filePath, text.length());
             } else {
                 members = null;
             }
