@@ -45,6 +45,10 @@ public class Member {
         this.name = name;
     }
 
+    public void visitMember(Member.Visitor visitor) {
+
+    }
+
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }
@@ -104,4 +108,41 @@ public class Member {
     private void setParentMember(Member parentMember) {
         this.parentMember = parentMember;
     }
+
+    public static interface Visitor {
+        public void handleModule();
+        public void handleClass();
+        public void handleMethod();
+    }
+
+    public static class Module extends Member {
+        public Module(String name, int offset) {
+            super(name, offset);
+        }
+
+        public void visitMember(Visitor visitor) {
+            visitor.handleModule();
+        }
+    }
+
+	public static class Class extends Member {
+        public Class(String name, int offset) {
+            super(name, offset);
+        }
+
+        public void visitMember(Visitor visitor) {
+            visitor.handleClass();
+        }
+	}
+
+	public static class Method extends Member {
+        public Method(String name, int offset) {
+            super(name, offset);
+        }
+
+        public void visitMember(Visitor visitor) {
+            visitor.handleMethod();
+        }
+	}
+
 }

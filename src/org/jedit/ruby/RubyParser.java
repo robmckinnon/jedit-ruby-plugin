@@ -37,11 +37,16 @@ public class RubyParser {
 
     public static interface Matcher {
         List<REMatch> getMatches(String text) throws REException;
+        Member createMember(String name, int index);
     }
 
     private static final Matcher moduleMatcher = new Matcher() {
         public List<REMatch> getMatches(String text) throws REException {
             return getMatchList("([ ]*)(module[ ]+)(\\w+.*)", text);
+        }
+
+        public Member createMember(String name, int index) {
+            return new Member.Module(name, index);
         }
     };
 
@@ -49,11 +54,19 @@ public class RubyParser {
         public List<REMatch> getMatches(String text) throws REException {
             return getMatchList("([ ]*)(class[ ]+)(\\w+.*)", text);
         }
+
+        public Member createMember(String name, int index) {
+            return new Member.Class(name, index);
+        }
     };
 
     private static final Matcher methodMatcher = new Matcher() {
         public List<REMatch> getMatches(String text) throws REException {
             return getMatchList("([ ]*)(def[ ]+)(.*)", text);
+        }
+
+        public Member createMember(String name, int index) {
+            return new Member.Method(name, index);
         }
     };
 
@@ -83,7 +96,7 @@ public class RubyParser {
         for(REMatch match : matches) {
             String name = match.toString(3);
             int index = match.getStartIndex(3);
-            members.add(new Member(name, index));
+            members.add(matcher.createMember(name, index));
         }
 
         return members;

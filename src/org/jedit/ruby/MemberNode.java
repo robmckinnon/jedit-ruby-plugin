@@ -23,14 +23,22 @@ import sidekick.Asset;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MemberNode extends Asset {
+public class MemberNode extends Asset implements Member.Visitor {
 
-    public MemberNode(String name) {
-        super(name);
+    private Icon icon;
+
+    private static Icon loadIcon(String name) {
+       return new ImageIcon(MemberNode.class.getResource("icons/" + name + ".png"));
+    }
+
+    public MemberNode(Member member) {
+        super(member.getName());
+        member.visitMember(this);
     }
 
     public DefaultMutableTreeNode createTreeNode() {
@@ -38,7 +46,7 @@ public class MemberNode extends Asset {
     }
 
     public Icon getIcon() {
-        return null;
+        return icon;
     }
 
     public String getShortString() {
@@ -47,5 +55,17 @@ public class MemberNode extends Asset {
 
     public String getLongString() {
         return getShortString();
+    }
+
+    public void handleModule() {
+        icon = loadIcon("module");
+    }
+
+    public void handleClass() {
+        icon = loadIcon("class");
+    }
+
+    public void handleMethod() {
+        icon = loadIcon("method");
     }
 }

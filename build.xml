@@ -48,7 +48,7 @@
 		<javac srcdir="${src.dir}"
 			destdir="${build.dir}"
 			deprecation="on"
-			includeJavaRuntime="yes">
+			includeJavaRuntime="yes" debug="true">
 			<classpath refid="project.class.path"/>
 		</javac>
 	</target>
@@ -57,6 +57,9 @@
 		<mkdir dir="${install.dir}"/>
 		<jar jarfile="${install.dir}/${jar.name}">
 			<fileset dir="${build.dir}"/>
+			<fileset dir="${src.dir}">
+				<include name="**/*.png"/>
+			</fileset>
 			<fileset dir=".">
 				<include name="actions.xml"/>
 				<include name="dockables.xml"/>

@@ -48,7 +48,7 @@ public class RubySideKickParser extends SideKickParser {
 
     private void addNodes(DefaultMutableTreeNode parentNode, Member[] members, Buffer buffer) {
         for(Member member : members) {
-            MemberNode node = new MemberNode(member.getName());
+            MemberNode node = new MemberNode(member);
             node.start = buffer.createPosition(member.getOffset());
             node.end = buffer.createPosition(member.getOffset());
             DefaultMutableTreeNode treeNode = node.createTreeNode();
