@@ -11,6 +11,9 @@ import org.jruby.parser.RubyParserResult;
 import org.jruby.parser.SyntaxErrorState;
 import org.jruby.common.RubyWarnings;
 import org.jruby.common.NullWarnings;
+import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.View;
 
 import java.util.Iterator;
 import java.util.List;
@@ -18,6 +21,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.io.StringReader;
 import java.io.Reader;
+
+import errorlist.ErrorSource;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -40,19 +45,37 @@ public class JRubyParser {
         JRubyParser.nothing = nothing;
     }
 
-    public static List<Member> getMembers(String ruby, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, RubyParser.WarningListener listener) {
+    public static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, RubyParser.WarningListener listener) {
+        Reader content = new StringReader(text);
+        return getMembers(content, moduleMembers, classMembers, methodMembers, listener);
+    }
+
+    public static List<Member> getMembers(Reader content, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, RubyParser.WarningListener listener) {
         List<Member> members;
         Parser parser = new Parser(listener);
         MockNodeVisitor visitor = new MockNodeVisitor(moduleMembers, classMembers, methodMembers);
 
         try {
-            Node node = parser.parse("", ruby);
+            Node node = parser.parse("", content);
             if (node != null) {
                 node.accept(visitor);
             }
             members = visitor.getMembers();
         } catch (SyntaxException e) {
-            members = null;
+            // JRubyParser.Parser informs listener of syntax error
+            members = new ArrayList<Member>();
+
+            // todo add generic error handling
+//            ErrorSource.Error[] errors = RubySideKickParser.getErrors();
+//            for (ErrorSource.Error error : errors) {
+//                if (error.getErrorType() == ErrorSource.ERROR) {
+//                    int line = error.getLineNumber() - 1;
+//                    int startOffset = jEdit.getActiveView().getBuffer().getLineStartOffset(line);
+//                    int endOffset = jEdit.getActiveView().getBuffer().getLineEndOffset(line);
+//                    String message = error.getErrorMessage();
+//                    members.add(new Member.Error(message, startOffset, endOffset));
+//                }
+//            }
         }
 
         return members;
@@ -76,13 +99,23 @@ public class JRubyParser {
         public MockNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers) {
             moduleNames = new ArrayList<String>();
             currentMember = new LinkedList<Member>();
-            currentMember.add(new Member.Root());
+            currentMember.add(new Member.Root(getEndOfFileOffset()));
             modules = moduleMembers;
             classes = classMembers;
             methods = methodMembers;
             moduleIndex = 0;
             classIndex = 0;
             methodIndex = 0;
+        }
+
+        private int getEndOfFileOffset() {
+            View view = jEdit.getActiveView();
+            int offset = 0;
+            if (view != null) {
+                Buffer buffer = view.getBuffer();
+                offset = buffer.getLineEndOffset(buffer.getLineCount() - 1);
+            }
+            return offset;
         }
 
         public List<Member> getMembers() {
@@ -136,6 +169,7 @@ public class JRubyParser {
             moduleNames.add(moduleName);
 
             Member module = modules.get(moduleIndex++);
+            module.setEndOffset(getEndOffset(node));
             currentMember.getLast().addChildMember(module);
             currentMember.add(module);
 
@@ -152,6 +186,7 @@ public class JRubyParser {
             System.out.print(": " + className);
 
             Member clas = classes.get(classIndex++);
+            clas.setEndOffset(getEndOffset(node));
             populateNamespace(clas);
             currentMember.getLast().addChildMember(clas);
             currentMember.add(clas);
@@ -167,6 +202,7 @@ public class JRubyParser {
             System.out.print(": " + methodName);
 
             Member method = methods.get(methodIndex++);
+            method.setEndOffset(getEndOffset(node));
             currentMember.getLast().addChildMember(method);
 
         }
@@ -175,11 +211,12 @@ public class JRubyParser {
             visitNode(node);
 
             Member method = methods.get(methodIndex++);
+            method.setEndOffset(getEndOffset(node));
 
             String methodName = node.getName();
             String receiverName;
-            if(node.getReceiverNode() instanceof ConstNode) {
-                ConstNode constNode = (ConstNode)node.getReceiverNode();
+            if (node.getReceiverNode() instanceof ConstNode) {
+                ConstNode constNode = (ConstNode) node.getReceiverNode();
                 receiverName = constNode.getName();
                 method.setReceiver(receiverName);
             } else {
@@ -196,9 +233,9 @@ public class JRubyParser {
         }
 
         private void populateNamespace(Member clas) {
-            if(moduleNames.size() > 0) {
+            if (moduleNames.size() > 0) {
                 String namespace = "";
-                for(String module : moduleNames) {
+                for (String module : moduleNames) {
                     namespace += module + "::";
                 }
                 clas.setNamespace(namespace);
@@ -208,7 +245,7 @@ public class JRubyParser {
         public void visitScopeNode(ScopeNode node) {
             visitNode(node);
             System.out.println("");
-            if(node.getBodyNode() != null) {
+            if (node.getBodyNode() != null) {
                 node.getBodyNode().accept(this);
             }
         }
@@ -232,6 +269,20 @@ public class JRubyParser {
         public void visitClassVarAsgnNode(ClassVarAsgnNode node) {
             visitNode(node);
             System.out.println(": " + node.getName());
+        }
+
+        private int getEndOffset(Node node) {
+            View view = jEdit.getActiveView();
+            int offset = 0;
+            if (view != null) {
+                int line = node.getPosition().getLine() - 1;
+                try {
+                    offset = view.getBuffer().getLineEndOffset(line) - 1;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    // todo get offset some other way
+                }
+            }
+            return offset;
         }
 
     }
@@ -310,15 +361,18 @@ public class JRubyParser {
             }
 
             StringBuffer buffer = new StringBuffer(message);
-            if(syntaxErrorState instanceof SyntaxErrorState) {
-                SyntaxErrorState errorState = (SyntaxErrorState)syntaxErrorState;
+            if (syntaxErrorState instanceof SyntaxErrorState) {
+                SyntaxErrorState errorState = (SyntaxErrorState) syntaxErrorState;
                 String[] expectedValues = errorState.expected();
-                buffer.append(found + " " + reformatValue(errorState.found()));
-                buffer.append("; " + expected + " ");
-                if(expectedValues.length == 0) {
+                String found = errorState.found();
+                if (found != null) {
+                    buffer.append(JRubyParser.found + " " + reformatValue(found) + "; ");
+                }
+                buffer.append(expected + " ");
+                if (expectedValues.length == 0) {
                     buffer.append(nothing);
                 } else {
-                    for(String value : expectedValues) {
+                    for (String value : expectedValues) {
                         value = reformatValue(value);
                         buffer.append(value + ", ");
                     }
@@ -328,9 +382,9 @@ public class JRubyParser {
         }
 
         private String reformatValue(String value) {
-            if(value.startsWith("k")) {
+            if (value.startsWith("k")) {
                 value = "'" + value.substring(1).toLowerCase() + "'";
-            } else if(value.startsWith("t")) {
+            } else if (value.startsWith("t")) {
                 value = value.substring(1).toLowerCase();
             }
             return value;

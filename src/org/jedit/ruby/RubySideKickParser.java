@@ -33,36 +33,32 @@ import javax.swing.tree.DefaultMutableTreeNode;
  */
 public class RubySideKickParser extends SideKickParser {
 
+    private static DefaultErrorSource errorSource;
+    private static final ErrorSource.Error[] EMPTY_ERROR_LIST = new ErrorSource.Error[0];
+
     public RubySideKickParser() {
         super("ruby");
     }
 
+    public static ErrorSource.Error[] getErrors() {
+        ErrorSource.Error[] errors = errorSource.getAllErrors();
+        if(errors != null) {
+            return errors;
+        } else {
+            return EMPTY_ERROR_LIST;
+        }
+    }
+
     public SideKickParsedData parse(final Buffer buffer, final DefaultErrorSource errorSource) {
         String text = buffer.getText(0, buffer.getLength());
+        RubySideKickParser.errorSource = errorSource;
 
-        RubyParser.WarningListener listener = new RubyParser.WarningListener() {
-            public void warn(SourcePosition position, String message) {
-                addWarning(message, position, buffer, errorSource);
-            }
-            public void warn(String message) {
-                addWarning(message, null, buffer, errorSource);
-            }
-            public void warning(SourcePosition position, String message) {
-                addWarning(message, position, buffer, errorSource);
-            }
-            public void warning(String message) {
-                addWarning(message, null, buffer, errorSource);
-            }
-
-            public void error(SourcePosition position, String message) {
-                addError(message, position, buffer, errorSource);
-            }
-        };
-
+        RubyParser.WarningListener listener = new RubySideKickWarningListener(buffer, errorSource);
         SideKickParsedData data = new SideKickParsedData(buffer.getName());
         DefaultMutableTreeNode parentNode = data.root;
         Member[] members = RubyParser.getMembers(text, buffer.getPath(), listener, true).getMembers();
         addNodes(parentNode, members, buffer);
+//        SideKickParsedData.setParsedData(jEdit.getActiveView(), data);
 
         return data;
     }
@@ -81,26 +77,51 @@ public class RubySideKickParser extends SideKickParser {
         if(lineText.length() == 0) {
             buffer.insert(buffer.getLineStartOffset(line), "---");
         }
-//                int line2 = line == 0 ? line : line - 1;
-//        int lineStartOffset = buffer.getLineStartOffset(line);
-//        int lineEndOffset = buffer.getLineEndOffset(line);
-//        int end = lineEndOffset - lineStartOffset;
-        errorSource.addError(type, buffer.getPath(), line, 0, 0, message);
+        int startOffsetInLine = 0;
+        int endOffsetInLine = 0;
+        errorSource.addError(type, buffer.getPath(), line, startOffsetInLine, endOffsetInLine, message);
     }
 
     private void addNodes(DefaultMutableTreeNode parentNode, Member[] members, Buffer buffer) {
         if(members != null) {
             for(Member member : members) {
                 MemberNode node = new MemberNode(member);
-                node.start = buffer.createPosition(member.getOffset());
-                node.end = buffer.createPosition(member.getOffset());
+                node.start = buffer.createPosition(member.getStartOffset());
+                node.end = buffer.createPosition(member.getEndOffset());
                 DefaultMutableTreeNode treeNode = node.createTreeNode();
-                if(member.hasChildMembers()) {
+                if (member.hasChildMembers()) {
                     Member[] childMembers = member.getChildMembers();
                     addNodes(treeNode, childMembers, buffer);
                 }
                 parentNode.add(treeNode);
             }
+        }
+    }
+
+    private class RubySideKickWarningListener implements RubyParser.WarningListener {
+        private final Buffer buffer;
+        private final DefaultErrorSource errorSource;
+
+        public RubySideKickWarningListener(Buffer buffer, DefaultErrorSource errorSource) {
+            this.buffer = buffer;
+            this.errorSource = errorSource;
+        }
+
+        public void warn(SourcePosition position, String message) {
+            addWarning(message, position, buffer, errorSource);
+        }
+        public void warn(String message) {
+            addWarning(message, null, buffer, errorSource);
+        }
+        public void warning(SourcePosition position, String message) {
+            addWarning(message, position, buffer, errorSource);
+        }
+        public void warning(String message) {
+            addWarning(message, null, buffer, errorSource);
+        }
+
+        public void error(SourcePosition position, String message) {
+            addError(message, position, buffer, errorSource);
         }
     }
 }

@@ -52,10 +52,8 @@ public class FileStructurePopup {
     }
 
     private void showPopup(View view) {
-        String text = view.getTextArea().getText();
-        String bufferPath = view.getBuffer().getPath();
         start = now();
-        RubyMembers members = RubyParser.getMembers(text, bufferPath, null, false);
+        RubyMembers members = RubyParser.getMembers(view);
 
         if (members.size() > 0) {
             JEditTextArea textArea = view.getTextArea();
@@ -63,7 +61,7 @@ public class FileStructurePopup {
             Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
 
             int caretPosition = view.getTextArea().getCaretPosition();
-            Member selectedMember = members.getPreviousMember(caretPosition);
+            Member selectedMember = members.getCurrentMember(caretPosition);
 
             new TypeAheadPopup(view, members.getMembers(), null, selectedMember, location);
         }

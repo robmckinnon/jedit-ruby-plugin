@@ -49,28 +49,60 @@ public class RubyMembers {
         return members.length;
     }
 
-    public Member getPreviousMember(int caretPosition) {
-        Member previousMember = null;
+    public Member getNextMember(int caretPosition) {
+        int index = getCurrentMemberIndex(caretPosition);
+        if (index == -1) {
+            if(memberList.size() > 0) {
+                return memberList.get(0);
+            } else {
+                return null;
+            }
+        } else if (index < memberList.size() - 1) {
+            return memberList.get(index + 1);
+        } else {
+            return null;
+        }
+    }
 
-        for (int i = 0; i < memberList.size(); i++) {
+    public Member getPreviousMember(int caretPosition) {
+        int index = getCurrentMemberIndex(caretPosition);
+        if (index > 0) {
+            return memberList.get(index - 1);
+        } else {
+            return null;
+        }
+    }
+
+    public Member getCurrentMember(int caretPosition) {
+        int index = getCurrentMemberIndex(caretPosition);
+        if (index == -1) {
+            return null;
+        } else {
+            return memberList.get(index);
+        }
+    }
+
+    private int getCurrentMemberIndex(int caretPosition) {
+        int memberIndex = -1;
+
+        for (int i = 0; memberIndex == -1 && i < memberList.size(); i++) {
             Member member = memberList.get(i);
-            int offset = member.getOffset();
+            int offset = member.getStartOffset();
 
             if(caretPosition >= offset) {
                 if(i < memberList.size() - 1) {
                     Member nextMember = memberList.get(i + 1);
-                    int nextOffset = nextMember.getOffset();
-                    if(caretPosition < nextOffset) {
-                        return member;
+                    int nextOffset = nextMember.getStartOffset();
+                    if (caretPosition < nextOffset) {
+                        memberIndex = i;
                     }
                 } else {
-                    return member;
+                    memberIndex = i;
                 }
             }
 
         }
-
-        return previousMember;
+        return memberIndex;
     }
 
     public Member[] getMembers() {
@@ -79,5 +111,21 @@ public class RubyMembers {
 
     public Member get(int index) {
         return members[index];
+    }
+
+    public List<Member> getClasses() {
+        final List<Member> classes = new ArrayList<Member>();
+        visitMembers(new Member.VisitorAdapter() {
+            public void handleClass(Member.Class classMember) {
+                classes.add(classMember);
+            }
+        });
+        return classes;
+    }
+
+    public void visitMembers(Member.Visitor visitor) {
+        for(Member member : memberList) {
+            member.accept(visitor);
+        }
     }
 }

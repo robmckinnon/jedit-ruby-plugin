@@ -4,9 +4,11 @@ import junit.framework.TestCase;
 import org.jedit.ruby.RubyParser;
 import org.jedit.ruby.Member;
 import org.jedit.ruby.RubyMembers;
+import org.jedit.ruby.RubyCache;
 import org.jruby.lexer.yacc.SourcePosition;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -58,14 +60,75 @@ public class TestRubyParser extends TestCase {
             DEF +
             "end\n";
 
+    public void tearDown() {
+        RubyCache.clear();
+    }
+
+    public void testParentOfDef() {
+        List<Member> members = RubyParser.getMembersAsList(CLASS, null, null);
+        Member method = members.get(0).getChildMembers()[0];
+        assertTrue("Assert has parent", method.hasParentMember());
+        assertEquals("Assert parent correct", "Green", method.getParentMember().getFullName());
+    }
+
+    private void addClassesToCache() {
+        RubyCache.add(CLASS, "CLASS");
+        RubyCache.add(ARR_CLASS, "ARR_CLASS");
+    }
+
+    private void addModuleToCache() {
+        RubyCache.add(DEF_IN_MODULE, "DEF_IN_MODULE");
+    }
+
+    public void testGetClassByMethod() {
+        addClassesToCache();
+        assertFindByMethodCorrect("red", 0, "Green", 1);
+        assertFindByMethodCorrect("[]", 0, "Green", 1);
+    }
+
+    public void testGetMethodByClass() {
+        addClassesToCache();
+        assertFindByClassCorrect("Green", 0, "[]", 2, "ARR_CLASS");
+        assertFindByClassCorrect("Green", 1, "red", 2, "CLASS");
+    }
+
+    public void testGetClassByCombo() {
+        addClassesToCache();
+        addModuleToCache();
+        assertFindByMethodCorrect("red", 0, "Blue", 2);
+        assertFindByMethodCorrect("red", 1, "Green", 2);
+        assertFindByMethodCorrect("[]", 0, "Green", 1);
+    }
+
+    public void testGetMethodByCombo() {
+        addClassesToCache();
+        addModuleToCache();
+        assertFindByClassCorrect("Green", 0, "[]", 2, "ARR_CLASS");
+        assertFindByClassCorrect("Green", 1, "red", 2, "CLASS");
+        assertFindByClassCorrect("Blue", 0, "red", 1, "DEF_IN_MODULE");
+    }
+
+    private void assertFindByMethodCorrect(String method, int index, String parentName, int parentCount) {
+        List<Member> members = RubyCache.getMembersWithMethod(method);
+        assertEquals("Assert parent match correct for: " + method, parentCount, members.size());
+        assertEquals("Assert name correct", parentName, members.get(index).getName());
+    }
+
+    private void assertFindByClassCorrect(String parentName, int index, String methodName, int methodCount, String filePath) {
+        List<Member.Method> members = RubyCache.getMethodsOfMember(parentName);
+        assertEquals("Assert child match correct", methodCount, members.size());
+        assertEquals("Assert name correct", methodName, members.get(index).getName());
+        assertEquals("Assert path correct", filePath, members.get(index).getFilePath());
+    }
+
     public void testParseModuleMethod() {
-        List<Member> members = RubyParser.getMembersAsList(MODULE_METHOD, null);
+        List<Member> members = RubyParser.getMembersAsList(MODULE_METHOD, null, null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "Blue.deep", 18, "Blue");
     }
 
     public void testBigFile() {
-        List<Member> members = RubyParser.getMembersAsList(bigFile, new TestListener());
+        List<Member> members = RubyParser.getMembersAsList(bigFile, null, new TestListener());
         members.toString();
     }
 
@@ -74,7 +137,7 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testEmptyClassInModule() {
-        List<Member> members = RubyParser.getMembersAsList(EMPTY_CLASS_IN_MODULE, null);
+        List<Member> members = RubyParser.getMembersAsList(EMPTY_CLASS_IN_MODULE, null, null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "Blue::Green", 18, "Blue");
     }
@@ -110,14 +173,14 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseClassInModule() {
-        List<Member> members = RubyParser.getMembersAsList(CLASS_IN_MODULE, null);
+        List<Member> members = RubyParser.getMembersAsList(CLASS_IN_MODULE, null, null);
         assertCorrect(0, "Blue", null, 7, members);
         members = assertChildrenCorrect(members, "Blue::Green", 18, "Blue");
         assertChildrenCorrect(members, "red", 28, "Blue");
     }
 
     public void testParseArrClassInModule() {
-        List<Member> members = RubyParser.getMembersAsList(ARR_CLASS_IN_MODULE, null);
+        List<Member> members = RubyParser.getMembersAsList(ARR_CLASS_IN_MODULE, null, null);
         assertCorrect(0, "Blue", null, 7, members);
         members = assertChildrenCorrect(members, "Blue::Green", 18, "Blue");
         assertChildrenCorrect(members, "[]", 28, "Blue");
@@ -128,7 +191,7 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseDefInModule() {
-        List<Member> members = RubyParser.getMembersAsList(DEF_IN_MODULE, null);
+        List<Member> members = RubyParser.getMembersAsList(DEF_IN_MODULE, null, null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "red", 16, "Blue");
     }
@@ -138,8 +201,16 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseDef() {
-        List<Member> members = RubyParser.getMembersAsList(DEF, null);
+        List<Member> members = RubyParser.getMembersAsList(DEF, null, null);
         assertCorrect(0, "red", null, 4, members);
+    }
+
+    public void testNextDef() {
+        RubyMembers members = RubyParser.getMembers("\n" + DEF + "\n", null);
+        Member nextMember = members.getNextMember(0);
+        List<Member> list = new ArrayList<Member>();
+        list.add(nextMember);
+        assertCorrect(0, "red", null, 5, list);
     }
 
     public void testParseArrDefSize() {
@@ -147,7 +218,7 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseArrDef() {
-        List<Member> members = RubyParser.getMembersAsList(ARR_DEF, null);
+        List<Member> members = RubyParser.getMembersAsList(ARR_DEF, null, null);
         assertCorrect(0, "[]", null, 4, members);
     }
 
@@ -156,7 +227,7 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseEmptyClass() {
-        List<Member> members = RubyParser.getMembersAsList(EMPTY_CLASS, null);
+        List<Member> members = RubyParser.getMembersAsList(EMPTY_CLASS, null, null);
         assertCorrect(0, "Green", null, 6, members);
     }
 
@@ -165,7 +236,7 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseEmptyModule() {
-        List<Member> members = RubyParser.getMembersAsList(EMPTY_MODULE, null);
+        List<Member> members = RubyParser.getMembersAsList(EMPTY_MODULE, null, null);
         assertCorrect(0, "Blue", null, 7, members);
     }
 
@@ -174,13 +245,13 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseClass() {
-        List<Member> members = RubyParser.getMembersAsList(CLASS, null);
+        List<Member> members = RubyParser.getMembersAsList(CLASS, null, null);
         assertCorrect(0, "Green", null, 6, members);
         assertChildrenCorrect(members, "red", 16, "Green");
     }
 
     public void testParseArrClass() {
-        List<Member> members = RubyParser.getMembersAsList(ARR_CLASS, null);
+        List<Member> members = RubyParser.getMembersAsList(ARR_CLASS, null, null);
         assertCorrect(0, "Green", null, 6, members);
         assertChildrenCorrect(members, "[]", 16, "Green");
     }
@@ -190,7 +261,7 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testParseClassAndDef() {
-        List<Member> members = RubyParser.getMembersAsList(CLASS_AND_DEF, null);
+        List<Member> members = RubyParser.getMembersAsList(CLASS_AND_DEF, null, null);
         assertCorrect(0, "Green", null, 6, members);
         assertCorrect(1, "red", null, 20, members);
     }
@@ -200,14 +271,14 @@ public class TestRubyParser extends TestCase {
     }
 
     public void testClassMethodCall() {
-        List<Member> members = RubyParser.getMembersAsList(classMethodFile, null);
+        List<Member> members = RubyParser.getMembersAsList(classMethodFile, null, null);
         assertCorrect(0, "One", null, 6, members);
         assertChildrenCorrect(members, "to_yaml(opts)", 15, "One");
         assertCorrect(1, "Two", null, 74, members);
     }
 
     private void assertSizeCorrect(int resultSize, String content) {
-        List<Member> members = RubyParser.getMembersAsList(content, null);
+        List<Member> members = RubyParser.getMembersAsList(content, null, null);
         assertEquals("assert result size is correct", resultSize, members.size());
     }
 
@@ -238,30 +309,31 @@ public class TestRubyParser extends TestCase {
             System.out.println(message);
         }
     }
+
     private void assertPreviousMemberCorrect(String text, int caretPosition, String expectedName) {
         RubyMembers members = RubyParser.getMembers(text, "", new TestListener(), false);
-        Member member = members.getPreviousMember(caretPosition);
+        Member member = members.getCurrentMember(caretPosition);
 
         if(expectedName == null) {
             assertNull("assert previous member is null", member);
         } else {
-            assertEquals("assert previous member correct", expectedName, member.getDisplayName());
+            assertEquals("assert previous member correct", expectedName, member.getFullName());
         }
     }
 
     private void assertCorrect(int index, String name, String parentName, int offset, List<Member> members) {
         try {
             Member member = members.get(index);
-            assertEquals("Assert name correct", name, member.getDisplayName());
-            assertEquals("Assert offset correct", offset, member.getOffset());
+            assertEquals("Assert name correct", name, member.getFullName());
+            assertEquals("Assert offset correct", offset, member.getStartOffset());
 
             List<Member> memberPath = member.getMemberPath();
 
             if(parentName == null) {
                 assertEquals("assert empty list", 1, memberPath.size());
-                assertEquals("assert self path member correct", name, memberPath.get(0).getDisplayName());
+                assertEquals("assert self path member correct", name, memberPath.get(0).getFullName());
             } else {
-                assertEquals("assert top path member correct", parentName, memberPath.get(0).getDisplayName());
+                assertEquals("assert top path member correct", parentName, memberPath.get(0).getFullName());
             }
         } catch (Exception e) {
             fail("Member not in result: " + name);

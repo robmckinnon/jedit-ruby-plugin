@@ -25,27 +25,27 @@ import javax.swing.ImageIcon;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MemberIcon implements Member.Visitor {
+public class MemberIcon extends Member.VisitorAdapter {
 
     private Icon icon;
 
     public MemberIcon(Member member) {
-        member.visitMember(this);
+        member.accept(this);
     }
 
     public Icon getIcon() {
         return icon;
     }
 
-    public void handleModule() {
+    public void handleModule(Member.Module module) {
         icon = loadIcon("module");
     }
 
-    public void handleClass() {
+    public void handleClass(Member.Class classMember) {
         icon = loadIcon("class");
     }
 
-    public void handleMethod() {
+    public void handleMethod(Member.Method method) {
         icon = loadIcon("method");
     }
 

@@ -88,7 +88,7 @@ public class TypeAheadPopup extends JWindow {
         }
 
         position = location;
-        searchPrefix = " " + jEdit.getProperty("file-structure-popup.search.label");
+        searchPrefix = " " + jEdit.getProperty("ruby.file-structure-popup.search.label");
         mismatchCharacters = 0;
         searchText = "";
         validCharacters = "_(),.[]";
@@ -153,8 +153,8 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private JCheckBox initNarrowListCheckBox() {
-        String label = jEdit.getProperty("file-structure-popup.narrow-search.label");
-        narrowListMnemonic = jEdit.getProperty("file-structure-popup.narrow-search.mnemonic").charAt(0);
+        String label = jEdit.getProperty("ruby.file-structure-popup.narrow-search.label");
+        narrowListMnemonic = jEdit.getProperty("ruby.file-structure-popup.narrow-search.mnemonic").charAt(0);
         final JCheckBox checkBox = new JCheckBox(label, narrowListOnTyping);
         checkBox.setMnemonic(narrowListMnemonic);
         checkBox.setFocusable(false);
@@ -167,8 +167,8 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private JCheckBox initShowAllCheckBox() {
-        String label = jEdit.getProperty("file-structure-popup.show-all.label");
-        showAllMnemonic = jEdit.getProperty("file-structure-popup.show-all.mnemonic").charAt(0);
+        String label = jEdit.getProperty("ruby.file-structure-popup.show-all.label");
+        showAllMnemonic = jEdit.getProperty("ruby.file-structure-popup.show-all.mnemonic").charAt(0);
         final JCheckBox checkBox = new JCheckBox(label, showAllMembers);
         checkBox.setMnemonic(showAllMnemonic);
         checkBox.setFocusable(false);
@@ -326,7 +326,7 @@ public class TypeAheadPopup extends JWindow {
             new TypeAheadPopup(view, originalMembers, childMembers, parentsList, null, position);
 
         } else {
-            int offset = member.getOffset();
+            int offset = member.getStartOffset();
             log(member + ": " + offset);
             view.goToBuffer(view.getBuffer());
             view.getTextArea().setCaretPosition(offset);
@@ -414,7 +414,7 @@ public class TypeAheadPopup extends JWindow {
                 if(UP_TO_PARENT_TEXT.startsWith(text)) {
                     visibleMembers.add(member);
                 }
-            } else if (member.getDisplayName().toLowerCase().startsWith(text) ||
+            } else if (member.getFullName().toLowerCase().startsWith(text) ||
                     member.getName().toLowerCase().startsWith(text)) {
                 visibleMembers.add(member);
             }

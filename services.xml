@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE SERVICES SYSTEM "services.dtd">
+
+<SERVICES>
+	<SERVICE CLASS="sidekick.SideKickParser" NAME="ruby">
+		new org.jedit.ruby.RubySideKickParser();
+	</SERVICE>
+</SERVICES>

@@ -19,8 +19,21 @@
  */
 package org.jedit.ruby;
 
-import org.gjt.sp.jedit.View;
 import gnu.regexp.REException;
+import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.View;
+import org.gjt.sp.jedit.gui.DockableWindowManager;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
+import errorlist.ErrorSource;
+
+import java.util.*;
+import java.io.*;
+
+import projectviewer.ProjectViewer;
+import projectviewer.event.ProjectViewerListener;
+import projectviewer.event.ProjectViewerEvent;
+import projectviewer.vpt.VPTNode;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -32,6 +45,11 @@ public class RubyActions {
         fileStructurePopup.show();
     }
 
+    public static void structureBrowser(View view) {
+        DockableWindowManager windowManager = view.getDockableWindowManager();
+        windowManager.showDockableWindow("sidekick-tree");
+    }
+    
     public static void autoIndentAndInsertEnd(View view) {
         try {
             AutoIndentAndInsertEnd indenter = new AutoIndentAndInsertEnd(view);
@@ -40,4 +58,79 @@ public class RubyActions {
             e.printStackTrace();
         }
     }
+
+    public static void nextMethod(View view) {
+        RubyMembers members = RubyParser.getMembers(view);
+        JEditTextArea textArea = view.getTextArea();
+        int caretPosition = textArea.getCaretPosition();
+        Member member = members.getNextMember(caretPosition);
+        if (member != null) {
+            textArea.setCaretPosition(member.getStartOffset(), true);
+        } else {
+            textArea.setCaretPosition(textArea.getBufferLength() - 1, true);
+        }
+    }
+
+    public static void previousMethod(View view) {
+        RubyMembers members = RubyParser.getMembers(view);
+        JEditTextArea textArea = view.getTextArea();
+        int caretPosition = textArea.getCaretPosition();
+        Member member = members.getCurrentMember(caretPosition);
+        if (member != null && caretPosition == member.getStartOffset()) {
+            member = members.getPreviousMember(caretPosition);
+        }
+        
+        if (member != null) {
+            textArea.setCaretPosition(member.getStartOffset(), true);
+        } else {
+            textArea.setCaretPosition(0, true);
+        }
+    }
+
+    public static void nextError(JEditTextArea textArea) {
+        int caretPosition = textArea.getCaretPosition();
+        ErrorSource.Error[] errors = RubySideKickParser.getErrors();
+
+        for (ErrorSource.Error error : errors) {
+            int offset = getOffset(error, textArea);
+            if(caretPosition < offset) {
+                textArea.setCaretPosition(offset, true);
+                break;
+            }
+        }
+    }
+
+    public static void previousError(JEditTextArea textArea) {
+        int caretPosition = textArea.getCaretPosition();
+        List<ErrorSource.Error> errors = Arrays.asList(RubySideKickParser.getErrors());
+        Collections.reverse(errors);
+
+        for (ErrorSource.Error error : errors) {
+            int offset = getOffset(error, textArea);
+            if(caretPosition > offset) {
+                textArea.setCaretPosition(offset, true);
+                break;
+            }
+        }
+    }
+
+    private static int getOffset(ErrorSource.Error error, JEditTextArea textArea) {
+        int line = error.getLineNumber() - 1;
+        return textArea.getLineEndOffset(line);
+    }
+//
+//    public static void goToPreviousError(View view) {
+//        getErrorList(view).previousError();
+//        view.getTextArea().requestFocus();
+//        jEdit.getBooleanProperty("");
+//    }
+//
+//    private static ErrorList getErrorList(View view) {
+//        ErrorList errorList2 = new ErrorList(view);
+//        DockableWindowManager windowManager = view.getDockableWindowManager();
+//        windowManager.showDockableWindow("error-list");
+//        ErrorList errorList = ((ErrorList)windowManager.getDockable("error-list"));
+//        windowManager.hideDockableWindow("error-list");
+//        return errorList2;
+//    }
 }

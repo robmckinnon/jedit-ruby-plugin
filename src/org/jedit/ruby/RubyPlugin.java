@@ -29,9 +29,9 @@ public class RubyPlugin extends EditPlugin {
 
     public void start() {
         super.start();
-        JRubyParser.setExpectedLabel(jEdit.getProperty("syntax-error.expected.label"));
-        JRubyParser.setFoundLabel(jEdit.getProperty("syntax-error.found.label"));
-        JRubyParser.setNothingLabel(jEdit.getProperty("syntax-error.nothing.label"));
+        JRubyParser.setExpectedLabel(jEdit.getProperty("ruby.syntax-error.expected.label"));
+        JRubyParser.setFoundLabel(jEdit.getProperty("ruby.syntax-error.found.label"));
+        JRubyParser.setNothingLabel(jEdit.getProperty("ruby.syntax-error.nothing.label"));
     }
 
     public void stop() {

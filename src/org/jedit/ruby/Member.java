@@ -19,46 +19,59 @@
  */
 package org.jedit.ruby;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Collections;
+import java.util.*;
 
 /**
  * Ruby file structure member
  * @author robmckinnon at users.sourceforge.net
  */
-public class Member {
+public abstract class Member implements Comparable<Member> {
 
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
     private String receiverName;
     private int parentCount;
     private List<Member> parentPath;
 
-    public static class Root extends Member {
-        public Root() {
-            super("root", 0);
-        }
-    }
-
     private Member parentMember;
     private List<Member> childMembers;
 
     private String namespace;
     private String name;
-    private int offset;
+    private int startOffset;
+    private int endOffset;
 
     public Member(String name) {
         this.name = name;
         parentCount = -1;
     }
 
-    public Member(String name, int offset) {
+    public Member(String name, int startOffset) {
         this(name);
-        this.offset = offset;
+        this.startOffset = startOffset;
     }
 
-    public void visitMember(Member.Visitor visitor) {
+    public Member(String name, int startOffset, int endOffset) {
+        this.name = name;
+        this.endOffset = endOffset;
+        this.startOffset = startOffset;
+    }
 
+    public int compareTo(Member member) {
+        return getFullName().compareTo(member.getFullName());
+    }
+
+    public void setEndOffset(int endOffset) {
+        this.endOffset = endOffset;
+    }
+
+    public abstract void accept(Member.Visitor visitor);
+
+    public void visitChildren(Member.Visitor visitor) {
+        if (hasChildMembers()) {
+            for (Member member : getChildMembersAsList()) {
+                member.accept(visitor);
+            }
+        }
     }
 
     public void setNamespace(String namespace) {
@@ -72,7 +85,11 @@ public class Member {
         }
     }
 
-    public String getDisplayName() {
+    /**
+     * Returns member name including any
+     * namespace or receiver prefix.
+     */
+    public String getFullName() {
         if(namespace == null) {
             if(receiverName == null) {
                 return name;
@@ -84,6 +101,10 @@ public class Member {
         }
     }
 
+    /**
+     * Returns member name excluding
+     * any namespace or receiver prefix.
+     */
     public String getName() {
         return name;
     }
@@ -92,25 +113,46 @@ public class Member {
         return name;
     }
 
-    public int getOffset() {
-        return offset;
+    public int getStartOffset() {
+        return startOffset;
     }
 
+    public int getEndOffset() {
+        return endOffset;
+    }
+
+    /**
+     * Returns true if supplied object
+     * is a member with the same display name
+     * and parent member as this member.
+     */
     public boolean equals(Object obj) {
+        boolean equal = false;
         if(obj instanceof Member) {
             Member member = ((Member) obj);
-            return name.equals(member.name) && offset == member.offset;
-        } else {
-            return false;
+            boolean displayNamesEqual = getFullName().equals(member.getFullName());
+
+            if (displayNamesEqual) {
+               if (hasParentMember()) {
+                   equal = parentMember.equals(member.getParentMember());
+               } else {
+                   equal = true;
+               }
+            }
         }
+        return equal;
     }
 
     public int hashCode() {
-        return name.hashCode() + offset;
+        int code = getFullName().hashCode();
+        if (hasParentMember()) {
+            code += getParentMember().hashCode();
+        }
+        return code;
     }
 
     public String toString() {
-        return getDisplayName();
+        return getFullName();
     }
 
     public boolean hasChildMembers() {
@@ -200,39 +242,112 @@ public class Member {
     }
 
     public static interface Visitor {
-        public void handleModule();
-        public void handleClass();
-        public void handleMethod();
+        public void handleModule(Module module);
+        public void handleClass(Class classMember);
+        public void handleMethod(Method method);
+        public void handleWarning(Warning warning);
+        public void handleError(Error warning);
     }
 
-    public static class Module extends Member {
-        public Module(String name, int offset) {
-            super(name, offset);
+    public static class VisitorAdapter implements Visitor {
+        public void handleModule(Module module) {
         }
 
-        public void visitMember(Visitor visitor) {
-            visitor.handleModule();
+        public void handleClass(Class classMember) {
+        }
+
+        public void handleMethod(Method method) {
+        }
+
+        public void handleWarning(Warning warning) {
+        }
+
+        public void handleError(Error warning) {
         }
     }
 
-	public static class Class extends Member {
-        public Class(String name, int offset) {
-            super(name, offset);
+    public static abstract class ParentMember extends Member {
+        protected ParentMember(String name, int startOffset) {
+            super(name, startOffset);
         }
 
-        public void visitMember(Visitor visitor) {
-            visitor.handleClass();
+        public Set<Method> getMethods() {
+            final Set<Method> methods = new HashSet<Method>();
+
+            visitChildren(new VisitorAdapter() {
+                public void handleMethod(Method method) {
+                    methods.add(method);
+                }
+            });
+
+            return methods;
         }
-	}
+    }
+
+    public static class Module extends ParentMember {
+        public Module(String name, int startOffset) {
+            super(name, startOffset);
+        }
+
+        public void accept(Visitor visitor) {
+            visitor.handleModule(this);
+        }
+    }
+
+	public static class Class extends ParentMember {
+        public Class(String name, int startOffset) {
+            super(name, startOffset);
+        }
+
+        public void accept(Visitor visitor) {
+            visitor.handleClass(this);
+        }
+
+    }
 
 	public static class Method extends Member {
-        public Method(String name, int offset) {
-            super(name, offset);
+        private String filePath;
+
+        public Method(String name, String filePath, int startOffset) {
+            super(name, startOffset);
+            this.filePath = filePath;
         }
 
-        public void visitMember(Visitor visitor) {
-            visitor.handleMethod();
+        public void accept(Visitor visitor) {
+            visitor.handleMethod(this);
         }
-	}
 
+        public String getFilePath() {
+            return filePath;
+        }
+    }
+
+    public static class Root extends Member {
+        public Root(int endOffset) {
+            super("root", 0, endOffset);
+        }
+
+        public void accept(Visitor visitor) {
+        }
+    }
+
+    public static class Warning extends Member {
+        public Warning(String message, int startOffset, int endOffset) {
+            super(message, startOffset, endOffset);
+        }
+
+        public void accept(Visitor visitor) {
+            visitor.handleWarning(this);
+        }
+    }
+
+    public static class Error extends Member {
+        public Error(String message, int startOffset, int endOffset) {
+            super(message, startOffset, endOffset);
+        }
+
+        public void accept(Visitor visitor) {
+            visitor.handleError(this);
+        }
+    }
 }

@@ -52,4 +52,9 @@ public class MemberNode extends Asset {
     public String getLongString() {
         return getShortString();
     }
+
+    public String toString() {
+        return name + " " + start + " " + end;
+    }
+
 }
