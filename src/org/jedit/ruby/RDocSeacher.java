@@ -58,7 +58,6 @@ public class RDocSeacher {
      * Runs supplied system command and returns process object.
      */
     private static Process run(String[] command) throws IOException,InterruptedException {
-        System.out.println(System.getProperty("user.dir"));
         final Process process = Runtime.getRuntime().exec(command);
 
         java.util.Timer timer = new java.util.Timer();
@@ -120,13 +119,13 @@ public class RDocSeacher {
     private static String ri(String searchTerm) throws IOException, InterruptedException {
         if(searchTerm.length() == 0)
             searchTerm = "-c";
-//        boolean windows = System.getProperty("os.name").toLowerCase().indexOf("windows") != -1;
+        boolean windows = System.getProperty("os.name").toLowerCase().indexOf("windows") != -1;
 
-//        if (windows) {
-//            return getOutput(new String[] {"ri.bat", searchTerm});
-//        } else {
+        if (windows) {
+            return getOutput(new String[] {"ri.bat", "-T", searchTerm});
+        } else {
             return getOutput(new String[] {"ri","-T", searchTerm});
-//        }
+        }
     }
 
     private static JScrollPane getScrollPane(JTextArea label, Action closeAction) {

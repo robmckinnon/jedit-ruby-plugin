@@ -26,8 +26,6 @@ import projectviewer.vpt.VPTFile;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.gjt.sp.util.Log;
-
 /**
  * @author robmckinnon at users.sourceforge.net
  */
@@ -48,23 +46,23 @@ public class RubyProjectListener implements ProjectListener {
     }
 
     private void addFile(String path) {
-        Log.log(Log.MESSAGE, this, "file added: " + path);
+        RubyPlugin.log("file added: " + path);
 //        RubyProjectViewerListener.addFile(path);
     }
 
     public void fileRemoved(ProjectEvent event) {
         VPTFile file = event.getAddedFile();
-        Log.log(Log.MESSAGE, this, "file removed: " + file.getNodePath());
+        RubyPlugin.log("file removed: " + file.getNodePath());
     }
 
     public void filesRemoved(ProjectEvent event) {
         List<VPTFile> files = new ArrayList<VPTFile>(event.getAddedFiles());
         for (VPTFile file : files) {
-            Log.log(Log.MESSAGE, this, "file removed: " + file.getNodePath());
+            RubyPlugin.log("file removed: " + file.getNodePath());
         }
     }
 
     public void propertiesChanged(ProjectEvent event) {
-        Log.log(Log.MESSAGE, this, "properties changed: " + event.getProject().getName());
+        RubyPlugin.log("properties changed: " + event.getProject().getName());
     }
 }

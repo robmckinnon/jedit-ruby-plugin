@@ -40,62 +40,62 @@ public class RubyProjectViewerListener implements ProjectViewerListener {
 
     public void projectLoaded(ProjectViewerEvent event) {
         VPTProject project = event.getProject();
-        Log.log(Log.MESSAGE, this, "project loaded: " + project.getName());
+        RubyPlugin.log("project loaded: " + project.getName());
 //            project.addProjectListener(new RubyProjectListener());
         reparse(project);
     }
 
     public void projectAdded(ProjectViewerEvent event) {
-        Log.log(Log.MESSAGE, this, "project added: " + event.getProject().getName());
+        RubyPlugin.log("project added: " + event.getProject().getName());
         reparse(event.getProject());
     }
 
     public void projectRemoved(ProjectViewerEvent event) {
-        Log.log(Log.MESSAGE, this, "project removed: " + event.getProject().getName());
+        RubyPlugin.log("project removed: " + event.getProject().getName());
         RubyCache.clear();
         reparse(event.getProject());
     }
 
     public void groupAdded(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
-        Log.log(Log.MESSAGE, this, "group added: " + group);
+        RubyPlugin.log("group added: " + group);
         reparse(event.getProject());
     }
 
     public void groupRemoved(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
-        Log.log(Log.MESSAGE, this, "group removed: " + group);
+        RubyPlugin.log("group removed: " + group);
         RubyCache.clear();
         reparse(event.getProject());
     }
 
     public void groupActivated(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
-        Log.log(Log.MESSAGE, this, "group activated: " + group);
+        RubyPlugin.log("group activated: " + group);
     }
 
     public void nodeMoved(ProjectViewerEvent event) {
         VPTNode node = (VPTNode) event.getSource();
-        Log.log(Log.MESSAGE, this, "node moved: " + node);
+        RubyPlugin.log("node moved: " + node);
     }
 
     public void reparse(VPTProject project) {
         if (project != null) {
             Collection openableNodes = project.getOpenableNodes();
-            Log.log(Log.MESSAGE, this, "parsing " + openableNodes.size() + " project files: " + project.getName());
+            RubyPlugin.log("parsing " + openableNodes.size() + " project files: " + project.getName());
             for (Iterator iterator = openableNodes.iterator(); iterator.hasNext();) {
                 VPTNode node = (VPTNode) iterator.next();
-                Log.log(Log.MESSAGE, this, "node: " + node.getNodePath());
+                RubyPlugin.log("node: " + node.getNodePath());
             }
 
             for (Iterator iterator = openableNodes.iterator(); iterator.hasNext();) {
                 VPTNode node = (VPTNode) iterator.next();
                 String path = node.getNodePath();
-                Log.log(Log.MESSAGE, this, "parsing: " + path);
+                RubyPlugin.log("parsing: " + path);
                 try {
                     addFile(path);
                 } catch (Exception e) {
-                    Log.log(Log.ERROR, this, e.getMessage());
+                    RubyPlugin.error(e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -136,11 +136,11 @@ public class RubyProjectViewerListener implements ProjectViewerListener {
                     buffer.append(chars, 0, length);
                 }
             } catch (IOException e) {
-                Log.log(Log.ERROR, this, e.getMessage());
+                RubyPlugin.error(e.getMessage());
                 e.printStackTrace();
             }
         } catch (FileNotFoundException e) {
-            Log.log(Log.ERROR, this, e.getMessage());
+            RubyPlugin.error(e.getMessage());
             e.printStackTrace();
         }
 

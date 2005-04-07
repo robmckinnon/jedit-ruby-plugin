@@ -80,7 +80,7 @@ public class RubySideKickParser extends SideKickParser {
     }
 
     public SideKickCompletion complete(EditPane editPane, int caret) {
-        System.out.println("completing");
+        RubyPlugin.log("completing");
         CodeCompletor completor = new CodeCompletor(editPane.getView());
 
         if(completor.isInsertionPoint()) {
@@ -108,7 +108,7 @@ public class RubySideKickParser extends SideKickParser {
         int startOffsetInLine = nonSpaceStartOffset - startOffset;
         int endOffsetInLine = endOffset - startOffset;
 
-        System.out.println("start " + startOffsetInLine + ", end " + endOffsetInLine);
+        RubyPlugin.log("start " + startOffsetInLine + ", end " + endOffsetInLine);
         errorSource.addError(type, position.getFile(), line, startOffsetInLine, endOffsetInLine, message);
     }
 

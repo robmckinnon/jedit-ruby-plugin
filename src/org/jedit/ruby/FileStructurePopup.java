@@ -21,7 +21,6 @@ package org.jedit.ruby;
 
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
-import org.gjt.sp.util.Log;
 
 import java.awt.Point;
 
@@ -78,7 +77,7 @@ public class FileStructurePopup {
     }
 
     private void log(String msg) {
-        Log.log(Log.DEBUG, this, msg + (now() - start));
+        RubyPlugin.log(msg + (now() - start));
         start = now();
     }
 

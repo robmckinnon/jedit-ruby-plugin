@@ -54,9 +54,9 @@ public class RubyActions {
         String text = textArea.getSelectedText();
         textArea.setCaretPosition(caretPosition);
 
-        System.out.println("looking for methods named: " + text);
+        RubyPlugin.log("looking for methods named: " + text);
         List<Member.Method> methods = RubyCache.getMethods(text);
-        System.out.println("found: " + methods.size());
+        RubyPlugin.log("found: " + methods.size());
 
         if (methods.size() > 0) {
             Member[] displayMembers = methods.toArray(new Member[0]);

@@ -88,7 +88,7 @@ public class TypeAheadPopup extends JWindow {
 
     private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location, boolean showStructure) {
         super(editorView);
-        Log.log(Log.MESSAGE, this, "selected is: " + String.valueOf(selectedMember));
+        RubyPlugin.log("selected is: " + String.valueOf(selectedMember));
 
         view = editorView;
         textArea = editorView.getTextArea();
@@ -347,7 +347,7 @@ public class TypeAheadPopup extends JWindow {
 
     private void goToMember(Member member, Buffer buffer) {
         int offset = member.getStartOffset();
-        log(member + ": " + offset);
+        RubyPlugin.log(member + ": " + offset);
         view.goToBuffer(buffer);
         view.getTextArea().setCaretPosition(offset);
         dispose();
@@ -516,7 +516,7 @@ public class TypeAheadPopup extends JWindow {
         }
 
         private void handleBackSpacePressed(KeyEvent event) {
-            log("handle backspace pressed");
+            RubyPlugin.log("handle backspace pressed");
             if (searchText.length() != 0) {
                 updateMatchedMembers(BACKSPACE_KEY);
             }
@@ -618,10 +618,6 @@ public class TypeAheadPopup extends JWindow {
         public boolean getFocusTraversalKeysEnabled() {
             return false;
         }
-    }
-
-    private void log(String msg) {
-        Log.log(Log.DEBUG, this, msg);
     }
 
     private class PopupListCellRenderer extends DefaultListCellRenderer {

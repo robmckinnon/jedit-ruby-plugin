@@ -131,7 +131,7 @@ public class RubyCache {
             Set<Member.Method> methodSet = getMethodSet(methodName);
 
             if(methodName.equals("add_topic")) {
-                System.out.println("adding: " + methodName);
+                RubyPlugin.log("adding: " + methodName);
             }
 
             if (!methodSet.contains(method)) {

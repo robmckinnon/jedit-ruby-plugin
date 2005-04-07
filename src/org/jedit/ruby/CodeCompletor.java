@@ -81,7 +81,6 @@ public class CodeCompletor {
             String className = analyzer.getClassName();
 
             if (className != null) {
-                log(className);
                 return RubyCache.getMethodsOfMember(className);
             } else {
                 return completeUsingMethods(analyzer.getMethods());
@@ -113,7 +112,7 @@ public class CodeCompletor {
         return results;
     }
 
-                        /**
+    /**
      * Creates a new JMenuItem.
      */
     private JMenuItem createMenuItem(String text, Action action) {
@@ -293,19 +292,4 @@ public class CodeCompletor {
         return intersection;
     }
 
-    private void log(String message) {
-//        Macros.message(textArea, message);
-    }
-
-// try {
-    // view.showWaitCursor();
-    //completeRubyMethod();
-// } catch(Exception e) {
-    // Macros.message(view, e.getMessage());
-// } finally {
-    // view.hideWaitCursor();
-// }
-
-//values = getClassesFor("to_s");
-//for(it = values.iterator(); it.hasNext(); Macros.message(textArea, it.next()));}
 }

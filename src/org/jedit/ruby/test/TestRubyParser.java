@@ -1,10 +1,7 @@
 package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
-import org.jedit.ruby.RubyParser;
-import org.jedit.ruby.Member;
-import org.jedit.ruby.RubyMembers;
-import org.jedit.ruby.RubyCache;
+import org.jedit.ruby.*;
 import org.jruby.lexer.yacc.SourcePosition;
 
 import java.util.List;
@@ -309,23 +306,23 @@ public class TestRubyParser extends TestCase {
 
     private static class TestListener implements RubyParser.WarningListener {
         public void warn(SourcePosition position, String message) {
-            System.out.println(message);
+            RubyPlugin.log(message);
         }
 
         public void warn(String message) {
-            System.out.println(message);
+            RubyPlugin.log(message);
         }
 
         public void warning(SourcePosition position, String message) {
-            System.out.println(message);
+            RubyPlugin.log(message);
         }
 
         public void warning(String message) {
-            System.out.println(message);
+            RubyPlugin.log(message);
         }
 
         public void error(SourcePosition position, String message) {
-            System.out.println(message);
+            RubyPlugin.log(message);
         }
 
         public void clear() {

@@ -174,7 +174,7 @@ public class RubyParser {
 
         public void warn(String message) {
             problems.add(new Member.Warning(message, 0));
-            log(message);
+            RubyPlugin.log("warn:  " + message);
         }
 
         public void warning(SourcePosition position, String message) {
@@ -184,12 +184,12 @@ public class RubyParser {
 
         public void warning(String message) {
             problems.add(new Member.Warning(message, 0));
-            log(message);
+            RubyPlugin.log("warn:  " + message);
         }
 
         public void error(SourcePosition position, String message) {
             problems.add(new Member.Error(message, getLine(position)));
-            System.out.println("error: " + position.getFile() + " " + position.getLine() + " " + message);
+            RubyPlugin.log("error: " + position.getFile() + " " + position.getLine() + " " + message);
         }
 
         public void clear() {
@@ -197,15 +197,11 @@ public class RubyParser {
         }
 
         private void log(SourcePosition position, String message) {
-            System.out.println("warn:  " + position.getFile() + " " + position.getLine() + " " + message);
+            RubyPlugin.log("warn:  " + position.getFile() + " " + position.getLine() + " " + message);
         }
 
         private int getLine(SourcePosition position) {
             return position == null ? 0 : position.getLine() - 1;
-        }
-
-        private void log(String message) {
-            System.out.println("warn:  " + message);
         }
 
     }

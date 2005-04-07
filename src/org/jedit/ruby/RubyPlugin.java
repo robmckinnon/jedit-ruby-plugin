@@ -23,11 +23,14 @@ import org.gjt.sp.jedit.EditPlugin;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.util.Log;
 
 /**
  * @author robmckinnon at users,sourceforge,net
  */
 public class RubyPlugin extends EditPlugin {
+
+    private static boolean debug = System.getProperty("user.home").equals("/home/a");
 
     public void start() {
         super.start();
@@ -38,6 +41,24 @@ public class RubyPlugin extends EditPlugin {
 
     public void stop() {
         super.stop();
+    }
+
+    public static void log(String message) {
+        if(debug) {
+            try {
+                Log.log(Log.MESSAGE, jEdit.getPlugin("RubyPlugin"), message);
+            } catch (Exception e) {
+                System.out.println(message);
+            }
+        }
+    }
+
+    public static void error(String message) {
+        try {
+            Log.log(Log.ERROR, jEdit.getPlugin("RubyPlugin"), message);
+        } catch (Exception e) {
+            System.err.println(message);
+        }
     }
 
     public static int getNonSpaceStartOffset(int line) {

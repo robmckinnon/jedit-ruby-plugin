@@ -64,7 +64,7 @@ interface MemberMatcher {
         }
 
         public Member createMember(String name, String filePath, int index) {
-            System.out.println("class: " + name);
+            RubyPlugin.log("class: " + name);
             return new Member.Class(name, index);
         }
     }

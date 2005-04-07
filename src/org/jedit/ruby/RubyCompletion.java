@@ -54,14 +54,14 @@ public class RubyCompletion extends SideKickCompletion {
     }
 
     public boolean handleKeystroke(int selectedIndex, char keyChar) {
-        System.out.println("selected: " + selectedIndex);
-        System.out.println("key: " + keyChar);
+        RubyPlugin.log("selected: " + selectedIndex);
+        RubyPlugin.log("key: " + keyChar);
         return insert(methods.get(selectedIndex), keyChar);
     }
 
     private boolean insert(Member.Method method, char keyChar) {
         Buffer buffer = view.getBuffer();
-        System.out.println("method: " + method.getName());
+        RubyPlugin.log("method: " + method.getName());
         int caretPosition = view.getTextArea().getCaretPosition();
         int offset = caretPosition;
         String partialMethod = completor.getPartialMethod();

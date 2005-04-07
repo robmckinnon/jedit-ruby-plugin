@@ -56,7 +56,7 @@ public class JRubyParser {
             }
             members = visitor.getMembers();
         } catch (SyntaxException e) {
-            System.out.println(e.getPosition().getLine() + ": " + e.getMessage());
+            RubyPlugin.log(e.getPosition().getLine() + ": " + e.getMessage());
             members = null; // listeners already informed of syntax error
         }
 
@@ -125,7 +125,7 @@ public class JRubyParser {
                 Node node = (Node) iterator.next();
                 visitNode(node);
                 if (printNode(node)) {
-                    System.out.println("");
+                    RubyPlugin.log("");
                 }
                 node.accept(this);
             }
@@ -133,7 +133,7 @@ public class JRubyParser {
 
         public void visitBlockNode(BlockNode node) {
             visitNode(node);
-            System.out.println("");
+            RubyPlugin.log("");
             visitNodeIterator(node.iterator());
         }
 
@@ -162,7 +162,7 @@ public class JRubyParser {
 
             namespaceNames.remove(moduleName);
             currentMember.removeLast();
-            System.out.println("]");
+            RubyPlugin.log("]");
         }
 
         public void visitClassNode(ClassNode node) {
@@ -214,7 +214,7 @@ public class JRubyParser {
             } else {
                 receiverName = "";
             }
-            System.out.println(": " + receiverName + methodName);
+            RubyPlugin.log(": " + receiverName + methodName);
 
             currentMember.getLast().addChildMember(method);
             currentMember.add(method);
@@ -253,7 +253,7 @@ public class JRubyParser {
 
         public void visitScopeNode(ScopeNode node) {
             visitNode(node);
-            System.out.println("");
+            RubyPlugin.log("");
             if (node.getBodyNode() != null) {
                 node.getBodyNode().accept(this);
             }
@@ -261,23 +261,23 @@ public class JRubyParser {
 
         public void visitIterNode(IterNode node) {
             visitNode(node);
-            System.out.println("");
+            RubyPlugin.log("");
             node.getBodyNode().accept(this);
         }
 
         public void visitFCallNode(FCallNode node) {
             visitNode(node);
-            System.out.println(": " + node.getName());
+            RubyPlugin.log(": " + node.getName());
         }
 
         public void visitClassVarDeclNode(ClassVarDeclNode node) {
             visitNode(node);
-            System.out.println(": " + node.getName());
+            RubyPlugin.log(": " + node.getName());
         }
 
         public void visitClassVarAsgnNode(ClassVarAsgnNode node) {
             visitNode(node);
-            System.out.println(": " + node.getName());
+            RubyPlugin.log(": " + node.getName());
         }
 
         private int getEndOffset(Node node) {
