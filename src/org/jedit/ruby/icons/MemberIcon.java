@@ -62,6 +62,6 @@ public class MemberIcon extends MemberVisitorAdapter {
     }
 
     private Icon loadIcon(String name) {
-       return new ImageIcon(MemberIcon.class.getResource("icons/" + name + ".png"));
+       return new ImageIcon(MemberIcon.class.getResource(name + ".png"));
     }
 }
