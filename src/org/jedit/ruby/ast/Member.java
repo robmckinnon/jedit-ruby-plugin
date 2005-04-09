@@ -17,11 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
-
-import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.View;
-import org.gjt.sp.jedit.Buffer;
+package org.jedit.ruby.ast;
 
 import java.util.*;
 
@@ -65,9 +61,9 @@ public abstract class Member implements Comparable<Member> {
         this.endOffset = endOffset;
     }
 
-    public abstract void accept(Member.Visitor visitor);
+    public abstract void accept(MemberVisitor visitor);
 
-    public void visitChildren(Member.Visitor visitor) {
+    public void visitChildren(MemberVisitor visitor) {
         if (hasChildMembers()) {
             for (Member member : getChildMembersAsList()) {
                 member.accept(visitor);
@@ -191,7 +187,7 @@ public abstract class Member implements Comparable<Member> {
     }
 
     public boolean hasParentMember() {
-        return parentMember != null && !(parentMember instanceof Member.Root);
+        return parentMember != null && !(parentMember instanceof Root);
     }
 
     public Member getTopMostParent() {
@@ -252,171 +248,4 @@ public abstract class Member implements Comparable<Member> {
         this.parentMember = parentMember;
     }
 
-    public static interface Visitor {
-        public void handleModule(Module module);
-        public void handleClass(Class classMember);
-        public void handleMethod(Method method);
-        public void handleWarning(Warning warning);
-        public void handleError(Error warning);
-    }
-
-    public static class VisitorAdapter implements Visitor {
-        public void handleModule(Module module) {
-        }
-
-        public void handleClass(Class classMember) {
-        }
-
-        public void handleMethod(Method method) {
-        }
-
-        public void handleWarning(Warning warning) {
-        }
-
-        public void handleError(Error warning) {
-        }
-    }
-
-    public static abstract class ParentMember extends Member {
-        protected ParentMember(String name, int startOffset) {
-            super(name, startOffset);
-        }
-
-        public Set<Method> getMethods() {
-            final Set<Method> methods = new HashSet<Method>();
-
-            visitChildren(new VisitorAdapter() {
-                public void handleMethod(Method method) {
-                    methods.add(method);
-                }
-            });
-
-            return methods;
-        }
-    }
-
-    public static class Module extends ParentMember {
-        public Module(String name, int startOffset) {
-            super(name, startOffset);
-        }
-
-        public void accept(Visitor visitor) {
-            visitor.handleModule(this);
-        }
-    }
-
-	public static class Class extends ParentMember {
-        public Class(String name, int startOffset) {
-            super(name, startOffset);
-        }
-
-        public void accept(Visitor visitor) {
-            visitor.handleClass(this);
-        }
-
-    }
-
-	public static class Method extends Member {
-        private String filePath;
-        private String fileName;
-
-        public Method(String name, String filePath, String fileName, int startOffset) {
-            super(name, startOffset);
-            this.filePath = filePath;
-            this.fileName = fileName;
-        }
-
-        public void accept(Visitor visitor) {
-            visitor.handleMethod(this);
-        }
-
-        public String getFilePath() {
-            return filePath;
-        }
-
-        public String getFileName() {
-            return fileName;
-        }
-
-        public int compareTo(Member member) {
-            int comparison = super.compareTo(member);
-            if(comparison == 0 && member instanceof Method) {
-                Method method = (Method)member;
-                comparison = fileName.compareTo(method.fileName);
-            }
-            return comparison;
-        }
-    }
-
-    public static class Root extends Member {
-        public Root(int endOffset) {
-            super("root", 0, endOffset);
-        }
-
-        public void accept(Visitor visitor) {
-        }
-    }
-
-    public static abstract class Problem extends Member {
-        private int line;
-
-        /**
-         * @param message warning message
-         * @param line line number starting at 0
-         */
-        public Problem(String message, int line) {
-            super(message, 0);
-            this.line = line;
-        }
-
-        public String getName() {
-            return " " + (line + 1) + ": " + super.getName();
-        }
-
-        public String getFullName() {
-            return getName();
-        }
-
-        public String getShortName() {
-            return super.getName();
-        }
-
-        public int getStartOffset() {
-            return RubyPlugin.getNonSpaceStartOffset(line);
-        }
-
-        /** don't like using jEdit View here */
-        public int getEndOffset() {
-            return RubyPlugin.getEndOffset(line);
-        }
-
-    }
-
-    public static class Warning extends Problem {
-        /**
-         * @param message warning message
-         * @param line line number starting at 0
-         */
-        public Warning(String message, int line) {
-            super(message, line);
-        }
-
-        public void accept(Visitor visitor) {
-            visitor.handleWarning(this);
-        }
-    }
-
-    public static class Error extends Problem {
-        /**
-         * @param message error message
-         * @param line line number starting at 0
-         */
-        public Error(String message, int line) {
-            super(message, line);
-        }
-
-        public void accept(Visitor visitor) {
-            visitor.handleError(this);
-        }
-    }
 }

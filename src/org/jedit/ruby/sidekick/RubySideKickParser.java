@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.sidekick;
 
 import sidekick.SideKickParser;
 import sidekick.SideKickParsedData;
@@ -25,6 +25,12 @@ import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
 import org.jruby.lexer.yacc.SourcePosition;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.parser.RubyParser;
+import org.jedit.ruby.ast.RubyMembers;
+import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.CodeCompletor;
+import org.jedit.ruby.RubyCompletion;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 

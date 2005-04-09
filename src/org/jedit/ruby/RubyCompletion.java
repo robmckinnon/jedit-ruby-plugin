@@ -22,6 +22,8 @@ package org.jedit.ruby;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Buffer;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.Method;
 
 import java.util.List;
 
@@ -32,7 +34,7 @@ public class RubyCompletion extends SideKickCompletion {
 
     private CodeCompletor completor;
     private View view;
-    private List<Member.Method> methods;
+    private List<Method> methods;
 
     public RubyCompletion(View view, CodeCompletor completor) {
         this.view = view;
@@ -59,7 +61,7 @@ public class RubyCompletion extends SideKickCompletion {
         return insert(methods.get(selectedIndex), keyChar);
     }
 
-    private boolean insert(Member.Method method, char keyChar) {
+    private boolean insert(Method method, char keyChar) {
         Buffer buffer = view.getBuffer();
         RubyPlugin.log("method: " + method.getName());
         int caretPosition = view.getTextArea().getCaretPosition();

@@ -26,86 +26,123 @@ import org.gjt.sp.jedit.textarea.JEditTextArea;
 import gnu.regexp.*;
 
 /**
- * TO INSTALL:
+ * <p>This action is intended to be executed each time the enter key is pressed.
+ * Add the 'ENTER' key shortcut via:<ul><li>
+ * Utilities -> Global Options -> Shortcuts -> Edit Shortcuts: RubyPlugin
+ * </li></ul>
+ * </p>
+ * <p/>
+ * Currently auto inserts and indents <code>end</code> after the following patterns:<pre>
+ *   if x
+ *   for x
+ *   while x
+ *   until x
+ *   unless x
+ *   def x
+ *   case x
+ *   class x
+ *   module x
+ *   begin
+ *   loop do
+ *   y do |z|
+ * </pre>
+ * It also auto-aligns <code>else</code> and <code>end</code> keywords.
+ * </p>
  *
- * 1) First install Ruby edit mode 0.3.
- *    This macro is designed to work with the auto-indenting
- *    defined in Ruby edit mode v0.3.
- *
- * 2) Place this macro in directory: [user_home_dir]/.jedit/macros/Ruby
- *
- * 3) This macro is intended to be executed each time the enter key is pressed.
- *    Add the 'ENTER' key shortcut via:
- *       Utilities -> Global Options -> Shortcuts -> Edit Shortcuts: Macros
- *
- * ABOUT:
- *    Currently auto inserts and indents 'end' after the following patterns:
- *      if <x>, for <x>, while <x>, until <x>, unless <x>, def <x>,
- *      case <x>, class <x>, module <x>, begin, loop do, <y> do |<z>|
- *
- *    It also auto-aligns else and end keywords.
  * @author robmckinnon at users.sourceforge.net
  */
 public class AutoIndentAndInsertEnd {
-    private JEditTextArea area;
-    private View view;
 
-    public AutoIndentAndInsertEnd(View view) {
-// start = System.currentTimeMillis();
-        this.view = view;
-        area = view.getTextArea();
-// end = System.currentTimeMillis();
-// Macros.message(view, "" + (end - start));
+    private static final AutoIndentAndInsertEnd instance = new AutoIndentAndInsertEnd();
+
+    private final RE IGNORE_REG_EXP = new IgnoreRegularExpression();
+    private final RE DO_REG_EXP = new DoRegularExpression();
+    private final RE MATCH_REG_EXP = new MatchRegularExpression();
+    private final RE END_REG_EXP = new EndRegularExpression();
+    private final RE ENHANCED_END_REG_EXP = new EnhancedEndRegularExpression();
+    private final RE COMMENT_REG_EXP = new CommentRegularExpression();
+    private final RE TRAILING_CONDITION_REG_EXP = new TrailingConditionRegularExpression();
+
+    private JEditTextArea area;
+
+    /** Singleton private constructor */
+    private AutoIndentAndInsertEnd() {
     }
 
-    public void performIndent() throws REException {
+    public static void performIndent(View view) {
+        instance.innerPerformIndent(view);
+    }
+
+    private void innerPerformIndent(View view) {
+        area = view.getTextArea();
         Buffer buffer = view.getBuffer();
 
-        if(!buffer.getMode().getName().equals("ruby")) {
+        if (!buffer.getMode().getName().equals("ruby")) {
             area.insertEnterAndIndent();
         } else {
             buffer.writeLock();
             buffer.beginCompoundEdit();
             try {
-                area.removeTrailingWhiteSpace();
-                int row = area.getCaretLine();
-                String line = area.getLineText(row);
-                String trimLine = line.trim();
-                int caretPosition = area.getCaretPosition() - area.getLineStartOffset(row);
-                boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
-                RE commentRegExp = new RE("(\\s*)(##?)(.*)", 0, RESearchMatcher.RE_SYNTAX_JEDIT);
-
-                if(caretPosition != line.length() || openingBrace) {
-                    if(commentRegExp.isMatch(line)) {
-                        handleComment(line, commentRegExp, row);
-                    } else {
-                        area.insertEnterAndIndent();
-                    }
-                } else if(trimLine.startsWith("else") || trimLine.startsWith("elsif")) {
-                    handleElse(trimLine, row);
-                } else {
-                    handleInsertEnter(trimLine, row, commentRegExp, line);
-                }
+                doIndent();
             } finally {
-                if(buffer.insideCompoundEdit()) {
+                if (buffer.insideCompoundEdit()) {
                     buffer.endCompoundEdit();
                 }
-                buffer.writeUnlock();                
+                buffer.writeUnlock();
             }
         }
     }
-    void handleElse(String trimLine, int row) throws REException {
+
+    private void doIndent() {
+        area.removeTrailingWhiteSpace();
+        int row = area.getCaretLine();
+        String line = area.getLineText(row);
+        String trimLine = line.trim();
+        int caretPosition = area.getCaretPosition() - area.getLineStartOffset(row);
+        boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
+
+        if (caretPosition != line.length() || openingBrace) {
+            if (COMMENT_REG_EXP.isMatch(line)) {
+                handleComment(line, row);
+            } else {
+                area.insertEnterAndIndent();
+            }
+        } else if (trimLine.startsWith("else") || trimLine.startsWith("elsif")) {
+            handleElse(trimLine, row);
+        } else {
+            handleInsertEnter(trimLine, row, line);
+        }
+    }
+
+    private void handleInsertEnter(String trimLine, int row, String line) {
+        boolean matchesDo = DO_REG_EXP.isMatch(line) && !isDoInComment(line);
+        boolean matchesSyntax = MATCH_REG_EXP.isMatch(line);
+
+        boolean ignore = IGNORE_REG_EXP.isMatch(line);
+
+        if (!ignore && (matchesDo || matchesSyntax)) {
+            handleInsertEnd(matchesDo, line);
+
+        } else if (END_REG_EXP.isMatch(trimLine)) {
+            handleEnd(trimLine, row);
+        } else if (COMMENT_REG_EXP.isMatch(trimLine)) {
+            handleComment(line, row);
+        } else {
+            area.insertEnterAndIndent();
+        }
+    }
+
+    private void handleElse(String trimLine, int row) {
         area.insertEnterAndIndent();
 
-        if(row > 0) {
-            RE re = new RE("(\\s*)([^#]*)(((if)|(unless)|(case)).*)", 0, RESearchMatcher.RE_SYNTAX_JEDIT);
+        if (row > 0) {
             int index = row;
 
-            while(index > 0) {
+            while (index > 0) {
                 index--;
                 String line = area.getLineText(index);
-                if(re.isMatch(line) && line.indexOf("elsif") == -1) {
-                    REMatch matches = re.getMatch(line);
+                if (TRAILING_CONDITION_REG_EXP.isMatch(line) && line.indexOf("elsif") == -1) {
+                    REMatch matches = TRAILING_CONDITION_REG_EXP.getMatch(line);
                     String indent = matches.toString(1);
                     for (int i = 0; i < matches.toString(2).length(); i++) {
                         indent += " ";
@@ -115,7 +152,7 @@ public class AutoIndentAndInsertEnd {
                     area.setSelectedText(indent + area.getSelectedText().trim());
                     area.shiftIndentRight();
 
-                    if(matches.toString(3).startsWith("case")) {
+                    if (matches.toString(3).startsWith("case")) {
                         area.goToPrevLine(false);
                         area.shiftIndentRight();
                         area.goToNextLine(false);
@@ -127,25 +164,25 @@ public class AutoIndentAndInsertEnd {
         }
     }
 
-    void reIndent(String trimLine, String indent) {
+    private void reIndent(String trimLine, String indent) {
         area.goToPrevLine(false);
         area.selectLine();
         area.setSelectedText(indent + trimLine);
         area.goToNextLine(false);
     }
 
-    void handleComment(String line, RE commentRegExp, int row) {
+    private void handleComment(String line, int row) {
         area.insertEnterAndIndent();
-        if(row > 0) {
+        if (row > 0) {
             int index = row;
-            while(index > 0) {
+            while (index > 0) {
                 line = area.getLineText(index);
                 index--;
 
-                if(commentRegExp.isMatch(line)) {
-                    REMatch matches = commentRegExp.getMatch(line);
+                if (COMMENT_REG_EXP.isMatch(line)) {
+                    REMatch matches = COMMENT_REG_EXP.getMatch(line);
                     String hashes = matches.toString(2);
-                    if(hashes.equals("##")) {
+                    if (hashes.equals("##")) {
                         String indent = matches.toString(1);
                         area.selectLine();
                         String text = area.getSelectedText() == null ? "" : area.getSelectedText();
@@ -162,32 +199,32 @@ public class AutoIndentAndInsertEnd {
 
     }
 
-    void handleEnd(String trimLine, RE endRegExp, RE doRegExp, RE syntaxRegExp, RE ignoreRegExp, int row) {
+    private void handleEnd(String trimLine, int row) {
         area.insertEnterAndIndent();
-        if(row > 0) {
+        if (row > 0) {
             int index = row;
             int endCount = 0;
-            while(index > 0) {
+            while (index > 0) {
                 index--;
                 String line = area.getLineText(index);
 
-                if(endRegExp.isMatch(line)) {
+                if (END_REG_EXP.isMatch(line)) {
                     endCount++;
 
-                } else if(!ignoreRegExp.isMatch(line)) {
-                    boolean isDoStatement = doRegExp.isMatch(line) && !isDoInComment(line);
-                    boolean isSyntaxStatement = syntaxRegExp.isMatch(line) &&
-                      line.indexOf("elsif") == -1;
+                } else if (!IGNORE_REG_EXP.isMatch(line)) {
+                    boolean isDoStatement = DO_REG_EXP.isMatch(line) && !isDoInComment(line);
+                    boolean isSyntaxStatement = MATCH_REG_EXP.isMatch(line) &&
+                            line.indexOf("elsif") == -1;
                     //Macros.message(view, "here " + line + isDoStatement + isSyntaxStatement);
 
-                    if(isDoStatement || isSyntaxStatement) {
-                        if(endCount > 0) {
+                    if (isDoStatement || isSyntaxStatement) {
+                        if (endCount > 0) {
                             endCount--;
                         } else {
-                            RE re = isDoStatement ? doRegExp : syntaxRegExp;
+                            RE re = isDoStatement ? DO_REG_EXP : MATCH_REG_EXP;
                             REMatch matches = re.getMatch(line);
                             String indent = matches.toString(1);
-                            if(!isDoStatement) {
+                            if (!isDoStatement) {
                                 for (int i = 0; i < matches.toString(2).length(); i++) {
                                     indent += " ";
                                 }
@@ -203,76 +240,25 @@ public class AutoIndentAndInsertEnd {
         }
     }
 
-    boolean isDoInComment(String line) {
+    private boolean isDoInComment(String line) {
         boolean inComment = false;
         int commentIndex = line.indexOf("#");
-        if(commentIndex != -1) {
+        if (commentIndex != -1) {
             int doIndex = line.indexOf(" do ");
-            if(doIndex > commentIndex) {
+            if (doIndex > commentIndex) {
                 inComment = true;
             }
         }
         return inComment;
     }
 
-    void handleInsertEnd(boolean matchesDo, RE doRegExp, RE syntaxRegExp, RE ignoreRegExp, String line) throws REException {
-        area.insertEnterAndIndent();
-        RE regExp = null;
-        if(matchesDo) {
-            regExp = doRegExp;
-        } else {
-            regExp = syntaxRegExp;
-        }
-        REMatch matches = regExp.getMatch(line);
-        String indent = matches.toString(1);
-        if(!matchesDo && line.indexOf("begin") == -1) {
-            for(int i = 0; i < matches.toString(2).length(); i++) {
-                indent += " ";
-            }
-        }
+    private void handleInsertEnd(boolean matchesDo, String line) {
+        String indent = getIndent(matchesDo, line);
 
+        area.insertEnterAndIndent();
         area.selectLine();
         area.setSelectedText(indent + "end");
-
-//        int row = area.getCaretLine();
-        int count = area.getLineCount();
-        int balanced = 0;
-        RE endRegExp = new RE("[^#]*end(\\s*|(\\s+.*))");
-        // buffer = new StringBuffer("");
-        boolean isString = false;
-
-        for(int i = 0; i < count; i++) {
-            line = area.getLineText(i).trim();
-            if(endRegExp.isMatch(line)) {
-                // buffer.append(balanced + "");
-                // for(int i=0; i < balanced; buffer.append(i++ > -1 ? "    " : ""));
-                // buffer.append(line+"\n");
-                balanced -= 1;
-            }
-            if(line.indexOf("<<-EOF") != -1) {
-                isString = true;
-            } else if(line.indexOf("EOF") != -1) {
-                isString = false;
-            }
-            if(!isString) {
-                boolean isDoStatement = doRegExp.isMatch(line) && !isDoInComment(line);
-                boolean ignore = ignoreRegExp.isMatch(line);
-
-                if(!ignore && (isDoStatement || syntaxRegExp.isMatch(line))) {
-                    boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
-                    boolean elsif = line.indexOf("elsif") != -1;
-                    if(!openingBrace && !elsif) {
-                        // buffer.append(balanced + "");
-                        // for(int i=0; i < balanced; buffer.append(i++ > -1 ? "    " : ""));
-                        // buffer.append(line+"\n");
-                        balanced += 1;
-                    }
-                }
-            }
-        }
-
-        // Macros.message(view, buffer.toString());
-        if(balanced < 0) {
+        if (endsNotBalanced()) {
             area.deleteLine();
         }
 
@@ -285,45 +271,139 @@ public class AutoIndentAndInsertEnd {
         area.shiftIndentRight();
     }
 
-    void handleInsertEnter(String trimLine, int row, RE commentRegExp, String line) throws REException {
-        // matches <x>.<y> do |<z>| expressions
-        String doExp = "(\\s*)(\\S+\\s+)+do\\s+\\|+[^\\|]*\\|\\s*";
+    private boolean endsNotBalanced() {
+        String line;
+        // int row = area.getCaretLine();
+        int count = area.getLineCount();
+        int balancedCount = 0;
+        // buffer = new StringBuffer("");
+        boolean isString = false;
 
-        // matches other syntax that requires end
-        String syntaxExp = "(\\s*)([^#]*)(" +
-            "((if|for|while|until|unless|def|case|class|module)(\\s+\\S+)+)|" +
-            "(begin|loop[ ]do|do)" +
-            ")\\s*";
+        for (int i = 0; i < count; i++) {
+            line = area.getLineText(i).trim();
+            if (ENHANCED_END_REG_EXP.isMatch(line)) {
+                // buffer.append(balancedCount + "");
+                // for(int i=0; i < balancedCount; buffer.append(i++ > -1 ? "    " : ""));
+                // buffer.append(line+"\n");
+                balancedCount -= 1;
+            }
+            if (line.indexOf("<<-EOF") != -1) {
+                isString = true;
+            } else if (line.indexOf("EOF") != -1) {
+                isString = false;
+            }
+            if (!isString) {
+                boolean isDoStatement = DO_REG_EXP.isMatch(line) && !isDoInComment(line);
+                boolean ignore = IGNORE_REG_EXP.isMatch(line);
 
-        String ignoreExp = "((.*)(" +
-            "([[:graph:]]\\s+(if|unless)(\\s+\\S+)+)" +
-            ")\\s*)" +
-            "|" +
-            "([^\"]*(\"|')[^\"]*" +
-            "(if|for|while|until|unless|def|case|class|module|do|begin|loop[ ]do)" +
-            "[^\"]*(\"|')[^\"]*)";
-
-        RE doRegExp = new RE(doExp, 0, RESearchMatcher.RE_SYNTAX_JEDIT);
-        RE syntaxRegExp = new RE(syntaxExp, 0, RESearchMatcher.RE_SYNTAX_JEDIT);
-        RE endRegExp = new RE("[^#]*end\\s*");
-        RE ignoreRegExp = new RE(ignoreExp, 0, RESearchMatcher.RE_SYNTAX_JEDIT);
-
-        boolean matchesDo = doRegExp.isMatch(line) && !isDoInComment(line);
-        boolean matchesSyntax = syntaxRegExp.isMatch(line);
-
-        boolean ignore = ignoreRegExp.isMatch(line);
-
-        if(!ignore && (matchesDo || matchesSyntax)) {
-            handleInsertEnd(matchesDo, doRegExp, syntaxRegExp, ignoreRegExp, line);
-
-        } else if(endRegExp.isMatch(trimLine)) {
-            handleEnd(trimLine, endRegExp, doRegExp, syntaxRegExp, ignoreRegExp, row);
-        } else if(commentRegExp.isMatch(trimLine)) {
-            handleComment(line, commentRegExp, row);
-        } else {
-            area.insertEnterAndIndent();
+                if (!ignore && (isDoStatement || MATCH_REG_EXP.isMatch(line))) {
+                    boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
+                    boolean elsif = line.indexOf("elsif") != -1;
+                    if (!openingBrace && !elsif) {
+                        // buffer.append(balancedCount + "");
+                        // for(int i=0; i < balancedCount; buffer.append(i++ > -1 ? "    " : ""));
+                        // buffer.append(line+"\n");
+                        balancedCount += 1;
+                    }
+                }
+            }
         }
 
+        // Macros.message(view, buffer.toString());
+        boolean endsNotBalanced = balancedCount < 0;
+        return endsNotBalanced;
+    }
+
+    private String getIndent(boolean matchesDo, String line) {
+        RE regExp = null;
+        if (matchesDo) {
+            regExp = DO_REG_EXP;
+        } else {
+            regExp = MATCH_REG_EXP;
+        }
+        REMatch matches = regExp.getMatch(line);
+        String indent = matches.toString(1);
+
+        if (!matchesDo && line.indexOf("begin") == -1 && line.indexOf("do") == -1) {
+            String leadingText = matches.toString(2);
+
+            for (int i = 0; i < leadingText.length(); i++) {
+                indent += " ";
+            }
+        }
+        return indent;
+    }
+
+    private static abstract class RegularExpression extends RE {
+        public RegularExpression() {
+            try {
+                initialize(getPattern(), 0, RESearchMatcher.RE_SYNTAX_JEDIT, 0, 0);
+            } catch (REException e) {
+                RubyPlugin.error(e.getMessage());
+            }
+        }
+
+        protected abstract String getPattern();
+    }
+
+    /** matches lines to ignore */
+    private static class IgnoreRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "((.*)(" +
+                    "([[:graph:]]\\s+(if|unless)(\\s+\\S+)+)" +
+                    ")\\s*)" +
+                    "|" +
+                    "([^\"]*(\"|')[^\"]*" +
+                    "(if|for|while|until|unless|def|case|class|module|do|begin|loop[ ]do)" +
+                    "[^\"]*(\"|')[^\"]*)";
+        }
+    }
+
+    /** matches x.y do |z| expressions */
+    private static class DoRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "(\\s*)(\\S+\\s+)+do\\s+\\|+[^\\|]*\\|\\s*";
+        }
+    }
+
+    /** matches other syntax that requires end */
+    private static class MatchRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            String indent = "(\\s*)";
+            String leadingText = "([^#]*)";
+            String trailingSpace = "\\s*";
+
+            return indent + leadingText
+                    + "("
+                    +   "((if|for|while|until|unless|def|case|class|module)(\\s+\\S+)+)"
+                    +   "|"
+                    +   "(begin|loop[ ]do|do)"
+                    + ")" + trailingSpace;
+        }
+    }
+
+    private static class EndRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "[^#]*end\\s*";
+        }
+    }
+
+    private static class EnhancedEndRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "[^#]*end(\\s*|(\\s+.*))";
+        }
+    }
+
+    private static class CommentRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "(\\s*)(##?)(.*)";
+        }
+    }
+
+    private static class TrailingConditionRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "(\\s*)([^#]*)(((if)|(unless)|(case)).*)";
+        }
     }
 
 }

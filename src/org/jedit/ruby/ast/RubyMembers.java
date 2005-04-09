@@ -17,7 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.ast;
+
+import org.jedit.ruby.ast.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +31,9 @@ public class RubyMembers {
 
     private Member[] members;
     private List<Member> memberList;
-    private List<Member.Problem> problems;
+    private List<Problem> problems;
 
-    public RubyMembers(Member[] members, List<Member.Problem> problems) {
+    public RubyMembers(Member[] members, List<Problem> problems) {
         this.members = members;
         this.problems = problems;
         if (members != null) {
@@ -44,8 +46,8 @@ public class RubyMembers {
         return members == null;
     }
 
-    public Member.Problem[] getProblems() {
-        return problems.toArray(new Member.Problem[0]);
+    public Problem[] getProblems() {
+        return problems.toArray(new Problem[0]);
     }
 
     private void populateMemberList(Member[] members, List<Member> list) {
@@ -131,15 +133,15 @@ public class RubyMembers {
 
     public List<Member> getClasses() {
         final List<Member> classes = new ArrayList<Member>();
-        visitMembers(new Member.VisitorAdapter() {
-            public void handleClass(Member.Class classMember) {
+        visitMembers(new MemberVisitorAdapter() {
+            public void handleClass(org.jedit.ruby.ast.Class classMember) {
                 classes.add(classMember);
             }
         });
         return classes;
     }
 
-    public void visitMembers(Member.Visitor visitor) {
+    public void visitMembers(MemberVisitor visitor) {
         for(Member member : memberList) {
             member.accept(visitor);
         }

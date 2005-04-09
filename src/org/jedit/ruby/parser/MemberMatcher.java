@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.parser;
 
 import gnu.regexp.REException;
 import gnu.regexp.REMatch;
@@ -26,6 +26,9 @@ import gnu.regexp.RE;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.File;
+
+import org.jedit.ruby.ast.*;
+import org.jedit.ruby.RubyPlugin;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -53,7 +56,7 @@ interface MemberMatcher {
         }
 
         public Member createMember(String name, String filePath, int index) {
-            return new Member.Module(name, index);
+            return new Module(name, index);
         }
     }
 
@@ -65,7 +68,7 @@ interface MemberMatcher {
 
         public Member createMember(String name, String filePath, int index) {
             RubyPlugin.log("class: " + name);
-            return new Member.Class(name, index);
+            return new org.jedit.ruby.ast.Class(name, index);
         }
     }
 
@@ -77,7 +80,7 @@ interface MemberMatcher {
 
         public Member createMember(String name, String filePath, int index) {
             String fileName = (new File(filePath)).getName();
-            return new Member.Method(name, filePath, fileName, index);
+            return new Method(name, filePath, fileName, index);
         }
     }
 

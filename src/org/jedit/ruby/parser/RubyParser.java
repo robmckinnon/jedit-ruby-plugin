@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.parser;
 
 import gnu.regexp.REException;
 
@@ -25,6 +25,11 @@ import java.util.*;
 
 import org.jruby.lexer.yacc.SourcePosition;
 import org.gjt.sp.jedit.View;
+import org.jedit.ruby.ast.*;
+import org.jedit.ruby.parser.JRubyParser;
+import org.jedit.ruby.parser.MemberMatcher;
+import org.jedit.ruby.ast.RubyMembers;
+import org.jedit.ruby.RubyPlugin;
 
 /**
  * <p>Parses ruby file.</p>
@@ -161,34 +166,34 @@ public class RubyParser {
 
     private static class LogWarningListener implements WarningListener {
 
-        private List<Member.Problem> problems = new ArrayList<Member.Problem>();
+        private List<Problem> problems = new ArrayList<Problem>();
 
-        public List<Member.Problem> getProblems() {
+        public List<Problem> getProblems() {
             return problems;
         }
 
         public void warn(SourcePosition position, String message) {
-            problems.add(new Member.Warning(message, getLine(position)));
+            problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
 
         public void warn(String message) {
-            problems.add(new Member.Warning(message, 0));
+            problems.add(new Warning(message, 0));
             RubyPlugin.log("warn:  " + message);
         }
 
         public void warning(SourcePosition position, String message) {
-            problems.add(new Member.Warning(message, getLine(position)));
+            problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
 
         public void warning(String message) {
-            problems.add(new Member.Warning(message, 0));
+            problems.add(new Warning(message, 0));
             RubyPlugin.log("warn:  " + message);
         }
 
         public void error(SourcePosition position, String message) {
-            problems.add(new Member.Error(message, getLine(position)));
+            problems.add(new org.jedit.ruby.ast.Error(message, getLine(position)));
             RubyPlugin.log("error: " + position.getFile() + " " + position.getLine() + " " + message);
         }
 

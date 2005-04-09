@@ -1,5 +1,5 @@
 /*
- * MemberNode.java - 
+ * Warning.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -17,44 +17,21 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
-
-import sidekick.Asset;
-
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.Icon;
+package org.jedit.ruby.ast;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MemberNode extends Asset {
-
-    private Icon icon;
-
-    public MemberNode(Member member) {
-        super(member.getName());
-        MemberIcon memberIcon = new MemberIcon(member);
-        icon = memberIcon.getIcon();
+public class Warning extends Problem {
+    /**
+     * @param message warning message
+     * @param line line number starting at 0
+     */
+    public Warning(String message, int line) {
+        super(message, line);
     }
 
-    public DefaultMutableTreeNode createTreeNode() {
-       return new DefaultMutableTreeNode(this, true);
+    public void accept(MemberVisitor visitor) {
+        visitor.handleWarning(this);
     }
-
-    public Icon getIcon() {
-        return icon;
-    }
-
-    public String getShortString() {
-        return name;
-    }
-
-    public String getLongString() {
-        return getShortString();
-    }
-
-    public String toString() {
-        return name + " " + start + " " + end;
-    }
-
 }

@@ -21,6 +21,10 @@ package org.jedit.ruby;
 
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.Problem;
+import org.jedit.ruby.ast.RubyMembers;
+import org.jedit.ruby.parser.RubyParser;
 
 import java.awt.Point;
 
@@ -64,7 +68,7 @@ public class FileStructurePopup {
 
             new TypeAheadPopup(view, members.getMembers(), null, selectedMember, location);
         } else {
-            Member.Problem[] problems = members.getProblems();
+            Problem[] problems = members.getProblems();
 
             if(problems.length > 0) {
                 new TypeAheadPopup(view, members.getProblems(), null, problems[0], location);

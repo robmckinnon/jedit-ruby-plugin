@@ -20,10 +20,14 @@
 package org.jedit.ruby;
 
 import errorlist.ErrorSource;
-import gnu.regexp.REException;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.Method;
+import org.jedit.ruby.ast.RubyMembers;
+import org.jedit.ruby.parser.RubyParser;
+import org.jedit.ruby.sidekick.RubySideKickParser;
 
 import javax.swing.SwingUtilities;
 import java.util.Arrays;
@@ -55,7 +59,7 @@ public class RubyActions {
         textArea.setCaretPosition(caretPosition);
 
         RubyPlugin.log("looking for methods named: " + text);
-        List<Member.Method> methods = RubyCache.getMethods(text);
+        List<Method> methods = RubyCache.getMethods(text);
         RubyPlugin.log("found: " + methods.size());
 
         if (methods.size() > 0) {
@@ -84,20 +88,18 @@ public class RubyActions {
         DockableWindowManager windowManager = view.getDockableWindowManager();
         windowManager.showDockableWindow("sidekick-tree");
     }
-    
+
     public static void autoIndentAndInsertEnd(View view) {
-        try {
-            AutoIndentAndInsertEnd indenter = new AutoIndentAndInsertEnd(view);
-            indenter.performIndent();
-        } catch (REException e) {
-            e.printStackTrace();
-        }
+// start = System.currentTimeMillis();
+        AutoIndentAndInsertEnd.performIndent(view);
+// end = System.currentTimeMillis();
+// Macros.message(view, "" + (end - start));
     }
 
     public static void nextMethod(View view) {
         RubyMembers members = RubyParser.getMembers(view);
 
-        if(!members.containsErrors()) {
+        if (!members.containsErrors()) {
             JEditTextArea textArea = view.getTextArea();
             int caretPosition = textArea.getCaretPosition();
             Member member = members.getNextMember(caretPosition);
@@ -113,7 +115,7 @@ public class RubyActions {
     public static void previousMethod(View view) {
         RubyMembers members = RubyParser.getMembers(view);
 
-        if(!members.containsErrors()) {
+        if (!members.containsErrors()) {
             JEditTextArea textArea = view.getTextArea();
             int caretPosition = textArea.getCaretPosition();
             Member member = members.getCurrentMember(caretPosition);
@@ -134,8 +136,8 @@ public class RubyActions {
         ErrorSource.Error[] errors = RubySideKickParser.getErrors();
 
         for (ErrorSource.Error error : errors) {
-            int offset = getOffset(error, textArea);
-            if(caretPosition < offset) {
+            int offset = RubyPlugin.getNonSpaceStartOffset(error.getLineNumber());
+            if (caretPosition < offset) {
                 textArea.setCaretPosition(offset, true);
                 break;
             }
@@ -148,31 +150,12 @@ public class RubyActions {
         Collections.reverse(errors);
 
         for (ErrorSource.Error error : errors) {
-            int offset = getOffset(error, textArea);
-            if(caretPosition > offset) {
+            int offset = RubyPlugin.getNonSpaceStartOffset(error.getLineNumber());
+            if (caretPosition > offset) {
                 textArea.setCaretPosition(offset, true);
                 break;
             }
         }
     }
 
-    private static int getOffset(ErrorSource.Error error, JEditTextArea textArea) {
-        int line = error.getLineNumber() - 1;
-        return textArea.getLineEndOffset(line);
-    }
-//
-//    public static void goToPreviousError(View view) {
-//        getErrorList(view).previousError();
-//        view.getTextArea().requestFocus();
-//        jEdit.getBooleanProperty("");
-//    }
-//
-//    private static ErrorList getErrorList(View view) {
-//        ErrorList errorList2 = new ErrorList(view);
-//        DockableWindowManager windowManager = view.getDockableWindowManager();
-//        windowManager.showDockableWindow("error-list");
-//        ErrorList errorList = ((ErrorList)windowManager.getDockable("error-list"));
-//        windowManager.hideDockableWindow("error-list");
-//        return errorList2;
-//    }
 }

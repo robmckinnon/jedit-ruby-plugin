@@ -1,5 +1,5 @@
 /*
- * MemberIcon.java - 
+ * MemberNode.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -17,49 +17,47 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.sidekick;
 
+import sidekick.Asset;
+
+import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 
-import errorlist.ErrorList;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.icons.MemberIcon;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MemberIcon extends Member.VisitorAdapter {
+public class MemberNode extends Asset {
 
     private Icon icon;
 
-    public MemberIcon(Member member) {
-        member.accept(this);
+    public MemberNode(Member member) {
+        super(member.getName());
+        MemberIcon memberIcon = new MemberIcon(member);
+        icon = memberIcon.getIcon();
+    }
+
+    public DefaultMutableTreeNode createTreeNode() {
+       return new DefaultMutableTreeNode(this, true);
     }
 
     public Icon getIcon() {
         return icon;
     }
 
-    public void handleModule(Member.Module module) {
-        icon = loadIcon("module");
+    public String getShortString() {
+        return name;
     }
 
-    public void handleClass(Member.Class classMember) {
-        icon = loadIcon("class");
+    public String getLongString() {
+        return getShortString();
     }
 
-    public void handleMethod(Member.Method method) {
-        icon = loadIcon("method");
+    public String toString() {
+        return name + " " + start + " " + end;
     }
 
-    public void handleWarning(Member.Warning warning) {
-        icon = ErrorList.ERROR_ICON;
-    }
-
-    public void handleError(Member.Error warning) {
-        icon = ErrorList.WARNING_ICON;
-    }
-
-    private Icon loadIcon(String name) {
-       return new ImageIcon(MemberIcon.class.getResource("icons/" + name + ".png"));
-    }
 }

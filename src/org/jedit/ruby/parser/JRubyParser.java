@@ -1,4 +1,4 @@
-package org.jedit.ruby;
+package org.jedit.ruby.parser;
 
 import org.jruby.ast.visitor.AbstractVisitor;
 import org.jruby.ast.*;
@@ -11,9 +11,9 @@ import org.jruby.parser.RubyParserResult;
 import org.jruby.parser.SyntaxErrorState;
 import org.jruby.common.RubyWarnings;
 import org.jruby.common.NullWarnings;
-import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.Buffer;
-import org.gjt.sp.jedit.View;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.Root;
+import org.jedit.ruby.RubyPlugin;
 
 import java.util.Iterator;
 import java.util.List;
@@ -79,7 +79,7 @@ public class JRubyParser {
         public RubyNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
             namespaceNames = new ArrayList<String>();
             currentMember = new LinkedList<Member>();
-            currentMember.add(new Member.Root(getEndOfFileOffset()));
+            currentMember.add(new Root(RubyPlugin.getEndOfFileOffset()));
             problemListeners = listeners;
             modules = moduleMembers;
             classes = classMembers;
@@ -87,16 +87,6 @@ public class JRubyParser {
             moduleIndex = 0;
             classIndex = 0;
             methodIndex = 0;
-        }
-
-        private int getEndOfFileOffset() {
-            View view = jEdit.getActiveView();
-            int offset = 0;
-            if (view != null) {
-                Buffer buffer = view.getBuffer();
-                offset = buffer.getLineEndOffset(buffer.getLineCount() - 1);
-            }
-            return offset;
         }
 
         public List<Member> getMembers() {
@@ -281,17 +271,8 @@ public class JRubyParser {
         }
 
         private int getEndOffset(Node node) {
-            View view = jEdit.getActiveView();
-            int offset = 0;
-            if (view != null) {
-                int line = node.getPosition().getLine() - 1;
-                try {
-                    offset = view.getBuffer().getLineEndOffset(line) - 1;
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    // todo get offset some other way
-                }
-            }
-            return offset;
+            int line = node.getPosition().getLine() - 1;
+            return RubyPlugin.getEndOffset(line);
         }
 
     }

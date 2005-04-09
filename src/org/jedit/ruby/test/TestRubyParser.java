@@ -2,6 +2,9 @@ package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
 import org.jedit.ruby.*;
+import org.jedit.ruby.parser.RubyParser;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.RubyMembers;
 import org.jruby.lexer.yacc.SourcePosition;
 
 import java.util.List;

@@ -26,6 +26,10 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.Method;
+import org.jedit.ruby.ast.MemberVisitorAdapter;
+import org.jedit.ruby.icons.MemberIcon;
 
 import javax.swing.*;
 import java.awt.*;
@@ -137,6 +141,8 @@ public class TypeAheadPopup extends JWindow {
     public void setVisible(boolean visible) {
         if (visible) {
             searchLabel = new JLabel("");
+            searchLabel.setOpaque(true);
+            searchLabel.setBackground(Color.white);
 
             JPanel topPanel = new JPanel(new GridLayout(2, 1));
 
@@ -335,8 +341,8 @@ public class TypeAheadPopup extends JWindow {
             Buffer buffer = view.getBuffer();
             goToMember(member, buffer);
         } else {
-            member.accept(new Member.VisitorAdapter() {
-                public void handleMethod(Member.Method method) {
+            member.accept(new MemberVisitorAdapter() {
+                public void handleMethod(Method method) {
                     String path = method.getFilePath();
                     Buffer buffer = jEdit.getBuffer(path);
                     goToMember(method, buffer);

@@ -19,6 +19,9 @@
  */
 package org.jedit.ruby;
 
+import org.jedit.ruby.ast.*;
+import org.jedit.ruby.parser.RubyParser;
+
 import java.util.*;
 
 /**
@@ -47,7 +50,7 @@ public class RubyCache {
         }
     }
 
-    public static List<Member.Method> getMethods(String method) {
+    public static List<Method> getMethods(String method) {
         return instance.nameToMethod.getMethods(method);
     }
 
@@ -55,22 +58,22 @@ public class RubyCache {
         return instance.methodToParent.getParentList(method);
     }
 
-    public static List<Member.Method> getMethodsOfMember(String memberName) {
+    public static List<Method> getMethodsOfMember(String memberName) {
         return instance.parentToMethod.getMethodList(memberName);
     }
 
     private void add(String path, RubyMembers members) {
         pathToMembers.put(path, members);
-        members.visitMembers(new Member.VisitorAdapter() {
-            public void handleModule(Member.Module module) {
+        members.visitMembers(new MemberVisitorAdapter() {
+            public void handleModule(Module module) {
                 parentToMethod.add(module);
             }
 
-            public void handleClass(Member.Class classMember) {
+            public void handleClass(org.jedit.ruby.ast.Class classMember) {
                 parentToMethod.add(classMember);
             }
 
-            public void handleMethod(Member.Method method) {
+            public void handleMethod(Method method) {
                 methodToParent.add(method);
                 nameToMethod.add(method);
             }
@@ -79,31 +82,31 @@ public class RubyCache {
 
     private static class ParentToMethod {
 
-        private Map<String, Set<Member.Method>> fullNameToMethodsMap = new HashMap<String, Set<Member.Method>>();
-        private Map<String, Set<Member.Method>> nameToMethodsMap = new HashMap<String, Set<Member.Method>>();
+        private Map<String, Set<Method>> fullNameToMethodsMap = new HashMap<String, Set<Method>>();
+        private Map<String, Set<Method>> nameToMethodsMap = new HashMap<String, Set<Method>>();
 
-        public List<Member.Method> getMethodList(String memberName) {
-            Set<Member.Method> methodSet = fullNameToMethodsMap.get(memberName);
+        public List<Method> getMethodList(String memberName) {
+            Set<Method> methodSet = fullNameToMethodsMap.get(memberName);
             if(methodSet == null) {
                 methodSet = nameToMethodsMap.get(memberName);
             }
 
-            List<Member.Method> methods;
+            List<Method> methods;
             if(methodSet != null) {
-                methods = new ArrayList<Member.Method>(methodSet);
+                methods = new ArrayList<Method>(methodSet);
 
                 if (methods.size() > 0) {
                     Collections.sort(methods);
                 }
             } else {
-                methods = new ArrayList<Member.Method>();
+                methods = new ArrayList<Method>();
             }
 
             return methods;
         }
 
-        public void add(Member.ParentMember member) {
-            Set<Member.Method> methods = member.getMethods();
+        public void add(ParentMember member) {
+            Set<Method> methods = member.getMethods();
             String fullName = member.getFullName();
             String name = member.getName();
 
@@ -124,11 +127,11 @@ public class RubyCache {
 
     private static class NameToMethod {
 
-        private Map<String, Set<Member.Method>> nameToMethodMap = new HashMap<String, Set<Member.Method>>();
+        private Map<String, Set<Method>> nameToMethodMap = new HashMap<String, Set<Method>>();
 
-        public void add(Member.Method method) {
+        public void add(Method method) {
             String methodName = method.getShortName();
-            Set<Member.Method> methodSet = getMethodSet(methodName);
+            Set<Method> methodSet = getMethodSet(methodName);
 
             if(methodName.equals("add_topic")) {
                 RubyPlugin.log("adding: " + methodName);
@@ -139,18 +142,18 @@ public class RubyCache {
             }
         }
 
-        public List<Member.Method> getMethods(String methodName) {
-            Set<Member.Method> methodSet = getMethodSet(methodName);
-            List<Member.Method> members = new ArrayList<Member.Method>(methodSet);
+        public List<Method> getMethods(String methodName) {
+            Set<Method> methodSet = getMethodSet(methodName);
+            List<Method> members = new ArrayList<Method>(methodSet);
             if (members.size() > 1) {
                 Collections.sort(members);
             }
             return members;
         }
 
-        public Set<Member.Method> getMethodSet(String methodName) {
+        public Set<Method> getMethodSet(String methodName) {
             if (!nameToMethodMap.containsKey(methodName)) {
-                nameToMethodMap.put(methodName, new HashSet<Member.Method>());
+                nameToMethodMap.put(methodName, new HashSet<Method>());
             }
             return nameToMethodMap.get(methodName);
         }
@@ -164,7 +167,7 @@ public class RubyCache {
 
         private Map<String, Set<Member>> methodToParentMap = new HashMap<String, Set<Member>>();
 
-        public void add(Member.Method method) {
+        public void add(Method method) {
             if (method.hasParentMember()) {
                 String methodName = method.getName();
                 Set<Member> parentSet = getParentSet(methodName);

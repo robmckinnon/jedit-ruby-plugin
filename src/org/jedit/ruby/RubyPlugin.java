@@ -19,11 +19,9 @@
  */
 package org.jedit.ruby;
 
-import org.gjt.sp.jedit.EditPlugin;
-import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.View;
-import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.Log;
+import org.jedit.ruby.parser.JRubyParser;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -55,7 +53,12 @@ public class RubyPlugin extends EditPlugin {
 
     public static void error(String message) {
         try {
-            Log.log(Log.ERROR, jEdit.getPlugin("RubyPlugin"), message);
+            EditPlugin plugin = jEdit.getPlugin("RubyPlugin");
+            Log.log(Log.ERROR, plugin, message);
+            View view = jEdit.getActiveView();
+            if (view != null) {
+                Macros.message(view, message);
+            }
         } catch (Exception e) {
             System.err.println(message);
         }
@@ -107,5 +110,15 @@ public class RubyPlugin extends EditPlugin {
             }
         }
         return startOffset;
+    }
+
+    public static int getEndOfFileOffset() {
+        View view = jEdit.getActiveView();
+        int offset = 0;
+        if (view != null) {
+            Buffer buffer = view.getBuffer();
+            offset = buffer.getLineEndOffset(buffer.getLineCount() - 1);
+        }
+        return offset;
     }
 }

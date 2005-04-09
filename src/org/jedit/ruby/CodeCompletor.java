@@ -30,6 +30,8 @@ import java.util.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.search.RESearchMatcher;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.Method;
 import gnu.regexp.REMatch;
 import gnu.regexp.RE;
 import gnu.regexp.REException;
@@ -50,8 +52,8 @@ public class CodeCompletor {
         analyzer = new CodeAnalyzer(textArea, buffer);
     }
 
-    public List<Member.Method> getMethods() {
-        List<Member.Method> methods = getMethods(buffer.getText(0, buffer.getLength()), textArea.getCaretPosition());
+    public List<Method> getMethods() {
+        List<Method> methods = getMethods(buffer.getText(0, buffer.getLength()), textArea.getCaretPosition());
         return methods;
     }
 
@@ -68,7 +70,7 @@ public class CodeCompletor {
     }
 
     public void completeRubyMethod() {
-        List<Member.Method> methods = getMethods();
+        List<Method> methods = getMethods();
         List<JMenuItem> menuItems = createMenuItems(methods);
         showPopupMenu(menuItems);
     }
@@ -76,7 +78,7 @@ public class CodeCompletor {
     /**
      * Prints list of methods possibly appropriate at the given location.
      */
-    public List<Member.Method> getMethods(String text, int location) {
+    public List<Method> getMethods(String text, int location) {
         if (analyzer.getName() != null) {
             String className = analyzer.getClassName();
 
@@ -86,11 +88,11 @@ public class CodeCompletor {
                 return completeUsingMethods(analyzer.getMethods());
             }
         } else {
-            return new ArrayList<Member.Method>();
+            return new ArrayList<Method>();
         }
     }
 
-    private List<Member.Method> completeUsingMethods(List<String> methods) {
+    private List<Method> completeUsingMethods(List<String> methods) {
         List<Member> members = null;
 
         for (String method : methods) {
@@ -102,7 +104,7 @@ public class CodeCompletor {
             }
         }
 
-        List<Member.Method> results = new ArrayList<Member.Method>();
+        List<Method> results = new ArrayList<Method>();
         for (Member member : members) {
             results.addAll(RubyCache.getMethodsOfMember(member.getFullName()));
         }
@@ -224,10 +226,10 @@ public class CodeCompletor {
         return RubyCache.getMembersWithMethod(methodName);
     }
 
-    List<JMenuItem> createMenuItems(List<Member.Method> methods) {
+    List<JMenuItem> createMenuItems(List<Method> methods) {
         List<JMenuItem> items = new ArrayList<JMenuItem>();
 
-        for (Member.Method method : methods) {
+        for (Method method : methods) {
             // Macros.message(view, method.toString());
 
 //            final JEditTextArea area = textArea;

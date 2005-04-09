@@ -20,7 +20,8 @@
 package org.jedit.ruby.test;
 
 import org.jedit.ruby.RubyCache;
-import org.jedit.ruby.Member;
+import org.jedit.ruby.ast.Member;
+import org.jedit.ruby.ast.Method;
 
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class TestRubyCache extends TestCase {
 
     public void testGetMethods() {
         addClassesToCache();
-        List<Member.Method> methods = RubyCache.getMethods("red");
+        List<Method> methods = RubyCache.getMethods("red");
 
         assertEquals("Assert file name correct", methods.get(0).getFileName(), "CLASS");
         assertEquals("Assert file name correct", methods.get(0).getName(), "red");
@@ -83,7 +84,7 @@ public class TestRubyCache extends TestCase {
     }
 
     private void assertFindByClassCorrect(String parentName, int index, String methodName, int methodCount, String filePath) {
-        List<Member.Method> members = RubyCache.getMethodsOfMember(parentName);
+        List<Method> members = RubyCache.getMethodsOfMember(parentName);
         assertEquals("Assert child match correct", methodCount, members.size());
         assertEquals("Assert name correct", methodName, members.get(index).getName());
         assertEquals("Assert path correct", filePath, members.get(index).getFilePath());
