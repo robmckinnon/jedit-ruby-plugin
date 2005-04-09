@@ -1,6 +1,5 @@
 package org.jedit.ruby.parser;
 
-import org.jruby.ast.visitor.AbstractVisitor;
 import org.jruby.ast.*;
 import org.jruby.lexer.yacc.SourcePosition;
 import org.jruby.lexer.yacc.LexerSource;
@@ -12,13 +11,9 @@ import org.jruby.parser.SyntaxErrorState;
 import org.jruby.common.RubyWarnings;
 import org.jruby.common.NullWarnings;
 import org.jedit.ruby.ast.Member;
-import org.jedit.ruby.ast.Root;
 import org.jedit.ruby.RubyPlugin;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.io.StringReader;
 import java.io.Reader;
 
@@ -27,9 +22,18 @@ import java.io.Reader;
  */
 public class JRubyParser {
 
+    private static final JRubyParser instance = new JRubyParser();
+
     private static String found;
     private static String expected;
     private static String nothing;
+
+    private RubyWarnings warnings;
+    private List<RubyParser.WarningListener> listeners;
+
+    /** singleton private constructor */
+    private JRubyParser() {
+    }
 
     public static void setFoundLabel(String found) {
         JRubyParser.found = found;
@@ -44,13 +48,19 @@ public class JRubyParser {
     }
 
     public static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath) {
+        return instance.parse(text, listeners, moduleMembers, classMembers, methodMembers, filePath);
+    }
+
+    private List<Member> parse(String text, List<RubyParser.WarningListener> listeners, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, String filePath) {
+        this.listeners = listeners;
+        this.warnings = new Warnings(listeners);
+
         Reader content = new StringReader(text);
         List<Member> members;
-        Parser parser = new Parser(listeners);
         RubyNodeVisitor visitor = new RubyNodeVisitor(moduleMembers, classMembers, methodMembers, listeners);
 
         try {
-            Node node = parser.parse(filePath, content);
+            Node node = parse(filePath, content);
             if (node != null) {
                 node.accept(visitor);
             }
@@ -63,218 +73,67 @@ public class JRubyParser {
         return members;
     }
 
-    private static class RubyNodeVisitor extends AbstractVisitor {
+    private Node parse(String name, Reader content) {
+        return parse(name, content, new RubyParserConfiguration());
+    }
 
-        private List<String> namespaceNames;
-        private LinkedList<Member> currentMember;
-        private int moduleIndex;
-        private int classIndex;
-        private int methodIndex;
-
-        private List<Member> modules;
-        private List<Member> classes;
-        private List<Member> methods;
-        private List<RubyParser.WarningListener> problemListeners;
-
-        public RubyNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
-            namespaceNames = new ArrayList<String>();
-            currentMember = new LinkedList<Member>();
-            currentMember.add(new Root(RubyPlugin.getEndOfFileOffset()));
-            problemListeners = listeners;
-            modules = moduleMembers;
-            classes = classMembers;
-            methods = methodMembers;
-            moduleIndex = 0;
-            classIndex = 0;
-            methodIndex = 0;
-        }
-
-        public List<Member> getMembers() {
-            return currentMember.getFirst().getChildMembersAsList();
-        }
-
-        protected void visitNode(Node node) {
-            if (printNode(node)) {
-                String name = node.getClass().getName();
-                int index = name.lastIndexOf('.');
-                SourcePosition position = node.getPosition();
-                if (position != null) {
-                    System.out.print("Line " + position.getLine() + ": " + name.substring(index + 1));
-                } else {
-                    System.out.print("          Node: " + name.substring(index + 1));
+    private Node parse(String name, Reader content, RubyParserConfiguration config) {
+        DefaultRubyParser parser = new DefaultRubyParser() {
+            public void yyerror(String message, Object syntaxErrorState) {
+                try {
+                    super.yyerror(message, syntaxErrorState);
+                } catch (SyntaxException e) {
+                    String errorMessage = formatErrorMessage(message, syntaxErrorState);
+                    for (RubyParser.WarningListener listener : listeners) {
+                        listener.error(e.getPosition(), errorMessage);
+                    }
+                    throw e;
                 }
             }
+        };
+
+        parser.setWarnings(warnings);
+        parser.init(config);
+        LexerSource lexerSource = LexerSource.getSource(name, content);
+        RubyParserResult result = parser.parse(lexerSource);
+        return result.getAST();
+    }
+
+    private String formatErrorMessage(String message, Object syntaxErrorState) {
+        if (message.equals("syntax error")) {
+            message = "";
+        } else {
+            message += ": ";
         }
 
-        private boolean printNode(Node node) {
-            return !(node instanceof NewlineNode);
-        }
-
-        private void visitNodeIterator(Iterator iterator) {
-            while (iterator.hasNext()) {
-                Node node = (Node) iterator.next();
-                visitNode(node);
-                if (printNode(node)) {
-                    RubyPlugin.log("");
-                }
-                node.accept(this);
+        StringBuffer buffer = new StringBuffer(message);
+        if (syntaxErrorState instanceof SyntaxErrorState) {
+            SyntaxErrorState errorState = (SyntaxErrorState) syntaxErrorState;
+            String[] expectedValues = errorState.expected();
+            String found = errorState.found();
+            if (found != null) {
+                buffer.append(JRubyParser.found + " " + reformatValue(found) + "; ");
             }
-        }
-
-        public void visitBlockNode(BlockNode node) {
-            visitNode(node);
-            RubyPlugin.log("");
-            visitNodeIterator(node.iterator());
-        }
-
-        public void visitNewlineNode(NewlineNode node) {
-            visitNode(node);
-            node.getNextNode().accept(this);
-        }
-
-        public void visitModuleNode(ModuleNode node) {
-            System.out.print("[");
-            visitNode(node);
-            String moduleName = node.getName();
-            System.out.print(": " + moduleName);
-
-            Member module = getMember("module", moduleIndex, modules, node.getName(), node.getPosition());
-            moduleIndex++;
-            module.setEndOffset(getEndOffset(node));
-            populateNamespace(module);
-
-            namespaceNames.add(moduleName);
-            Member parent = currentMember.getLast();
-            parent.addChildMember(module);
-            currentMember.add(module);
-
-            node.getBodyNode().accept(this);
-
-            namespaceNames.remove(moduleName);
-            currentMember.removeLast();
-            RubyPlugin.log("]");
-        }
-
-        public void visitClassNode(ClassNode node) {
-            visitNode(node);
-            String className = node.getClassName();
-            System.out.print(": " + className);
-
-            Member clas = getMember("class", classIndex, classes, node.getClassName(), node.getPosition());
-            classIndex++;
-            clas.setEndOffset(getEndOffset(node));
-            populateNamespace(clas);
-
-            namespaceNames.add(className);
-            Member parent = currentMember.getLast();
-            parent.addChildMember(clas);
-            currentMember.add(clas);
-
-            node.getBodyNode().accept(this);
-
-            namespaceNames.remove(className);
-            currentMember.removeLast();
-        }
-
-        public void visitDefnNode(DefnNode node) {
-            visitNode(node);
-            String methodName = node.getName();
-            System.out.print(": " + methodName);
-
-            Member method = getMember("method", methodIndex, methods, node.getName(), node.getPosition());
-            methodIndex++;
-            method.setEndOffset(getEndOffset(node));
-            Member parent = currentMember.getLast();
-            parent.addChildMember(method);
-
-        }
-
-        public void visitDefsNode(DefsNode node) {
-            visitNode(node);
-
-            Member method = methods.get(methodIndex++);
-            method.setEndOffset(getEndOffset(node));
-
-            String methodName = node.getName();
-            String receiverName;
-            if (node.getReceiverNode() instanceof ConstNode) {
-                ConstNode constNode = (ConstNode) node.getReceiverNode();
-                receiverName = constNode.getName();
-                method.setReceiver(receiverName);
+            buffer.append(expected + " ");
+            if (expectedValues.length == 0) {
+                buffer.append(nothing);
             } else {
-                receiverName = "";
-            }
-            RubyPlugin.log(": " + receiverName + methodName);
-
-            currentMember.getLast().addChildMember(method);
-            currentMember.add(method);
-
-            node.getBodyNode().accept(this);
-
-            currentMember.removeLast();
-        }
-
-        private void populateNamespace(Member member) {
-            if (namespaceNames.size() > 0) {
-                String namespace = "";
-                for (String module : namespaceNames) {
-                    namespace += module + "::";
+                for (String value : expectedValues) {
+                    value = reformatValue(value);
+                    buffer.append(value + ", ");
                 }
-                member.setNamespace(namespace);
             }
         }
+        return buffer.toString();
+    }
 
-        private Member getMember(String memberType, int index, List<Member> members, String memberName, SourcePosition position) {
-            Member member = null;
-            try {
-                member = members.get(index);
-                if(!memberName.equals(member.getShortName())) {
-                    throw new Exception();
-                }
-            } catch (Exception e) {
-                String message = "parser can't find " + memberType + " " + memberName;
-                for (RubyParser.WarningListener listener : problemListeners) {
-                    listener.error(position, message);
-                }
-                throw new SyntaxException(position, message);
-            }
-            return member;
+    private String reformatValue(String value) {
+        if (value.startsWith("k")) {
+            value = "'" + value.substring(1).toLowerCase() + "'";
+        } else if (value.startsWith("t")) {
+            value = value.substring(1).toLowerCase();
         }
-
-        public void visitScopeNode(ScopeNode node) {
-            visitNode(node);
-            RubyPlugin.log("");
-            if (node.getBodyNode() != null) {
-                node.getBodyNode().accept(this);
-            }
-        }
-
-        public void visitIterNode(IterNode node) {
-            visitNode(node);
-            RubyPlugin.log("");
-            node.getBodyNode().accept(this);
-        }
-
-        public void visitFCallNode(FCallNode node) {
-            visitNode(node);
-            RubyPlugin.log(": " + node.getName());
-        }
-
-        public void visitClassVarDeclNode(ClassVarDeclNode node) {
-            visitNode(node);
-            RubyPlugin.log(": " + node.getName());
-        }
-
-        public void visitClassVarAsgnNode(ClassVarAsgnNode node) {
-            visitNode(node);
-            RubyPlugin.log(": " + node.getName());
-        }
-
-        private int getEndOffset(Node node) {
-            int line = node.getPosition().getLine() - 1;
-            return RubyPlugin.getEndOffset(line);
-        }
-
+        return value;
     }
 
     private static class Warnings extends NullWarnings {
@@ -309,86 +168,4 @@ public class JRubyParser {
         }
     }
 
-    private static class Parser {
-
-        private RubyWarnings warnings;
-        private List<RubyParser.WarningListener> listeners;
-
-        public Parser(List<RubyParser.WarningListener> listeners) {
-            this(new Warnings(listeners));
-            this.listeners = listeners;
-        }
-
-        public Parser(RubyWarnings warnings) {
-            this.warnings = warnings;
-        }
-
-        public Node parse(String name, String content) {
-            return parse(name, new StringReader(content));
-        }
-
-        public Node parse(String name, Reader content) {
-            return parse(name, content, new RubyParserConfiguration());
-        }
-
-        private Node parse(String name, Reader content, RubyParserConfiguration config) {
-            DefaultRubyParser parser = new DefaultRubyParser() {
-                public void yyerror(String message, Object syntaxErrorState) {
-                    try {
-                        super.yyerror(message, syntaxErrorState);
-                    } catch (SyntaxException e) {
-                        String errorMessage = formatErrorMessage(message, syntaxErrorState);
-                        for (RubyParser.WarningListener listener : listeners) {
-                            listener.error(e.getPosition(), errorMessage);
-                        }
-                        throw e;
-                    }
-                }
-            };
-
-            parser.setWarnings(warnings);
-            parser.init(config);
-            LexerSource lexerSource = LexerSource.getSource(name, content);
-            RubyParserResult result = parser.parse(lexerSource);
-            return result.getAST();
-        }
-
-        private String formatErrorMessage(String message, Object syntaxErrorState) {
-            if (message.equals("syntax error")) {
-                message = "";
-            } else {
-                message += ": ";
-            }
-
-            StringBuffer buffer = new StringBuffer(message);
-            if (syntaxErrorState instanceof SyntaxErrorState) {
-                SyntaxErrorState errorState = (SyntaxErrorState) syntaxErrorState;
-                String[] expectedValues = errorState.expected();
-                String found = errorState.found();
-                if (found != null) {
-                    buffer.append(JRubyParser.found + " " + reformatValue(found) + "; ");
-                }
-                buffer.append(expected + " ");
-                if (expectedValues.length == 0) {
-                    buffer.append(nothing);
-                } else {
-                    for (String value : expectedValues) {
-                        value = reformatValue(value);
-                        buffer.append(value + ", ");
-                    }
-                }
-            }
-            return buffer.toString();
-        }
-
-        private String reformatValue(String value) {
-            if (value.startsWith("k")) {
-                value = "'" + value.substring(1).toLowerCase() + "'";
-            } else if (value.startsWith("t")) {
-                value = value.substring(1).toLowerCase();
-            }
-            return value;
-        }
-
-    }
 }

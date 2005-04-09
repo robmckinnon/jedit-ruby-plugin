@@ -26,8 +26,6 @@ import java.util.*;
 import org.jruby.lexer.yacc.SourcePosition;
 import org.gjt.sp.jedit.View;
 import org.jedit.ruby.ast.*;
-import org.jedit.ruby.parser.JRubyParser;
-import org.jedit.ruby.parser.MemberMatcher;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.RubyPlugin;
 
