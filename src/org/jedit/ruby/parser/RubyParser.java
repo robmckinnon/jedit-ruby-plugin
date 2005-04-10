@@ -82,7 +82,7 @@ public class RubyParser {
         return instance.createMembersAsList(text, filePath, listener);
     }
 
-    private RubyMembers createMembers(String text, String filePath, WarningListener listener, boolean forceReparse) {
+    private synchronized RubyMembers createMembers(String text, String filePath, WarningListener listener, boolean forceReparse) {
         Member[] members;
 
         if(!forceReparse
@@ -104,7 +104,7 @@ public class RubyParser {
         return new RubyMembers(members, logListener.getProblems());
     }
 
-    private List<Member> createMembersAsList(String text, String filePath, WarningListener listener) {
+    private synchronized List<Member> createMembersAsList(String text, String filePath, WarningListener listener) {
         List<Member> members = null;
 
         try {

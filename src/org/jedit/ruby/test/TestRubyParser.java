@@ -362,6 +362,25 @@ public class TestRubyParser extends TestCase {
         }
     }
 
+    public void testGlobalIf() {
+        List<Member> members = RubyParser.getMembersAsList(globalIfFile, PATH, null);
+        assertCorrect(0, "File", null, 6, members);
+        assertChildrenCorrect(members, "File.open(*args)", 31, "File");
+        assertCorrect(1, "Test", null, 70, members);
+        assertCorrect(0, "initialize", "Test", 80, members.get(1).getChildMembersAsList());
+    }
+
+    private static final String globalIfFile = "class File\n" +
+            " if ($debug)\n" +
+            "   def File.open(*args)\n" +
+            "   end\n" +
+            " end\n" +
+            "end\n" +
+            "class Test\n" +
+            " def initialize\n" +
+            " end\n" +
+            "end";
+
     private static final String classMethodFile = "class One\n" +
             "\tdef to_yaml(opts)\n" +
             "\t\tself.class if Hash === opts\n" +

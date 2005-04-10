@@ -20,8 +20,13 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 import org.jedit.ruby.parser.JRubyParser;
+
+import javax.swing.SwingUtilities;
+import java.io.*;
+import java.awt.Point;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -29,6 +34,7 @@ import org.jedit.ruby.parser.JRubyParser;
 public class RubyPlugin extends EditPlugin {
 
     private static boolean debug = System.getProperty("user.home").equals("/home/a");
+    private static final String RUBY_DIR = "ruby";
 
     public void start() {
         super.start();
@@ -76,7 +82,8 @@ public class RubyPlugin extends EditPlugin {
 
                 if(text.length() > 0) {
                     int index = 0;
-                    while (text.charAt(index) == ' ' && (offset - index) < end) {
+                    while ((text.charAt(index) == ' ' || text.charAt(index) == '\t')
+                            && (offset - index) < end) {
                         index++;
                     }
                     offset += index;
@@ -120,5 +127,52 @@ public class RubyPlugin extends EditPlugin {
             offset = buffer.getLineEndOffset(buffer.getLineCount() - 1);
         }
         return offset;
+    }
+
+    public static String readFile(File file) {
+        StringBuffer buffer = new StringBuffer();
+
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+            try {
+                char[] chars = new char[1024];
+                int length;
+                while (-1 != (length = bufferedReader.read(chars))) {
+                    buffer.append(chars, 0, length);
+                }
+            } catch (IOException e) {
+                error(e.getMessage());
+                e.printStackTrace();
+            }
+        } catch (FileNotFoundException e) {
+            error(e.getMessage());
+            e.printStackTrace();
+        }
+
+        return buffer.toString();
+    }
+
+    public static File getStoragePath(String fileName) {
+        File storageDirectory = new File(jEdit.getSettingsDirectory() + File.separatorChar + RUBY_DIR);
+        if (!storageDirectory.exists()) {
+            storageDirectory.mkdir();
+        }
+        return new File(storageDirectory.getPath() + File.separatorChar + fileName);
+    }
+
+    public static Point getCaretPopupLocation(View view) {
+        JEditTextArea textArea = view.getTextArea();
+        textArea.scrollToCaret(false);
+        Point location = textArea.offsetToXY(textArea.getCaretPosition());
+        location.y += textArea.getPainter().getFontMetrics().getHeight();
+        SwingUtilities.convertPointToScreen(location, textArea.getPainter());
+        return location;
+    }
+
+    public static Point getCenteredPopupLocation(View view) {
+        JEditTextArea textArea = view.getTextArea();
+        textArea.scrollToCaret(false);
+        Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
+        return location;
     }
 }

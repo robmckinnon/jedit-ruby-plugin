@@ -27,10 +27,11 @@ import junit.framework.Test;
  */
 public class RubyTestSuite extends TestSuite {
 
-   public static Test suite() {
-      TestSuite suite = new TestSuite("ruby");
-      suite.addTestSuite(TestRubyParser.class);
-      suite.addTestSuite(TestRubyCache.class);
-      return suite;
-   }
+    public static Test suite() {
+        TestSuite suite = new TestSuite("ruby");
+        suite.addTestSuite(TestRubyParser.class);
+        suite.addTestSuite(TestRubyCache.class);
+        suite.addTestSuite(TestRDocSeacher.class);
+        return suite;
+    }
 }

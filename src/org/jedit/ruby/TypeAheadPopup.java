@@ -75,28 +75,38 @@ public class TypeAheadPopup extends JWindow {
     private char showAllMnemonic;
     private JCheckBox showAllCheckBox;
     private JCheckBox narrowListCheckBox;
+    private boolean searchDocumentation;
+
+
+    /**
+     * Use when displaying RDoc search choices.
+     */
+    public TypeAheadPopup(View editorView, Member[] displayMembers, Point location) {
+        this(editorView, displayMembers, displayMembers[0], location, true);
+    }
 
     /**
      * Use when not displaying file structure.
      */
-    public TypeAheadPopup(View editorView, Member[] displayMembers, Member selectedMember, Point location) {
-        this(editorView, displayMembers, displayMembers, null, selectedMember, location, false);
+    public TypeAheadPopup(View editorView, Member[] displayMembers, Member selectedMember, Point location, boolean searchResults) {
+        this(editorView, displayMembers, displayMembers, null, selectedMember, location, false, searchResults);
     }
 
     /**
      * Use when displaying file structure.
      */
     public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
-        this(editorView, displayMembers, displayMembers, parentMembers, selectedMember, location, true);
+        this(editorView, displayMembers, displayMembers, parentMembers, selectedMember, location, true, false);
     }
 
-    private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location, boolean showStructure) {
+    private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location, boolean showStructure, boolean searchResults) {
         super(editorView);
         RubyPlugin.log("selected is: " + String.valueOf(selectedMember));
 
         view = editorView;
         textArea = editorView.getTextArea();
         showFileStructure = showStructure;
+        searchDocumentation = searchResults;
 
         if (parentMembers != null) {
             parentsList = parentMembers;
@@ -213,7 +223,7 @@ public class TypeAheadPopup extends JWindow {
         showAllMembers = selected;
         jEdit.setProperty(SHOW_ALL, Boolean.toString(showAllMembers));
         dispose();
-        new TypeAheadPopup(view, originalMembers, originalMembers, null, (Member)popupList.getSelectedValue(), position, true);
+        new TypeAheadPopup(view, originalMembers, originalMembers, null, (Member)popupList.getSelectedValue(), position, true, searchDocumentation);
     }
 
     private void putFocusOnPopup() {
@@ -253,7 +263,7 @@ public class TypeAheadPopup extends JWindow {
                         handleFocusOnDispose = false;
                         dispose();
                         parentsList.add(members);
-                        new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position, true);
+                        new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position, true, searchDocumentation);
                         selectedIndex = -1;
                         break;
                     }
@@ -328,18 +338,21 @@ public class TypeAheadPopup extends JWindow {
             handleFocusOnDispose = false;
             dispose();
             Member[] members = parentsList.removeLast();
-            new TypeAheadPopup(view, originalMembers, members, parentsList, member, position, true);
+            new TypeAheadPopup(view, originalMembers, members, parentsList, member, position, true, searchDocumentation);
 
         } else if (member.hasChildMembers() && showMenu && !showAllMembers) {
             Member[] childMembers = member.getChildMembers();
             handleFocusOnDispose = false;
             dispose();
             parentsList.add(members);
-            new TypeAheadPopup(view, originalMembers, childMembers, parentsList, null, position, true);
+            new TypeAheadPopup(view, originalMembers, childMembers, parentsList, null, position, true, searchDocumentation);
 
         } else if (showFileStructure) {
             Buffer buffer = view.getBuffer();
             goToMember(member, buffer);
+        } else if (searchDocumentation) {
+            dispose();
+            RDocSeacher.doSearch(view, member.getName());
         } else {
             member.accept(new MemberVisitorAdapter() {
                 public void handleMethod(Method method) {

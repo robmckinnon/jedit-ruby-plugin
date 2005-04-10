@@ -56,9 +56,7 @@ public class FileStructurePopup {
 
     private void showPopup(View view) {
         start = now();
-        JEditTextArea textArea = view.getTextArea();
-        textArea.scrollToCaret(false);
-        Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
+        Point location = RubyPlugin.getCenteredPopupLocation(view);
 
         RubyMembers members = RubyParser.getMembers(view);
 

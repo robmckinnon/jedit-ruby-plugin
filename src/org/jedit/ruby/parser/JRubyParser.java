@@ -47,7 +47,7 @@ public class JRubyParser {
         JRubyParser.nothing = nothing;
     }
 
-    public static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath) {
+    static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath) {
         return instance.parse(text, listeners, moduleMembers, classMembers, methodMembers, filePath);
     }
 

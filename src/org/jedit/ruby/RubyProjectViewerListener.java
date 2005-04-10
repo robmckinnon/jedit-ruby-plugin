@@ -24,10 +24,8 @@ import projectviewer.event.ProjectViewerEvent;
 import projectviewer.vpt.VPTProject;
 import projectviewer.vpt.VPTGroup;
 import projectviewer.vpt.VPTNode;
-import org.gjt.sp.util.Log;
 import org.gjt.sp.jedit.Mode;
 import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.Buffer;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -117,33 +115,11 @@ public class RubyProjectViewerListener implements ProjectViewerListener {
         String text = null;
 //        Buffer buffer = jEdit.getBuffer(path);
 //        if (buffer == null) {
-            text = readFile(file);
+            text = RubyPlugin.readFile(file);
 //        } else {
 //            text = buffer.getText(0, buffer.getLength());
 //        }
         return text;
     }
 
-    private String readFile(File file) {
-        StringBuffer buffer = new StringBuffer();
-
-        try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
-            try {
-                char[] chars = new char[1024];
-                int length;
-                while (-1 != (length = bufferedReader.read(chars))) {
-                    buffer.append(chars, 0, length);
-                }
-            } catch (IOException e) {
-                RubyPlugin.error(e.getMessage());
-                e.printStackTrace();
-            }
-        } catch (FileNotFoundException e) {
-            RubyPlugin.error(e.getMessage());
-            e.printStackTrace();
-        }
-
-        return buffer.toString();
-    }
 }

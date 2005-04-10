@@ -64,13 +64,8 @@ public class RubyActions {
 
         if (methods.size() > 0) {
             Member[] displayMembers = methods.toArray(new Member[0]);
-
-            textArea.scrollToCaret(false);
-            Point location = textArea.offsetToXY(textArea.getCaretPosition());
-            location.y += textArea.getPainter().getFontMetrics().getHeight();
-            SwingUtilities.convertPointToScreen(location, textArea.getPainter());
-
-            new TypeAheadPopup(view, displayMembers, displayMembers[0], location);
+            Point location = RubyPlugin.getCaretPopupLocation(view);
+            new TypeAheadPopup(view, displayMembers, displayMembers[0], location, false);
         }
     }
 
