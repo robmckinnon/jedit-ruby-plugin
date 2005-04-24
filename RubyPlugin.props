@@ -2,7 +2,7 @@
 plugin.org.jedit.ruby.RubyPlugin.activate=defer
 plugin.org.jedit.ruby.RubyPlugin.name=Ruby Plugin
 plugin.org.jedit.ruby.RubyPlugin.author=Robert McKinnon
-plugin.org.jedit.ruby.RubyPlugin.version=0.4
+plugin.org.jedit.ruby.RubyPlugin.version=0.5
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.jars=
 plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.4
@@ -13,6 +13,8 @@ plugin.org.jedit.ruby.RubyPlugin.depend.3=plugin projectviewer.ProjectPlugin 2.1
 # Menu
 plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
 	ruby.structure-browser \
+	- \
+	ruby.progressive-selection \
 	- \
 	ruby.search-documentation \
 	ruby.find-declaration \
@@ -28,6 +30,8 @@ plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
 
 ruby.file-structure-popup.label=File structure popup
 ruby.structure-browser.label=Structure browser
+
+ruby.progressive-selection.label=Progressive selection
 
 ruby.search-documentation.label=Search RDoc (using ri)
 ruby.find-declaration.label=Find declaration (experimental)
@@ -51,11 +55,17 @@ ruby.complete-method.label=Complete method
 plugin.projectviewer.org.jedit.ruby.RubyPlugin.global-pv-listeners=org.jedit.ruby.RubyProjectViewerListener
 plugin.projectviewer.org.jedit.ruby.RubyPlugin.prj-listeners=org.jedit.ruby.RubyProjectListener
 
+ruby.not-ruby-file.title=Not recognized as a Ruby file.
+ruby.not-ruby-file.message=Not recognized as a Ruby file.\n\n To mark as a Ruby file, change edit mode \n on Utilities->Buffer Options dialog.\n
+
 ruby.file-structure-popup.narrow-search.label=Narrow down the list on typing
 ruby.file-structure-popup.narrow-search.mnemonic=n
 ruby.file-structure-popup.show-all.label=Show all file structure members
 ruby.file-structure-popup.show-all.mnemonic=s
 ruby.file-structure-popup.search.label=Search for: 
+ruby.file-structure-popup.no-structure.label=No structure to show.
+
+ruby.find-declaration.no-matches.label=No matches found, try adding relevant files to Project Viewer.
 
 ruby.search-documentation.error=Error:\nri An error has occurred, see the Activity Log for details.
 ruby.search-documentation.permission=\n To allow searches to return long result messages\n execute this file permission change on the command line:\n\n    chmod +x {0}\n

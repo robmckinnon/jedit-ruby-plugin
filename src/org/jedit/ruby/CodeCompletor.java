@@ -45,15 +45,16 @@ public class CodeCompletor {
     private JEditTextArea textArea;
     private Buffer buffer;
     private CodeAnalyzer analyzer;
+    private List<Method> methods;
 
     public CodeCompletor(View view) {
         textArea = view.getTextArea();
         buffer = view.getBuffer();
         analyzer = new CodeAnalyzer(textArea, buffer);
+        methods = getMethods(buffer.getText(0, buffer.getLength()), textArea.getCaretPosition());
     }
 
     public List<Method> getMethods() {
-        List<Method> methods = getMethods(buffer.getText(0, buffer.getLength()), textArea.getCaretPosition());
         return methods;
     }
 
@@ -66,6 +67,12 @@ public class CodeCompletor {
     }
 
     public boolean isInsertionPoint() {
+        String partialMethod = getPartialMethod();
+        for (Method method : methods) {
+            if(method.getShortName().equals(partialMethod)) {
+                return false;
+            }
+        }
         return analyzer.isInsertionPoint();
     }
 
@@ -82,11 +89,31 @@ public class CodeCompletor {
         if (analyzer.getName() != null) {
             String className = analyzer.getClassName();
 
+            List<Method> methods;
             if (className != null) {
-                return RubyCache.getMethodsOfMember(className);
+                methods = RubyCache.getMethodsOfMember(className);
+                if(analyzer.isClass()) {
+                    for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
+                        Method method = iterator.next();
+                        if(!method.isClassMethod()) {
+                            iterator.remove();
+                        }
+                    }
+                }
             } else {
-                return completeUsingMethods(analyzer.getMethods());
+                methods = completeUsingMethods(analyzer.getMethods());
             }
+
+            if(getPartialMethod() != null) {
+                for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
+                    Method method = iterator.next();
+
+                    if(!method.getShortName().startsWith(getPartialMethod())) {
+                        iterator.remove();
+                    }
+                }
+            }
+            return methods;
         } else {
             return new ArrayList<Method>();
         }
@@ -105,8 +132,11 @@ public class CodeCompletor {
         }
 
         List<Method> results = new ArrayList<Method>();
-        for (Member member : members) {
-            results.addAll(RubyCache.getMethodsOfMember(member.getFullName()));
+
+        if (members != null) {
+            for (Member member : members) {
+                results.addAll(RubyCache.getMethodsOfMember(member.getFullName()));
+            }
         }
 //        boolean is_class = analyzer.isClass();
 //        String partial = analyzer.getPartialMethod();

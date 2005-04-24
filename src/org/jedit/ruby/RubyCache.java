@@ -45,7 +45,13 @@ public class RubyCache {
     public static void add(String text, String path) {
         RubyMembers members = RubyParser.getMembers(text, path, null, true);
 
-        if(!members.containsErrors()) {
+        if (!members.containsErrors()) {
+            instance.add(path, members);
+        }
+    }
+
+    public static void add(RubyMembers members, String path) {
+        if (!members.containsErrors()) {
             instance.add(path, members);
         }
     }
@@ -69,7 +75,7 @@ public class RubyCache {
                 parentToMethod.add(module);
             }
 
-            public void handleClass(org.jedit.ruby.ast.Class classMember) {
+            public void handleClass(org.jedit.ruby.ast.ClassMember classMember) {
                 parentToMethod.add(classMember);
             }
 
@@ -87,12 +93,12 @@ public class RubyCache {
 
         public List<Method> getMethodList(String memberName) {
             Set<Method> methodSet = fullNameToMethodsMap.get(memberName);
-            if(methodSet == null) {
+            if (methodSet == null) {
                 methodSet = nameToMethodsMap.get(memberName);
             }
 
             List<Method> methods;
-            if(methodSet != null) {
+            if (methodSet != null) {
                 methods = new ArrayList<Method>(methodSet);
 
                 if (methods.size() > 0) {
@@ -133,8 +139,8 @@ public class RubyCache {
             String methodName = method.getShortName();
             Set<Method> methodSet = getMethodSet(methodName);
 
-            if(methodName.equals("add_topic")) {
-                RubyPlugin.log("adding: " + methodName);
+            if (methodName.equals("add_topic")) {
+                RubyPlugin.log("adding: " + methodName, getClass());
             }
 
             if (!methodSet.contains(method)) {

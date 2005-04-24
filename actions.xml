@@ -2,6 +2,11 @@
 
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
+	<ACTION NAME="ruby.progressive-selection">
+		<CODE>
+			org.jedit.ruby.RubyActions.progressiveSelection(view);
+		</CODE>
+	</ACTION>
 	<ACTION NAME="ruby.search-documentation">
 		<CODE>
 			org.jedit.ruby.RubyActions.searchDocumentation(view);

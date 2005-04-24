@@ -32,7 +32,7 @@ public abstract class Problem extends Member {
      * @param line line number starting at 0
      */
     public Problem(String message, int line) {
-        super(message, 0);
+        super(message, 0, 0);
         this.line = line;
     }
 

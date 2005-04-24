@@ -26,8 +26,9 @@ import java.util.HashSet;
  * @author robmckinnon at users.sourceforge.net
  */
 public abstract class ParentMember extends Member {
-    protected ParentMember(String name, int startOffset) {
-        super(name, startOffset);
+
+    protected ParentMember(String name, int startOuterOffset, int startOffset) {
+        super(name, startOuterOffset, startOffset);
     }
 
     public Set<Method> getMethods() {

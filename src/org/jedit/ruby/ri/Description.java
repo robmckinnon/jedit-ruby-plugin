@@ -1,5 +1,5 @@
 /*
- * Module.java - 
+ * Description.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -17,17 +17,40 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby.ast;
+package org.jedit.ruby.ri;
+
+import java.io.Serializable;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Module extends ParentMember {
-    public Module(String name, int startOuterOffset, int startOffset) {
-        super(name, startOuterOffset, startOffset);
+public class Description implements Serializable {
+
+    private String fullName;
+    private String name;
+    private String comment;
+
+    public String getFullName() {
+        return fullName;
     }
 
-    public void accept(MemberVisitor visitor) {
-        visitor.handleModule(this);
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }

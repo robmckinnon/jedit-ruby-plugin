@@ -23,17 +23,24 @@ package org.jedit.ruby.ast;
  * @author robmckinnon at users.sourceforge.net
  */
 public class Method extends Member {
+
     private String filePath;
     private String fileName;
+    private boolean isClassMethod;
 
-    public Method(String name, String filePath, String fileName, int startOffset) {
-        super(name, startOffset);
+    public Method(String name, String filePath, String fileName, int startOuterOffset, int startOffset, boolean classMethod) {
+        super(name, startOuterOffset, startOffset);
         this.filePath = filePath;
         this.fileName = fileName;
+        isClassMethod = classMethod;
     }
 
     public void accept(MemberVisitor visitor) {
         visitor.handleMethod(this);
+    }
+
+    public boolean isClassMethod() {
+        return isClassMethod;
     }
 
     public String getFilePath() {
@@ -46,8 +53,8 @@ public class Method extends Member {
 
     public int compareTo(Member member) {
         int comparison = super.compareTo(member);
-        if(comparison == 0 && member instanceof org.jedit.ruby.ast.Method) {
-            org.jedit.ruby.ast.Method method = (org.jedit.ruby.ast.Method)member;
+        if(comparison == 0 && member instanceof Method) {
+            org.jedit.ruby.ast.Method method = (Method)member;
             comparison = fileName.compareTo(method.fileName);
         }
         return comparison;

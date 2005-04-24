@@ -46,23 +46,23 @@ public class RubyProjectListener implements ProjectListener {
     }
 
     private void addFile(String path) {
-        RubyPlugin.log("file added: " + path);
+        RubyPlugin.log("file added: " + path, getClass());
 //        RubyProjectViewerListener.addFile(path);
     }
 
     public void fileRemoved(ProjectEvent event) {
         VPTFile file = event.getAddedFile();
-        RubyPlugin.log("file removed: " + file.getNodePath());
+        RubyPlugin.log("file removed: " + file.getNodePath(), getClass());
     }
 
     public void filesRemoved(ProjectEvent event) {
         List<VPTFile> files = new ArrayList<VPTFile>(event.getAddedFiles());
         for (VPTFile file : files) {
-            RubyPlugin.log("file removed: " + file.getNodePath());
+            RubyPlugin.log("file removed: " + file.getNodePath(), getClass());
         }
     }
 
     public void propertiesChanged(ProjectEvent event) {
-        RubyPlugin.log("properties changed: " + event.getProject().getName());
+        RubyPlugin.log("properties changed: " + event.getProject().getName(), getClass());
     }
 }

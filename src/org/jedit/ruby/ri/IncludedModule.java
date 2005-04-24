@@ -1,5 +1,5 @@
 /*
- * Module.java - 
+ * IncludedModule.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -17,17 +17,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby.ast;
+package org.jedit.ruby.ri;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Module extends ParentMember {
-    public Module(String name, int startOuterOffset, int startOffset) {
-        super(name, startOuterOffset, startOffset);
-    }
-
-    public void accept(MemberVisitor visitor) {
-        visitor.handleModule(this);
-    }
+public class IncludedModule extends NamedThing {
 }

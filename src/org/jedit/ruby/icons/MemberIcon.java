@@ -45,7 +45,7 @@ public class MemberIcon extends MemberVisitorAdapter {
         icon = loadIcon("module");
     }
 
-    public void handleClass(org.jedit.ruby.ast.Class classMember) {
+    public void handleClass(org.jedit.ruby.ast.ClassMember classMember) {
         icon = loadIcon("class");
     }
 
@@ -54,11 +54,11 @@ public class MemberIcon extends MemberVisitorAdapter {
     }
 
     public void handleWarning(Warning warning) {
-        icon = ErrorList.ERROR_ICON;
+        icon = ErrorList.WARNING_ICON;
     }
 
     public void handleError(Error warning) {
-        icon = ErrorList.WARNING_ICON;
+        icon = ErrorList.ERROR_ICON;
     }
 
     private Icon loadIcon(String name) {

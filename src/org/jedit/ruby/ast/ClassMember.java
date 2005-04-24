@@ -1,5 +1,5 @@
 /*
- * Module.java - 
+ * ClassMember.java -
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -22,12 +22,14 @@ package org.jedit.ruby.ast;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Module extends ParentMember {
-    public Module(String name, int startOuterOffset, int startOffset) {
+public class ClassMember extends ParentMember {
+
+    public ClassMember(String name, int startOuterOffset, int startOffset) {
         super(name, startOuterOffset, startOffset);
     }
 
     public void accept(MemberVisitor visitor) {
-        visitor.handleModule(this);
+        visitor.handleClass(this);
     }
+
 }

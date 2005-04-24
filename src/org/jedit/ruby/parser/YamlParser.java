@@ -1,5 +1,5 @@
 /*
- * Module.java - 
+ * YamlParser.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -17,17 +17,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby.ast;
+package org.jedit.ruby.parser;
+
+import java.util.Collection;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Module extends ParentMember {
-    public Module(String name, int startOuterOffset, int startOffset) {
-        super(name, startOuterOffset, startOffset);
+public class YamlParser {
+
+    public static Collection parse(String objectclass) {
+        return null;
     }
 
-    public void accept(MemberVisitor visitor) {
-        visitor.handleModule(this);
-    }
+    
 }

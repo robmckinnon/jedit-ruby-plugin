@@ -23,8 +23,10 @@ package org.jedit.ruby.ast;
  * @author robmckinnon at users.sourceforge.net
  */
 public class Root extends Member {
+
     public Root(int endOffset) {
-        super("root", 0, endOffset);
+        super("root", 0, 0);
+        setEndOffset(endOffset);
     }
 
     public void accept(MemberVisitor visitor) {

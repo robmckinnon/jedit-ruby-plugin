@@ -80,7 +80,7 @@ class CodeAnalyzer {
         return line;
     }
 
-    boolean isClass() {
+    public boolean isClass() {
         try {
             RE expression = new RE("^[A-Z]\\w*");
             return expression.isMatch(name);
@@ -106,7 +106,9 @@ class CodeAnalyzer {
             int end = textArea.getLineEndOffset(line);
             StringBuffer text = new StringBuffer();
             text.append(buffer.getText(0, start));
-            text.append(buffer.getText(end, buffer.getLength() - end));
+            if(buffer.getLength() > end) {
+                text.append(buffer.getText(end, buffer.getLength() - end));
+            }
             textWithoutLine = text.toString();
         }
 

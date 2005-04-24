@@ -19,8 +19,6 @@
  */
 package org.jedit.ruby.ast;
 
-import org.jedit.ruby.ast.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,11 +33,15 @@ public class RubyMembers {
 
     public RubyMembers(Member[] members, List<Problem> problems) {
         this.members = members;
-        this.problems = problems;
+        setProblems(problems);
         if (members != null) {
             memberList = new ArrayList<Member>();
             populateMemberList(members, memberList);
         }
+    }
+
+    public void setProblems(List<Problem> problems) {
+        this.problems = problems;
     }
 
     public boolean containsErrors() {
@@ -105,12 +107,12 @@ public class RubyMembers {
 
         for (int i = 0; memberIndex == -1 && i < memberList.size(); i++) {
             Member member = memberList.get(i);
-            int offset = member.getStartOffset();
+            int offset = member.getStartOuterOffset();
 
             if(caretPosition >= offset) {
                 if(i < memberList.size() - 1) {
                     Member nextMember = memberList.get(i + 1);
-                    int nextOffset = nextMember.getStartOffset();
+                    int nextOffset = nextMember.getStartOuterOffset();
                     if (caretPosition < nextOffset) {
                         memberIndex = i;
                     }
@@ -127,6 +129,30 @@ public class RubyMembers {
         return members;
     }
 
+    public Member[] combineMembersAndProblems(int offsetLimit) {
+        if (members != null && problems != null) {
+            List<Member> accesibleMembers = new ArrayList<Member>();
+
+            for (Member member : members) {
+                if(member.getStartOffset() < offsetLimit) {
+                    accesibleMembers.add(member);
+                }
+            }
+
+            Member[] combined = new Member[accesibleMembers.size() + problems.size()];
+            int index = 0;
+            for (Member member : accesibleMembers) {
+                combined[index++] = member;
+            }
+            for (Problem problem : problems) {
+                combined[index++] = problem;
+            }
+            return combined;
+        } else {
+            throw new IllegalStateException("Can only call when members and problems are non-null arrays");
+        }
+    }
+
     public Member get(int index) {
         return members[index];
     }
@@ -134,7 +160,7 @@ public class RubyMembers {
     public List<Member> getClasses() {
         final List<Member> classes = new ArrayList<Member>();
         visitMembers(new MemberVisitorAdapter() {
-            public void handleClass(org.jedit.ruby.ast.Class classMember) {
+            public void handleClass(org.jedit.ruby.ast.ClassMember classMember) {
                 classes.add(classMember);
             }
         });
@@ -146,4 +172,5 @@ public class RubyMembers {
             member.accept(visitor);
         }
     }
+
 }

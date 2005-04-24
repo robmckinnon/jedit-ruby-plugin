@@ -24,8 +24,6 @@ import projectviewer.event.ProjectViewerEvent;
 import projectviewer.vpt.VPTProject;
 import projectviewer.vpt.VPTGroup;
 import projectviewer.vpt.VPTNode;
-import org.gjt.sp.jedit.Mode;
-import org.gjt.sp.jedit.jEdit;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -38,88 +36,76 @@ public class RubyProjectViewerListener implements ProjectViewerListener {
 
     public void projectLoaded(ProjectViewerEvent event) {
         VPTProject project = event.getProject();
-        RubyPlugin.log("project loaded: " + project.getName());
-//            project.addProjectListener(new RubyProjectListener());
+        RubyPlugin.log("project loaded: " + project.getName(), getClass());
         reparse(project);
     }
 
     public void projectAdded(ProjectViewerEvent event) {
-        RubyPlugin.log("project added: " + event.getProject().getName());
+        VPTProject project = event.getProject();
+        RubyPlugin.log("project added: " + project.getName(), getClass());
         reparse(event.getProject());
     }
 
     public void projectRemoved(ProjectViewerEvent event) {
-        RubyPlugin.log("project removed: " + event.getProject().getName());
-        RubyCache.clear();
-        reparse(event.getProject());
+        VPTProject project = event.getProject();
+        RubyPlugin.log("project removed: " + project.getName(), getClass());
     }
 
     public void groupAdded(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
-        RubyPlugin.log("group added: " + group);
+        RubyPlugin.log("group added: " + group, getClass());
         reparse(event.getProject());
     }
 
     public void groupRemoved(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
-        RubyPlugin.log("group removed: " + group);
+        RubyPlugin.log("group removed: " + group, getClass());
         RubyCache.clear();
         reparse(event.getProject());
     }
 
     public void groupActivated(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
-        RubyPlugin.log("group activated: " + group);
+        RubyPlugin.log("group activated: " + group, getClass());
     }
 
     public void nodeMoved(ProjectViewerEvent event) {
         VPTNode node = (VPTNode) event.getSource();
-        RubyPlugin.log("node moved: " + node);
+        RubyPlugin.log("node moved: " + node, getClass());
     }
 
     public void reparse(VPTProject project) {
         if (project != null) {
             Collection openableNodes = project.getOpenableNodes();
-            RubyPlugin.log("parsing " + openableNodes.size() + " project files: " + project.getName());
+            RubyPlugin.log("parsing " + openableNodes.size() + " project files: " + project.getName(), getClass());
             for (Iterator iterator = openableNodes.iterator(); iterator.hasNext();) {
                 VPTNode node = (VPTNode) iterator.next();
-                RubyPlugin.log("node: " + node.getNodePath());
+                RubyPlugin.log("node: " + node.getNodePath(), getClass());
             }
 
             for (Iterator iterator = openableNodes.iterator(); iterator.hasNext();) {
                 VPTNode node = (VPTNode) iterator.next();
                 String path = node.getNodePath();
-                RubyPlugin.log("parsing: " + path);
+                RubyPlugin.log("parsing: " + path, getClass());
                 try {
                     addFile(path);
                 } catch (Exception e) {
-                    RubyPlugin.error(e.getMessage());
+                    RubyPlugin.error(e.getMessage(), getClass());
                     e.printStackTrace();
                 }
             }
         }
     }
 
-    public void addFile(String path) {
-        Mode rubyMode = jEdit.getMode("ruby");
+    private void addFile(String path) {
         File file = new File(path);
-        if (file.isFile() && rubyMode.accept(path, "")) {
-            String text = getText(path, file);
+
+        if (RubyPlugin.isRubyFile(file)) {
+            String text = RubyPlugin.readFile(file);
             if (text != null) {
                 RubyCache.add(text, path);
             }
         }
-    }
-
-    private String getText(String path, File file) {
-        String text = null;
-//        Buffer buffer = jEdit.getBuffer(path);
-//        if (buffer == null) {
-            text = RubyPlugin.readFile(file);
-//        } else {
-//            text = buffer.getText(0, buffer.getLength());
-//        }
-        return text;
     }
 
 }

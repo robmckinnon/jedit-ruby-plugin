@@ -47,8 +47,10 @@ class RubyNodeVisitor extends AbstractVisitor {
     private List<Member> classes;
     private List<Member> methods;
     private List<RubyParser.WarningListener> problemListeners;
+    private LineCounter lineCounter;
 
-    public RubyNodeVisitor(List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
+    public RubyNodeVisitor(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
+        lineCounter = new LineCounter(text);
         namespaceNames = new ArrayList<String>();
         currentMember = new LinkedList<Member>();
         currentMember.add(new Root(RubyPlugin.getEndOfFileOffset()));
@@ -87,7 +89,7 @@ class RubyNodeVisitor extends AbstractVisitor {
             Node node = (Node) iterator.next();
             visitNode(node);
             if (printNode(node)) {
-                RubyPlugin.log("");
+                RubyPlugin.log("", getClass());
             }
             node.accept(this);
         }
@@ -95,7 +97,7 @@ class RubyNodeVisitor extends AbstractVisitor {
 
     public void visitBlockNode(BlockNode node) {
         visitNode(node);
-        RubyPlugin.log("");
+        RubyPlugin.log("", getClass());
         visitNodeIterator(node.iterator());
     }
 
@@ -124,7 +126,7 @@ class RubyNodeVisitor extends AbstractVisitor {
 
         namespaceNames.remove(moduleName);
         currentMember.removeLast();
-        RubyPlugin.log("]");
+        RubyPlugin.log("]", getClass());
     }
 
     public void visitClassNode(ClassNode node) {
@@ -176,7 +178,7 @@ class RubyNodeVisitor extends AbstractVisitor {
         } else {
             receiverName = "";
         }
-        RubyPlugin.log(": " + receiverName + methodName);
+        RubyPlugin.log(": " + receiverName + methodName, getClass());
 
         currentMember.getLast().addChildMember(method);
         currentMember.add(method);
@@ -215,7 +217,7 @@ class RubyNodeVisitor extends AbstractVisitor {
 
     public void visitScopeNode(ScopeNode node) {
         visitNode(node);
-        RubyPlugin.log("");
+        RubyPlugin.log("", getClass());
         if (node.getBodyNode() != null) {
             node.getBodyNode().accept(this);
         }
@@ -231,28 +233,36 @@ class RubyNodeVisitor extends AbstractVisitor {
 
     public void visitIterNode(IterNode node) {
         visitNode(node);
-        RubyPlugin.log("");
+        RubyPlugin.log("", getClass());
         node.getBodyNode().accept(this);
     }
 
     public void visitFCallNode(FCallNode node) {
         visitNode(node);
-        RubyPlugin.log(": " + node.getName());
+        RubyPlugin.log(": " + node.getName(), getClass());
     }
 
     public void visitClassVarDeclNode(ClassVarDeclNode node) {
         visitNode(node);
-        RubyPlugin.log(": " + node.getName());
+        RubyPlugin.log(": " + node.getName(), getClass());
     }
 
     public void visitClassVarAsgnNode(ClassVarAsgnNode node) {
         visitNode(node);
-        RubyPlugin.log(": " + node.getName());
+        RubyPlugin.log(": " + node.getName(), getClass());
     }
 
     private int getEndOffset(Node node) {
-        int line = node.getPosition().getLine() - 1;
-        return RubyPlugin.getEndOffset(line);
+        return lineCounter.getEndOffset(getEndLine(node));
     }
 
+    private int getEndLine(Node node) {
+        int line = node.getPosition().getLine() - 1;
+        String text = lineCounter.getLine(line);
+        if (text.indexOf("end") == -1 && text.indexOf("}") == -1) {
+            line = node.getPosition().getLine();
+        }
+        return line;
+    }
+    
 }

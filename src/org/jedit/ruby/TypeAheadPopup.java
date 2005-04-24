@@ -25,25 +25,30 @@ import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
-import org.gjt.sp.util.Log;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ast.MemberVisitorAdapter;
 import org.jedit.ruby.icons.MemberIcon;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
 /**
- * Altered version of Slava Pestov's
+ * Majorly altered version of Slava Pestov's
  * org.gjt.sp.jedit.gui.CompleteWord.
  *
  * @author robmckinnon at users,sourceforge,net
  */
 public class TypeAheadPopup extends JWindow {
+
+    public static final PopupState FILE_STRUCTURE_POPUP = new FileStructureState();
+    public static final PopupState SEARCH_POPUP = new SearchState();
+    public static final PopupState FIND_DECLARATION_POPUP = new FindDeclarationState();
 
     private static final String NARROW_LIST_ON_TYPING = "rubyplugin.file-structure-popup.narrow-list-on-typing";
     private static final String SHOW_ALL = "rubyplugin.file-structure-popup.show-all";
@@ -52,6 +57,7 @@ public class TypeAheadPopup extends JWindow {
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
     private static final char BACKSPACE_KEY = (char)-1;
     private static final char ESCAPE_KEY = (char)-2;
+    private static final Border TOP_LINE_BORDER = new TopLineBorder(Color.GRAY);
 
     private Member toParentMember;
     private Member[] members;
@@ -69,44 +75,24 @@ public class TypeAheadPopup extends JWindow {
     private int mismatchCharacters;
     private boolean handleFocusOnDispose;
     private boolean narrowListOnTyping;
-    private boolean showAllMembers;
-    private boolean showFileStructure;
     private char narrowListMnemonic;
     private char showAllMnemonic;
     private JCheckBox showAllCheckBox;
     private JCheckBox narrowListCheckBox;
-    private boolean searchDocumentation;
+    private boolean allHaveSameName;
+    private PopupState state;
 
-
-    /**
-     * Use when displaying RDoc search choices.
-     */
-    public TypeAheadPopup(View editorView, Member[] displayMembers, Point location) {
-        this(editorView, displayMembers, displayMembers[0], location, true);
+    public TypeAheadPopup(View view, Member[] members, Member selectedMember, PopupState state) {
+        this(view, members, members, null, selectedMember, null, state);
     }
 
-    /**
-     * Use when not displaying file structure.
-     */
-    public TypeAheadPopup(View editorView, Member[] displayMembers, Member selectedMember, Point location, boolean searchResults) {
-        this(editorView, displayMembers, displayMembers, null, selectedMember, location, false, searchResults);
-    }
-
-    /**
-     * Use when displaying file structure.
-     */
-    public TypeAheadPopup(View editorView, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location) {
-        this(editorView, displayMembers, displayMembers, parentMembers, selectedMember, location, true, false);
-    }
-
-    private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location, boolean showStructure, boolean searchResults) {
+    private TypeAheadPopup(View editorView, Member[] originalMembers, Member[] displayMembers, LinkedList<Member[]> parentMembers, Member selectedMember, Point location, PopupState state) {
         super(editorView);
-        RubyPlugin.log("selected is: " + String.valueOf(selectedMember));
+        RubyPlugin.log("selected is: " + String.valueOf(selectedMember), getClass());
 
+        this.state = state;
         view = editorView;
         textArea = editorView.getTextArea();
-        showFileStructure = showStructure;
-        searchDocumentation = searchResults;
 
         if (parentMembers != null) {
             parentsList = parentMembers;
@@ -123,14 +109,8 @@ public class TypeAheadPopup extends JWindow {
 
         narrowListOnTyping = jEdit.getBooleanProperty(NARROW_LIST_ON_TYPING, false);
 
-        if(showFileStructure) {
-            showAllMembers = jEdit.getBooleanProperty(SHOW_ALL, false);
-        } else {
-            showAllMembers = false;
-        }
-
         this.originalMembers = originalMembers;
-        if(showAllMembers) {
+        if (state.showAllMembers()) {
             members = getExpandedMembers(displayMembers);
         } else {
             members = displayMembers;
@@ -153,12 +133,16 @@ public class TypeAheadPopup extends JWindow {
             searchLabel = new JLabel("");
             searchLabel.setOpaque(true);
             searchLabel.setBackground(Color.white);
+            searchLabel.setBorder(TOP_LINE_BORDER);
 
-            JPanel topPanel = new JPanel(new GridLayout(2, 1));
+            JPanel topPanel;
 
-            if (showFileStructure) {
+            if (state.displayShowAllCheckBox()) {
+                topPanel = new JPanel(new GridLayout(2, 1));
                 showAllCheckBox = initShowAllCheckBox();
                 topPanel.add(showAllCheckBox);
+            } else {
+                topPanel = new JPanel(new GridLayout(1, 1));
             }
 
             narrowListCheckBox = initNarrowListCheckBox();
@@ -169,13 +153,20 @@ public class TypeAheadPopup extends JWindow {
             panel.add(searchLabel, BorderLayout.SOUTH);
             JScrollPane scroller = new JScrollPane(popupList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-            setContentPane(new NonTraversablePanel(new BorderLayout()));
+            NonTraversablePanel contentPane = new NonTraversablePanel(new BorderLayout());
+            contentPane.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+            setContentPane(contentPane);
             getContentPane().add(panel, BorderLayout.NORTH);
             getContentPane().add(scroller);
 
             putFocusOnPopup();
             pack();
-            setLocation(position);
+
+            if (position == null) {
+                setLocationRelativeTo(view);
+            } else {
+                setLocation(position);
+            }
             super.setVisible(true);
             Object selectedValue = popupList.getSelectedValue();
             popupList.setSelectedIndex(0);
@@ -207,7 +198,7 @@ public class TypeAheadPopup extends JWindow {
     private JCheckBox initShowAllCheckBox() {
         String label = jEdit.getProperty("ruby.file-structure-popup.show-all.label");
         showAllMnemonic = jEdit.getProperty("ruby.file-structure-popup.show-all.mnemonic").charAt(0);
-        final JCheckBox checkBox = new JCheckBox(label, showAllMembers);
+        final JCheckBox checkBox = new JCheckBox(label, state.showAllMembers());
         checkBox.setMnemonic(showAllMnemonic);
         checkBox.setFocusable(false);
         checkBox.addActionListener(new ActionListener() {
@@ -220,10 +211,9 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private void setShowAllMembers(boolean selected) {
-        showAllMembers = selected;
-        jEdit.setProperty(SHOW_ALL, Boolean.toString(showAllMembers));
+        jEdit.setProperty(SHOW_ALL, Boolean.toString(selected));
         dispose();
-        new TypeAheadPopup(view, originalMembers, originalMembers, null, (Member)popupList.getSelectedValue(), position, true, searchDocumentation);
+        new TypeAheadPopup(view, originalMembers, originalMembers, null, (Member)popupList.getSelectedValue(), position, state);
     }
 
     private void putFocusOnPopup() {
@@ -233,16 +223,17 @@ public class TypeAheadPopup extends JWindow {
     private JList initPopupList(Member selectedMember) {
         int selectedIndex = getSelectedIndex(selectedMember, members);
 
-        if(selectedIndex != -1) {
+        if (selectedIndex != -1) {
             boolean parentLinkAtTop = selectedMember != null
-                                && selectedMember.hasParentMember()
-                                && !showAllMembers
-                                && showFileStructure;
+                    && selectedMember.hasParentMember()
+                    && !state.showAllMembers()
+                    && state == FILE_STRUCTURE_POPUP;
             if (parentLinkAtTop) {
                 selectedIndex++;
             }
             return initPopupList(selectedIndex);
         } else {
+            RubyPlugin.error("couldn't find selected member " + selectedMember.getName(), getClass());
             return null;
         }
     }
@@ -263,7 +254,7 @@ public class TypeAheadPopup extends JWindow {
                         handleFocusOnDispose = false;
                         dispose();
                         parentsList.add(members);
-                        new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position, true, searchDocumentation);
+                        new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position, state);
                         selectedIndex = -1;
                         break;
                     }
@@ -283,7 +274,7 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private Member[] initDisplayMembers(Member[] members, LinkedList<Member[]> parentsList) {
-        if (!showAllMembers) {
+        if (!state.showAllMembers()) {
             if (parentsList.size() > 0) {
                 Member parentMember = members[0].getParentMember();
                 toParentMember = parentMember;
@@ -300,9 +291,9 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private void populateMemberList(Member[] members, List<Member> memberList) {
-        for(Member member : members) {
+        for (Member member : members) {
             memberList.add(member);
-            if(member.hasChildMembers()) {
+            if (member.hasChildMembers()) {
                 populateMemberList(member.getChildMembers(), memberList);
             }
         }
@@ -314,7 +305,7 @@ public class TypeAheadPopup extends JWindow {
 
         list.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
-                handleSelection((Member) popupList.getSelectedValue(), true);
+                handleSelection((Member)popupList.getSelectedValue(), true);
             }
         });
 
@@ -334,42 +325,19 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private void handleSelection(Member member, boolean showMenu) {
-        if (member == toParentMember && showMenu) {
-            handleFocusOnDispose = false;
-            dispose();
-            Member[] members = parentsList.removeLast();
-            new TypeAheadPopup(view, originalMembers, members, parentsList, member, position, true, searchDocumentation);
-
-        } else if (member.hasChildMembers() && showMenu && !showAllMembers) {
-            Member[] childMembers = member.getChildMembers();
-            handleFocusOnDispose = false;
-            dispose();
-            parentsList.add(members);
-            new TypeAheadPopup(view, originalMembers, childMembers, parentsList, null, position, true, searchDocumentation);
-
-        } else if (showFileStructure) {
-            Buffer buffer = view.getBuffer();
-            goToMember(member, buffer);
-        } else if (searchDocumentation) {
-            dispose();
-            RDocSeacher.doSearch(view, member.getName());
-        } else {
-            member.accept(new MemberVisitorAdapter() {
-                public void handleMethod(Method method) {
-                    String path = method.getFilePath();
-                    Buffer buffer = jEdit.getBuffer(path);
-                    goToMember(method, buffer);
-                }
-            });
-        }
+        state.handleSelection(member, showMenu, this, view);
     }
 
     private void goToMember(Member member, Buffer buffer) {
-        int offset = member.getStartOffset();
-        RubyPlugin.log(member + ": " + offset);
-        view.goToBuffer(buffer);
-        view.getTextArea().setCaretPosition(offset);
         dispose();
+        int offset = member.getStartOffset();
+        RubyPlugin.log(member + ": " + offset, getClass());
+        view.goToBuffer(buffer);
+        if(offset > buffer.getLength()) {
+            offset = buffer.getLength();
+        }
+        JEditTextArea textArea = view.getTextArea();
+        textArea.setCaretPosition(offset);
     }
 
     private void updateMatchedMembers(char typed) {
@@ -437,7 +405,7 @@ public class TypeAheadPopup extends JWindow {
     private void setNarrowListOnTyping(boolean narrow) {
         narrowListOnTyping = narrow;
         jEdit.setProperty(NARROW_LIST_ON_TYPING, Boolean.toString(narrow));
-        if(searchText.length() > 0) {
+        if (searchText.length() > 0) {
             updateMatchedMembers(' '); // naive refresh
             updateMatchedMembers(BACKSPACE_KEY);
         }
@@ -449,7 +417,7 @@ public class TypeAheadPopup extends JWindow {
 
         for (Member member : displayMembers) {
             if (member == toParentMember) {
-                if(UP_TO_PARENT_TEXT.startsWith(text)) {
+                if (UP_TO_PARENT_TEXT.startsWith(text)) {
                     visibleMembers.add(member);
                 }
             } else if (member.getFullName().toLowerCase().startsWith(text) ||
@@ -458,10 +426,39 @@ public class TypeAheadPopup extends JWindow {
             }
         }
 
+        allHaveSameName = visibleMembers.size() > 1;
+        String name = null;
+        for (Member member : visibleMembers) {
+            if (name != null) {
+                allHaveSameName = allHaveSameName && name.equals(member.getFullName());
+            }
+            name = member.getFullName();
+        }
+
         return visibleMembers;
     }
 
-    class KeyHandler extends KeyAdapter {
+    private static class TopLineBorder extends LineBorder {
+        public TopLineBorder(Color color) {
+            super(color);
+        }
+
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Color oldColor = g.getColor();
+            int i;
+            g.setColor(lineColor);
+            for (i = 0; i < thickness; i++) {
+                int newWidth = width - i - i - 1;
+                int x1 = x + i;
+                int y1 = y + i;
+                int x2 = x1 + newWidth;
+                g.drawLine(x1, y1, x2, y1);
+            }
+            g.setColor(oldColor);
+        }
+    }
+
+    private class KeyHandler extends KeyAdapter {
 
         public void keyPressed(KeyEvent event) {
             switch (event.getKeyCode()) {
@@ -503,15 +500,15 @@ public class TypeAheadPopup extends JWindow {
                     handleSelection(event, false);
 
                 default:
-                    if(event.isAltDown() || event.isMetaDown()) {
+                    if (event.isAltDown() || event.isMetaDown()) {
                         char keyChar = event.getKeyChar();
                         if (keyChar == narrowListMnemonic) {
                             narrowListCheckBox.setSelected(!narrowListOnTyping);
                             setNarrowListOnTyping(!narrowListOnTyping);
                             event.consume();
                         } else if (keyChar == showAllMnemonic) {
-                            showAllCheckBox.setSelected(!showAllMembers);
-                            setShowAllMembers(!showAllMembers);
+                            showAllCheckBox.setSelected(!state.showAllMembers());
+                            setShowAllMembers(!state.showAllMembers());
                             event.consume();
                         }
                     }
@@ -535,7 +532,6 @@ public class TypeAheadPopup extends JWindow {
         }
 
         private void handleBackSpacePressed(KeyEvent event) {
-            RubyPlugin.log("handle backspace pressed");
             if (searchText.length() != 0) {
                 updateMatchedMembers(BACKSPACE_KEY);
             }
@@ -618,48 +614,109 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
-    class NonTraversablePanel extends JPanel {
-        public NonTraversablePanel(LayoutManager layout) {
-            super(layout);
-        }
-
-        /**
-         * Returns false to indicate this component can't
-         * be traversed by pressing the Tab key.
-         */
-        public boolean isManagingFocus() {
-            return false;
-        }
-
-        /**
-         * Makes the tab key work in Java 1.4.
-         */
-        public boolean getFocusTraversalKeysEnabled() {
-            return false;
-        }
-    }
-
     private class PopupListCellRenderer extends DefaultListCellRenderer {
 
         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus);
 
             Member member = (Member)value;
-            if(member == toParentMember) {
-                setText("[ " + UP_TO_PARENT_TEXT + " ]");
-            } else if (showAllMembers) {
-                StringBuffer buffer = new StringBuffer();
-                for (int i = 0; i < member.getParentCount(); i++) {
-                    buffer.append("  ");
-                }
-                buffer.append(member.getFullName());
-                setText(buffer.toString());
+            StringBuffer buffer = new StringBuffer();
+
+            if (member == toParentMember) {
+                buffer.append("[ " + UP_TO_PARENT_TEXT + " ]");
             } else {
-                setText(value.toString());
+                if (state.showAllMembers()) {
+                    for (int i = 0; i < member.getParentCount(); i++) {
+                        buffer.append("  ");
+                    }
+                    buffer.append(member.getFullName());
+                } else {
+                    buffer.append(member.getFullName());
+                }
+
+                if (allHaveSameName && member.hasParentMember()) {
+                    buffer.append(" (" + member.getParentMember().getFullName() + ")");
+                }
             }
+
+            setText(buffer.toString());
             MemberIcon memberIcon = new MemberIcon(member);
             setIcon(memberIcon.getIcon());
             return this;
         }
     }
+
+    private interface PopupState {
+        void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view);
+
+        boolean showAllMembers();
+
+        boolean displayShowAllCheckBox();
+    }
+
+    private static class FileStructureState implements PopupState {
+        public void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view) {
+            if (member == popup.toParentMember && showMenu) {
+                popup.handleFocusOnDispose = false;
+                popup.dispose();
+                Member[] members = popup.parentsList.removeLast();
+                new TypeAheadPopup(view, popup.originalMembers, members, popup.parentsList, member, popup.position, popup.state);
+
+            } else if (member.hasChildMembers() && showMenu && !showAllMembers()) {
+                Member[] childMembers = member.getChildMembers();
+                popup.handleFocusOnDispose = false;
+                popup.dispose();
+                popup.parentsList.add(popup.members);
+                new TypeAheadPopup(view, popup.originalMembers, childMembers, popup.parentsList, null, popup.position, popup.state);
+
+            } else {
+                Buffer buffer = view.getBuffer();
+                popup.goToMember(member, buffer);
+            }
+        }
+
+        public boolean showAllMembers() {
+            return jEdit.getBooleanProperty(SHOW_ALL, false);
+        }
+
+        public boolean displayShowAllCheckBox() {
+            return true;
+        }
+    }
+
+    private static class FindDeclarationState implements PopupState {
+        public void handleSelection(Member member, boolean showMenu, final TypeAheadPopup popup, final View view) {
+            member.accept(new MemberVisitorAdapter() {
+                public void handleMethod(Method method) {
+                    String path = method.getFilePath();
+                    Buffer buffer = jEdit.openFile(view, path);
+                    popup.goToMember(method, buffer);
+                }
+            });
+        }
+
+        public boolean showAllMembers() {
+            return false;
+        }
+
+        public boolean displayShowAllCheckBox() {
+            return false;
+        }
+    }
+
+    private static class SearchState implements PopupState {
+        public void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view) {
+            popup.dispose();
+            RDocSeacher.doSearch(view, member.getName());
+        }
+
+        public boolean showAllMembers() {
+            return false;
+        }
+
+        public boolean displayShowAllCheckBox() {
+            return false;
+        }
+    }
+
 }

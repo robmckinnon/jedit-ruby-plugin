@@ -23,14 +23,16 @@ import java.util.*;
 
 /**
  * Ruby file structure member
+ *
  * @author robmckinnon at users.sourceforge.net
  */
 public abstract class Member implements Comparable<Member> {
 
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
+
     private String receiverName;
-    private int parentCount;
     private List<Member> parentPath;
+    private int parentCount;
 
     private Member parentMember;
     private List<Member> childMembers;
@@ -38,19 +40,17 @@ public abstract class Member implements Comparable<Member> {
     private String namespace;
     private String name;
     private String shortName;
+    private int startOuterOffset;
     private int startOffset;
     private int endOffset;
 
-    public Member(String name, int startOffset) {
-        this(name, startOffset, startOffset);
-    }
-
-    public Member(String name, int startOffset, int endOffset) {
+    public Member(String name, int startOuterOffset, int startOffset) {
         parentCount = -1;
         this.name = name;
         this.startOffset = startOffset;
-        this.endOffset = endOffset;
-        this.shortName = (new StringTokenizer(name, " (")).nextToken();
+        this.startOuterOffset = startOuterOffset;
+        this.endOffset = startOffset;
+        shortName = (new StringTokenizer(name, " (")).nextToken();
     }
 
     public int compareTo(Member member) {
@@ -77,7 +77,7 @@ public abstract class Member implements Comparable<Member> {
 
     public void setReceiver(String receiverName) {
         this.receiverName = receiverName;
-        if(name.startsWith(receiverName)) {
+        if (name.startsWith(receiverName)) {
             name = name.substring(name.indexOf('.') + 1);
         }
     }
@@ -87,8 +87,8 @@ public abstract class Member implements Comparable<Member> {
      * namespace or receiver prefix.
      */
     public String getFullName() {
-        if(namespace == null) {
-            if(receiverName == null) {
+        if (namespace == null) {
+            if (receiverName == null) {
                 return name;
             } else {
                 return receiverName + '.' + name;
@@ -120,6 +120,10 @@ public abstract class Member implements Comparable<Member> {
         return name;
     }
 
+    public int getStartOuterOffset() {
+        return startOuterOffset;
+    }
+
     public int getStartOffset() {
         return startOffset;
     }
@@ -135,16 +139,16 @@ public abstract class Member implements Comparable<Member> {
      */
     public boolean equals(Object obj) {
         boolean equal = false;
-        if(obj instanceof Member) {
-            Member member = ((Member) obj);
+        if (obj instanceof Member) {
+            Member member = ((Member)obj);
             boolean displayNamesEqual = getFullName().equals(member.getFullName());
 
             if (displayNamesEqual) {
-               if (hasParentMember()) {
-                   equal = parentMember.equals(member.getParentMember());
-               } else {
-                   equal = true;
-               }
+                if (hasParentMember()) {
+                    equal = parentMember.equals(member.getParentMember());
+                } else {
+                    equal = true;
+                }
             }
         }
         return equal;
@@ -167,7 +171,7 @@ public abstract class Member implements Comparable<Member> {
     }
 
     public Member[] getChildMembers() {
-        if(hasChildMembers()) {
+        if (hasChildMembers()) {
             return childMembers.toArray(EMPTY_MEMBER_ARRAY);
         } else {
             return null;
@@ -179,7 +183,7 @@ public abstract class Member implements Comparable<Member> {
     }
 
     public void addChildMember(Member member) {
-        if(childMembers == null) {
+        if (childMembers == null) {
             childMembers = new ArrayList<Member>();
         }
         childMembers.add(member);
@@ -191,7 +195,7 @@ public abstract class Member implements Comparable<Member> {
     }
 
     public Member getTopMostParent() {
-        if(hasParentMember()) {
+        if (hasParentMember()) {
             return getTopMostParentOrSelf(getParentMember());
         } else {
             return null;
@@ -210,17 +214,17 @@ public abstract class Member implements Comparable<Member> {
      * Returns list of member parent hierarchy
      * starting with top most parent, ending
      * with the member itself.
-     *
+     * <p/>
      * If this member has no parent, the list only
      * contains this member.
-     */ 
+     */
     public List<Member> getMemberPath() {
         if (parentPath == null) {
             List<Member> path = new ArrayList<Member>();
             Member current = this;
             path.add(current);
 
-            while(current.hasParentMember()) {
+            while (current.hasParentMember()) {
                 current = current.getParentMember();
                 path.add(current);
             }

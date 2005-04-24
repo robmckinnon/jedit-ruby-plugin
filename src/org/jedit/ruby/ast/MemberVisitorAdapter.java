@@ -26,7 +26,7 @@ public class MemberVisitorAdapter implements MemberVisitor {
     public void handleModule(Module module) {
     }
 
-    public void handleClass(Class classMember) {
+    public void handleClass(ClassMember classMember) {
     }
 
     public void handleMethod(Method method) {

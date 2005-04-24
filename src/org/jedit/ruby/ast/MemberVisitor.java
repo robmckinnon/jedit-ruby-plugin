@@ -23,9 +23,15 @@ package org.jedit.ruby.ast;
  * @author robmckinnon at users.sourceforge.net
  */
 public interface MemberVisitor {
-    public void handleModule(Module module);
-    public void handleClass(Class classMember);
-    public void handleMethod(Method method);
-    public void handleWarning(Warning warning);
-    public void handleError(Error warning);
+
+    void handleModule(Module module);
+
+    void handleClass(ClassMember classMember);
+
+    void handleMethod(Method method);
+
+    void handleWarning(Warning warning);
+
+    void handleError(Error warning);
+
 }

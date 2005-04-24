@@ -22,7 +22,6 @@ package org.jedit.ruby;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Buffer;
-import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 
 import java.util.List;
@@ -42,10 +41,6 @@ public class RubyCompletion extends SideKickCompletion {
         methods = completor.getMethods();
     }
 
-    public void insert(int index) {
-        insert(methods.get(index),'\n');
-    }
-
     public int getTokenLength() {
         String partialMethod = completor.getPartialMethod();
         if(partialMethod == null) {
@@ -56,14 +51,32 @@ public class RubyCompletion extends SideKickCompletion {
     }
 
     public boolean handleKeystroke(int selectedIndex, char keyChar) {
-        RubyPlugin.log("selected: " + selectedIndex);
-        RubyPlugin.log("key: " + keyChar);
-        return insert(methods.get(selectedIndex), keyChar);
+        switch(keyChar) {
+            case ' ': case '\t': case '\n':
+                // execute below code
+                break;
+            default:
+                view.getTextArea().userInput(keyChar);
+                return true;
+        }
+
+        RubyPlugin.log("selected: " + selectedIndex, getClass());
+        RubyPlugin.log("key: " + keyChar, getClass());
+        if(selectedIndex != -1)
+            insert(methods.get(selectedIndex), keyChar);
+        else
+            view.getTextArea().userInput(keyChar);
+
+        return false;
     }
 
-    private boolean insert(Method method, char keyChar) {
+    public void insert(int index) {
+        insert(methods.get(index),'\n');
+    }
+
+    private void insert(Method method, char keyChar) {
         Buffer buffer = view.getBuffer();
-        RubyPlugin.log("method: " + method.getName());
+        RubyPlugin.log("method: " + method.getName(), getClass());
         int caretPosition = view.getTextArea().getCaretPosition();
         int offset = caretPosition;
         String partialMethod = completor.getPartialMethod();
@@ -74,7 +87,6 @@ public class RubyCompletion extends SideKickCompletion {
         }
 
         buffer.insert(offset, method.getName());
-        return true;
     }
 
     public int size() {
@@ -84,6 +96,5 @@ public class RubyCompletion extends SideKickCompletion {
     public Object get(int index) {
         return methods.get(index);
     }
-
 
 }

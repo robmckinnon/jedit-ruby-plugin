@@ -23,10 +23,18 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 import org.jedit.ruby.parser.JRubyParser;
+import org.jedit.ruby.ri.ClassDescription;
+import org.jedit.ruby.ri.MethodDescription;
+import org.jedit.ruby.ast.*;
 
 import javax.swing.SwingUtilities;
+import javax.swing.JOptionPane;
 import java.io.*;
 import java.awt.Point;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.jar.JarInputStream;
+import java.util.jar.JarEntry;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -36,34 +44,140 @@ public class RubyPlugin extends EditPlugin {
     private static boolean debug = System.getProperty("user.home").equals("/home/a");
     private static final String RUBY_DIR = "ruby";
 
+    public void stop() {
+        super.stop();
+    }
+
     public void start() {
         super.start();
         JRubyParser.setExpectedLabel(jEdit.getProperty("ruby.syntax-error.expected.label"));
         JRubyParser.setFoundLabel(jEdit.getProperty("ruby.syntax-error.found.label"));
         JRubyParser.setNothingLabel(jEdit.getProperty("ruby.syntax-error.nothing.label"));
+        parseRdoc();
     }
 
-    public void stop() {
-        super.stop();
+    private void parseRdoc() {
+        log("parsing RDoc from jar");
+        List<JarEntry> entries = getEntries();
+        for (JarEntry entry : entries) {
+            loadClassDesciption(entry);
+        }
     }
 
-    public static void log(String message) {
+    private void loadClassDesciption(JarEntry entry) {
+        String name = entry.getName();
+        log(name);
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream(name);
+        ObjectInputStream input = null;
+        try {
+            input = new ObjectInputStream(inputStream);
+            ClassDescription result = (ClassDescription)input.readObject();
+            cache(result);
+        } catch (Exception e) {
+            error(e, getClass());
+        } finally {
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (IOException e) {
+                error(e, getClass());
+            }
+        }
+    }
+
+    private List<JarEntry> getEntries() {
+        List<JarEntry> entries = new ArrayList<JarEntry>();
+        try {
+            File file = getJarFile();
+            log(file.getName());
+            JarInputStream jar = new JarInputStream(new FileInputStream(file));
+            JarEntry entry = jar.getNextJarEntry();
+            while(entry != null) {
+                if(!entry.isDirectory() && entry.getName().endsWith(".dat")) {
+                    log(entry.getName());
+                    entries.add(entry);
+                }
+                entry = jar.getNextJarEntry();
+            }
+        } catch (IOException e) {
+            error(e, getClass());
+        }
+        return entries;
+    }
+
+    private File getJarFile() {
+        File file = getJarFile(jEdit.getSettingsDirectory());
+        if(!file.exists()) {
+            file = getJarFile(jEdit.getJEditHome());
+        }
+        return file;
+    }
+
+    private File getJarFile(String directory) {
+        File dir = new File(directory, "jars");
+        File file = new File(dir, "RubyPlugin.jar");
+        return file;
+    }
+
+    private void cache(ClassDescription result) {
+        ClassMember parent = new ClassMember(result.getName(), 0, 0);
+        parent.setNamespace(null);
+        parent.setParentMember(null);
+        parent.setReceiver("");
+        parent.setEndOffset(0);
+
+        addMethods(result.getInstanceMethods(), parent);
+        addMethods(result.getClassMethods(), parent);
+        Member[] members = new Member[1];
+        members[0] = parent;
+        RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>());
+        RubyCache.add(rubyMembers, "1.8/system");
+    }
+
+    private void addMethods(List<MethodDescription> methods, ClassMember parent) {
+        for (MethodDescription methodDescription : methods) {
+            String name = methodDescription.getName();
+            name = name.startsWith(".") ? name.substring(1) : name;
+            Method method = new Method(name, "", "", 0, 0, methodDescription.isClassMethod());
+            method.setNamespace(null);
+            method.setParentMember(null);
+            method.setReceiver("");
+            method.setEndOffset(0);
+            parent.addChildMember(method);
+        }
+    }
+
+    private static void log(String message) {
+        log(message, RubyPlugin.class);
+    }
+
+    public static void log(String message, Class clas) {
         if(debug) {
             try {
-                Log.log(Log.MESSAGE, jEdit.getPlugin("RubyPlugin"), message);
+                Log.log(Log.MESSAGE, clas, message);
             } catch (Exception e) {
                 System.out.println(message);
             }
         }
     }
 
-    public static void error(String message) {
+    public static void error(Exception e, Class clas) {
+        String message = e.getClass().getName();
+        message = message.substring(message.lastIndexOf('.') + 1);
+        if(e.getMessage() != null && e.getMessage().length() > 0) {
+            message += ": " + e.getMessage();
+        }
+        e.printStackTrace();
+        error(message, clas);
+    }
+
+    public static void error(String message, Class clas) {
         try {
-            EditPlugin plugin = jEdit.getPlugin("RubyPlugin");
-            Log.log(Log.ERROR, plugin, message);
+            Log.log(Log.ERROR, clas, message);
             View view = jEdit.getActiveView();
             if (view != null) {
-                Macros.message(view, message);
+//                show("", message, view, JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
             System.err.println(message);
@@ -73,21 +187,22 @@ public class RubyPlugin extends EditPlugin {
     public static int getNonSpaceStartOffset(int line) {
         int offset = 0;
         View view = jEdit.getActiveView();
-        if (view != null) {
-            Buffer buffer = view.getBuffer();
-            if (buffer != null) {
-                offset = buffer.getLineStartOffset(line);
-                int end = buffer.getLineEndOffset(line);
-                String text = buffer.getLineText(line);
 
-                if(text.length() > 0) {
-                    int index = 0;
-                    while ((text.charAt(index) == ' ' || text.charAt(index) == '\t')
-                            && (offset - index) < end) {
-                        index++;
-                    }
-                    offset += index;
+        if (view != null && view.getBuffer() != null) {
+            Buffer buffer = view.getBuffer();
+            offset = buffer.getLineStartOffset(line);
+            int end = buffer.getLineEndOffset(line);
+            String text = buffer.getLineText(line);
+            int length = text.length();
+
+            if (length > 0) {
+                int index = 0;
+                while (index < length
+                        && (text.charAt(index) == ' ' || text.charAt(index) == '\t')
+                        && (offset - index) < end) {
+                    index++;
                 }
+                offset += index;
             }
         }
 
@@ -141,12 +256,10 @@ public class RubyPlugin extends EditPlugin {
                     buffer.append(chars, 0, length);
                 }
             } catch (IOException e) {
-                error(e.getMessage());
-                e.printStackTrace();
+                error(e, RubyPlugin.class);
             }
         } catch (FileNotFoundException e) {
-            error(e.getMessage());
-            e.printStackTrace();
+            error(e, RubyPlugin.class);
         }
 
         return buffer.toString();
@@ -175,4 +288,29 @@ public class RubyPlugin extends EditPlugin {
         Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
         return location;
     }
+
+    public static boolean isRubyFile(Buffer buffer) {
+        return isRubyFile(new File(buffer.getPath()));
+    }
+
+    public static boolean isRubyFile(File file) {
+        Mode rubyMode = jEdit.getMode("ruby");
+        return file.isFile() && rubyMode.accept(file.getPath(), "");
+    }
+
+    public static void showMessage(String titleKey, String messageKey, View view) {
+        String title = titleKey == null ? null : jEdit.getProperty(titleKey);
+        String message = jEdit.getProperty(messageKey);
+        show(title, message, view, JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public static void showMessage(String messageKey, View view) {
+        showMessage(null, messageKey, view);
+    }
+
+    private static void show(String title, String message, View view, int type) {
+        GUIUtilities.hideSplashScreen();
+        JOptionPane.showMessageDialog(view, message, title, type);
+    }
+
 }

@@ -37,14 +37,16 @@ interface MemberMatcher {
 
     List<Match> getMatches(String text) throws REException;
 
-    Member createMember(String name, String filePath, int index);
+    Member createMember(String name, String filePath, int startOuterOffset, int startOffset);
 
     static class Match {
         String value;
+        int startOuterOffset;
         int startOffset;
 
-        public Match(String value, int startOffset) {
+        public Match(String value, int startOuterOffset, int startOffset) {
             this.value = value;
+            this.startOuterOffset = startOuterOffset;
             this.startOffset = startOffset;
         }
     }
@@ -55,8 +57,8 @@ interface MemberMatcher {
             return getMatchList("([ ]*)(module[ ]+)(\\w+[^;\\s]*)", text);
         }
 
-        public Member createMember(String name, String filePath, int index) {
-            return new Module(name, index);
+        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {
+            return new Module(name, startOuterOffset, startOffset);
         }
     }
 
@@ -66,9 +68,9 @@ interface MemberMatcher {
             return getMatchList("([ ]*)(class[ ]+)(\\w+.*)", text);
         }
 
-        public Member createMember(String name, String filePath, int index) {
-            RubyPlugin.log("class: " + name);
-            return new org.jedit.ruby.ast.Class(name, index);
+        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {
+            RubyPlugin.log("class: " + name, getClass());
+            return new ClassMember(name, startOuterOffset, startOffset);
         }
     }
 
@@ -78,9 +80,9 @@ interface MemberMatcher {
             return getMatchList("([ ]*)(def[ ]+)(.*)", text);
         }
 
-        public Member createMember(String name, String filePath, int index) {
+        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {
             String fileName = (new File(filePath)).getName();
-            return new Method(name, filePath, fileName, index);
+            return new Method(name, filePath, fileName, startOuterOffset, startOffset, false);
         }
     }
 
@@ -99,8 +101,9 @@ interface MemberMatcher {
             for(REMatch reMatch : matches) {
                 if(onlySpacesBeforeMatch(reMatch, text, start)) {
                     String value = reMatch.toString(3).trim();
-                    int index = reMatch.getStartIndex(3);
-                    Match match = new Match(value, index);
+                    int startOuterOffset = reMatch.getStartIndex(1);
+                    int startIndex = reMatch.getStartIndex(3);
+                    Match match = new Match(value, startOuterOffset, startIndex);
                     matchList.add(match);
                     start = text.indexOf(reMatch.toString()) + reMatch.toString().length();
                 }

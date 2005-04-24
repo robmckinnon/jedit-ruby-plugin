@@ -86,6 +86,7 @@
 				<include name="services.xml"/>
 				<include name="**/*.props"/>
 				<include name="**/*.html"/>
+				<include name="**/*.dat"/>
 			</fileset>
 		</jar>
 	</target>
@@ -117,7 +118,8 @@
 		<delete>
 			<fileset dir="." includes="**/*~" defaultexcludes="no"/>
 <!-- 			<fileset dir="." includes="**/*.html" defaultexcludes="no"/>
- -->		</delete>
+ -->		
+ 		</delete>
 	</target>
 
 </project>

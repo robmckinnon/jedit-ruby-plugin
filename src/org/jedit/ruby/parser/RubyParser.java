@@ -20,14 +20,18 @@
 package org.jedit.ruby.parser;
 
 import gnu.regexp.REException;
-
-import java.util.*;
-
-import org.jruby.lexer.yacc.SourcePosition;
 import org.gjt.sp.jedit.View;
-import org.jedit.ruby.ast.*;
-import org.jedit.ruby.ast.RubyMembers;
+import org.gjt.sp.jedit.Buffer;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.ast.*;
+import org.jedit.ruby.ast.Error;
+import org.jruby.lexer.yacc.SourcePosition;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.io.File;
 
 /**
  * <p>Parses ruby file.</p>
@@ -49,24 +53,28 @@ public class RubyParser {
     private final MemberMatcher classMatcher;
     private final MemberMatcher methodMatcher;
 
-    private Map<String, Integer> fileToLengthMap;
-    private Map<String, Member[]> fileToMembersMap;
-//    private String lastFilePath;
-//    private Member[] lastMembers;
-//    private int lastTextLength;
+    private Map<File, Long> fileToLastModified;
+    private Map<File, String> fileToOldText;
+    private Map<File, Member[]> fileToMembers;
+    private Map<File, RubyMembers> fileToLastGoodMembers;
+    private Map<File, List<Problem>> fileToProblems;
 
     private RubyParser() {
         logListener = new LogWarningListener();
         moduleMatcher = new MemberMatcher.ModuleMatcher();
         classMatcher = new MemberMatcher.ClassMatcher();
         methodMatcher = new MemberMatcher.MethodMatcher();
-        fileToLengthMap = new HashMap<String, Integer>();
-        fileToMembersMap = new HashMap<String, Member[]>();
+        fileToLastModified = new HashMap<File, Long>();
+        fileToOldText = new HashMap<File, String>();
+        fileToMembers = new HashMap<File, Member[]>();
+        fileToLastGoodMembers = new HashMap<File, RubyMembers>();
+        fileToProblems = new HashMap<File, List<Problem>>();
     }
 
     public static RubyMembers getMembers(View view) {
         String text = view.getTextArea().getText();
-        String filePath = view.getBuffer().getPath();
+        Buffer buffer = view.getBuffer();
+        String filePath = buffer.getPath();
         return getMembers(text, filePath);
     }
 
@@ -82,26 +90,51 @@ public class RubyParser {
         return instance.createMembersAsList(text, filePath, listener);
     }
 
-    private synchronized RubyMembers createMembers(String text, String filePath, WarningListener listener, boolean forceReparse) {
+    public static boolean hasLastGoodMembers(Buffer buffer) {
+        return instance.hasLastGoodMembers(buffer.getPath());
+    }
+
+    public static RubyMembers getLastGoodMembers(Buffer buffer) {
+        return instance.getLastGoodMembers(buffer.getPath());
+    }
+
+    private synchronized boolean hasLastGoodMembers(String path) {
+        return fileToLastGoodMembers.containsKey(new File(path));
+    }
+
+    private synchronized RubyMembers getLastGoodMembers(String path) {
+        return fileToLastGoodMembers.get(new File(path));
+    }
+
+    private synchronized RubyMembers createMembers(String text, String path, WarningListener listener, boolean forceReparse) {
         Member[] members;
+        List<Problem> problems;
+        File file = new File(path);
 
         if(!forceReparse
-                && fileToMembersMap.containsKey(filePath)
-                && fileToLengthMap.get(filePath) == text.length()) {
-            members = fileToMembersMap.get(filePath);
+                && fileToMembers.containsKey(file)
+                && fileToLastModified.get(file) == file.lastModified()
+                && fileToOldText.get(file).equals(text)) {
+            members = fileToMembers.get(file);
+            problems = fileToProblems.get(file);
         } else {
-            List<Member> memberList = createMembersAsList(text, filePath, listener);
+            List<Member> memberList = createMembersAsList(text, path, listener);
+            problems = logListener.getProblems();
+            members = memberList != null ? memberList.toArray(EMPTY_MEMBER_ARRAY) : null;
 
-            if (memberList != null) {
-                members = memberList.toArray(EMPTY_MEMBER_ARRAY);
-                fileToMembersMap.put(filePath, members);
-                fileToLengthMap.put(filePath, text.length());
-            } else {
-                members = null;
+            fileToMembers.put(file, members);
+            if (members != null) {
+                fileToLastGoodMembers.put(file, new RubyMembers(members, null));
+            } else if (fileToLastGoodMembers.containsKey(file)) {
+                RubyMembers lastGoodMembers = fileToLastGoodMembers.get(file);
+                lastGoodMembers.setProblems(problems);
             }
+            fileToLastModified.put(file, file.lastModified());
+            fileToOldText.put(file, text);
+            fileToProblems.put(file, problems);
         }
 
-        return new RubyMembers(members, logListener.getProblems());
+        return new RubyMembers(members, problems);
     }
 
     private synchronized List<Member> createMembersAsList(String text, String filePath, WarningListener listener) {
@@ -136,8 +169,9 @@ public class RubyParser {
 
         for(MemberMatcher.Match match : matches) {
             String name = match.value.trim();
-            int index = match.startOffset;
-            members.add(matcher.createMember(name, filePath, index));
+            int startOffset = match.startOffset;
+            int startOuterOffset = match.startOuterOffset;
+            members.add(matcher.createMember(name, filePath, startOuterOffset, startOffset));
         }
 
         return members;
@@ -177,7 +211,7 @@ public class RubyParser {
 
         public void warn(String message) {
             problems.add(new Warning(message, 0));
-            RubyPlugin.log("warn:  " + message);
+            RubyPlugin.log("warn:  " + message, getClass());
         }
 
         public void warning(SourcePosition position, String message) {
@@ -186,13 +220,13 @@ public class RubyParser {
         }
 
         public void warning(String message) {
+            RubyPlugin.log("warn:  " + message, getClass());
             problems.add(new Warning(message, 0));
-            RubyPlugin.log("warn:  " + message);
         }
 
         public void error(SourcePosition position, String message) {
-            problems.add(new org.jedit.ruby.ast.Error(message, getLine(position)));
-            RubyPlugin.log("error: " + position.getFile() + " " + position.getLine() + " " + message);
+            RubyPlugin.log("error: " + position.getFile() + " " + position.getLine() + " " + message, getClass());
+            problems.add(new Error(message, getLine(position)));
         }
 
         public void clear() {
@@ -200,7 +234,7 @@ public class RubyParser {
         }
 
         private void log(SourcePosition position, String message) {
-            RubyPlugin.log("warn:  " + position.getFile() + " " + position.getLine() + " " + message);
+            RubyPlugin.log("warn:  " + position.getFile() + " " + position.getLine() + " " + message, getClass());
         }
 
         private int getLine(SourcePosition position) {

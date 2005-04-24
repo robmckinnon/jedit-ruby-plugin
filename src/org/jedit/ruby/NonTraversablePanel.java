@@ -1,5 +1,5 @@
 /*
- * Module.java - 
+ * NonTraversablePanel.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -17,17 +17,31 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby.ast;
+package org.jedit.ruby;
+
+import javax.swing.JPanel;
+import java.awt.LayoutManager;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Module extends ParentMember {
-    public Module(String name, int startOuterOffset, int startOffset) {
-        super(name, startOuterOffset, startOffset);
+class NonTraversablePanel extends JPanel {
+    public NonTraversablePanel(LayoutManager layout) {
+        super(layout);
     }
 
-    public void accept(MemberVisitor visitor) {
-        visitor.handleModule(this);
+    /**
+     * Returns false to indicate this component can't
+     * be traversed by pressing the Tab key.
+     */
+    public boolean isManagingFocus() {
+        return false;
+    }
+
+    /**
+     * Makes the tab key work in Java 1.4.
+     */
+    public boolean getFocusTraversalKeysEnabled() {
+        return false;
     }
 }

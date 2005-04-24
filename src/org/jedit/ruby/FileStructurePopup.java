@@ -20,13 +20,11 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.View;
-import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.gjt.sp.jedit.Buffer;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Problem;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.parser.RubyParser;
-
-import java.awt.Point;
 
 /**
  * Shows file structure popup to allow user to navigate
@@ -44,33 +42,57 @@ public class FileStructurePopup {
     }
 
     public void show() {
-        try {
-            log("showing file structure popup");
-            view.showWaitCursor();
-            showPopup(view);
-        } catch (Exception e) {
-        } finally {
-            view.hideWaitCursor();
+        if (RubyPlugin.isRubyFile(view.getBuffer())) {
+            try {
+                log("showing file structure popup");
+                view.showWaitCursor();
+                showPopup(view);
+            } catch (Exception e) {
+                RubyPlugin.error(e, getClass());
+            } finally {
+                view.hideWaitCursor();
+            }
+        } else {
+            RubyPlugin.showMessage("ruby.file-structure-popup.label", "ruby.not-ruby-file.message", view);
         }
     }
 
     private void showPopup(View view) {
         start = now();
-        Point location = RubyPlugin.getCenteredPopupLocation(view);
 
+        Buffer buffer = view.getBuffer();
         RubyMembers members = RubyParser.getMembers(view);
 
         if (!members.containsErrors() && members.size() > 0) {
-            int caretPosition = view.getTextArea().getCaretPosition();
-            Member selectedMember = members.getCurrentMember(caretPosition);
+            showPopup(view, members, members.getMembers());
 
-            new TypeAheadPopup(view, members.getMembers(), null, selectedMember, location);
+        } else if(RubyParser.hasLastGoodMembers(buffer)) {
+            RubyMembers lastGoodMembers = RubyParser.getLastGoodMembers(buffer);
+            Member[] displayMembers = lastGoodMembers.combineMembersAndProblems(buffer.getLength());
+            showPopup(view, displayMembers, displayMembers[displayMembers.length - 1]);
+
         } else {
             Problem[] problems = members.getProblems();
 
             if(problems.length > 0) {
-                new TypeAheadPopup(view, members.getProblems(), null, problems[0], location);
+                showPopup(view, problems, problems[0]);
+            } else {
+                RubyPlugin.showMessage("ruby.file-structure-popup.label", "ruby.file-structure-popup.no-structure.label", view);
             }
+        }
+    }
+
+    private void showPopup(View view, RubyMembers members, Member[] displayMembers) {
+        int caretPosition = view.getTextArea().getCaretPosition();
+        Member selectedMember = members.getCurrentMember(caretPosition);
+        showPopup(view, displayMembers, selectedMember);
+    }
+
+    private void showPopup(View view, Member[] displayMembers, Member selectedMember) {
+        try {
+            new TypeAheadPopup(view, displayMembers, selectedMember, TypeAheadPopup.FILE_STRUCTURE_POPUP);
+        } catch (Exception e) {
+            RubyPlugin.error(e, getClass());
         }
     }
 
@@ -79,7 +101,7 @@ public class FileStructurePopup {
     }
 
     private void log(String msg) {
-        RubyPlugin.log(msg + (now() - start));
+        RubyPlugin.log(msg + (now() - start), getClass());
         start = now();
     }
 

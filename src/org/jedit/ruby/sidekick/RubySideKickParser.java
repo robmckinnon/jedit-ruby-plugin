@@ -48,6 +48,10 @@ public class RubySideKickParser extends SideKickParser {
         super("ruby");
     }
 
+    public boolean supportsCompletion() {
+        return true;
+    }
+
     public static ErrorSource.Error[] getErrors() {
         ErrorSource.Error[] errors = errorSource.getAllErrors();
         if(errors != null) {
@@ -65,9 +69,12 @@ public class RubySideKickParser extends SideKickParser {
         SideKickParsedData data = new RubyParsedData(buffer.getName());
         DefaultMutableTreeNode parentNode = data.root;
         RubyMembers members = RubyParser.getMembers(text, buffer.getPath(), listener, false);
+
         if (!members.containsErrors()) {
             addNodes(parentNode, members.getMembers(), buffer);
-//        SideKickParsedData.setParsedData(jEdit.getActiveView(), data);
+        } else if(RubyParser.hasLastGoodMembers(buffer)) {
+            members = RubyParser.getLastGoodMembers(buffer);
+            addNodes(parentNode, members.combineMembersAndProblems(0), buffer);
         } else {
             addNodes(parentNode, members.getProblems(), buffer);
         }
@@ -81,12 +88,8 @@ public class RubySideKickParser extends SideKickParser {
         }
     }
 
-    public boolean supportsCompletion() {
-        return true;
-    }
-
     public SideKickCompletion complete(EditPane editPane, int caret) {
-        RubyPlugin.log("completing");
+        RubyPlugin.log("completing", getClass());
         CodeCompletor completor = new CodeCompletor(editPane.getView());
 
         if(completor.isInsertionPoint()) {
@@ -114,7 +117,7 @@ public class RubySideKickParser extends SideKickParser {
         int startOffsetInLine = nonSpaceStartOffset - startOffset;
         int endOffsetInLine = endOffset - startOffset;
 
-        RubyPlugin.log("start " + startOffsetInLine + ", end " + endOffsetInLine);
+        RubyPlugin.log("start " + startOffsetInLine + ", end " + endOffsetInLine, getClass());
         errorSource.addError(type, position.getFile(), line, startOffsetInLine, endOffsetInLine, message);
     }
 

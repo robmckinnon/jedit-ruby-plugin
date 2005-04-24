@@ -29,7 +29,6 @@ public class JRubyParser {
     private static String nothing;
 
     private RubyWarnings warnings;
-    private List<RubyParser.WarningListener> listeners;
 
     /** singleton private constructor */
     private JRubyParser() {
@@ -52,42 +51,38 @@ public class JRubyParser {
     }
 
     private List<Member> parse(String text, List<RubyParser.WarningListener> listeners, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, String filePath) {
-        this.listeners = listeners;
         this.warnings = new Warnings(listeners);
 
         Reader content = new StringReader(text);
         List<Member> members;
-        RubyNodeVisitor visitor = new RubyNodeVisitor(moduleMembers, classMembers, methodMembers, listeners);
+        RubyNodeVisitor visitor = new RubyNodeVisitor(text, moduleMembers, classMembers, methodMembers, listeners);
 
         try {
-            Node node = parse(filePath, content);
+            Node node = parse(filePath, content, new RubyParserConfiguration());
             if (node != null) {
                 node.accept(visitor);
             }
             members = visitor.getMembers();
         } catch (SyntaxException e) {
-            RubyPlugin.log(e.getPosition().getLine() + ": " + e.getMessage());
-            members = null; // listeners already informed of syntax error
+            for (RubyParser.WarningListener listener : listeners) {
+                listener.error(e.getPosition(), e.getMessage());
+            }
+            RubyPlugin.log(e.getPosition().getLine() + ": " + e.getMessage(), getClass());
+            members = null;
         }
 
         return members;
     }
 
-    private Node parse(String name, Reader content) {
-        return parse(name, content, new RubyParserConfiguration());
-    }
-
     private Node parse(String name, Reader content, RubyParserConfiguration config) {
         DefaultRubyParser parser = new DefaultRubyParser() {
+            /** Hack to ensure we get original error message */
             public void yyerror(String message, Object syntaxErrorState) {
                 try {
                     super.yyerror(message, syntaxErrorState);
                 } catch (SyntaxException e) {
                     String errorMessage = formatErrorMessage(message, syntaxErrorState);
-                    for (RubyParser.WarningListener listener : listeners) {
-                        listener.error(e.getPosition(), errorMessage);
-                    }
-                    throw e;
+                    throw new SyntaxException(e.getPosition(), errorMessage);
                 }
             }
         };

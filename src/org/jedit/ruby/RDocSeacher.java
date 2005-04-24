@@ -28,7 +28,6 @@ import org.jedit.ruby.ast.Method;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.awt.Point;
 import java.io.*;
 import java.util.*;
 
@@ -63,10 +62,10 @@ public class RDocSeacher {
             instance.searchFor(searchTerm, view);
         } catch (IOException e) {
             e.printStackTrace();
-            RubyPlugin.error(e.getMessage());
+            RubyPlugin.error(e, RDocSeacher.class);
         } catch (InterruptedException e) {
             e.printStackTrace();
-            RubyPlugin.error(e.getMessage());
+            RubyPlugin.error(e, RDocSeacher.class);
         }
     }
 
@@ -76,20 +75,18 @@ public class RDocSeacher {
     public void performSearch(View view) throws IOException, InterruptedException {
         String term = getSearchTerm(view, view.getTextArea().getSelectedText());
         if (term != null) {
+            jEdit.setProperty("ruby-ri-search-term", term);
             searchFor(term, view);
         }
     }
 
     private void searchFor(String term, View view) throws IOException, InterruptedException {
-        jEdit.setProperty("ruby-ri-search-term", term);
-        //    Macros.message(view, ri(term));
         String result = ri(term);
 
         if(result.startsWith("More than one method matched your request.")) {
             List<Member> methods = parseMultipleResults(result);
             Member[] members = methods.toArray(new Member[methods.size()]);
-            Point location = RubyPlugin.getCenteredPopupLocation(view);
-            new TypeAheadPopup(view, members, location);
+            new TypeAheadPopup(view, members, members[0], TypeAheadPopup.SEARCH_POPUP);
         } else {
             showDialog(view, "", result);
         }
@@ -104,8 +101,18 @@ public class RDocSeacher {
             if(line.startsWith(" ")) {
                 StringTokenizer tokenizer = new StringTokenizer(line.trim(), ", ");
                 while(tokenizer.hasMoreTokens()) {
-                    String method = tokenizer.nextToken();
-                    methods.add(new Method(method, "none", "none", 0));
+                    String namespace = "";
+                    String methodName = tokenizer.nextToken();
+                    int index = methodName.lastIndexOf("::");
+
+                    if(index != -1) {
+                        namespace = methodName.substring(0, index + 2);
+                        methodName = methodName.substring(index + 2);
+                    }
+
+                    Method method = new Method(methodName, "none", "none", 0, 0, false);
+                    method.setNamespace(namespace);
+                    methods.add(method);
                 }
             }
         }
@@ -291,7 +298,7 @@ public class RDocSeacher {
         dialog.setSize((int) (dialog.getWidth() * 1.05), height);
         dialog.setLocationRelativeTo(frame);
 
-        dialog.show();
+        dialog.setVisible(true);
     }
 
     /**
