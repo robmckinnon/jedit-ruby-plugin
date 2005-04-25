@@ -131,6 +131,14 @@ public class AutoIndentAndInsertEnd {
             handleComment(line, row);
         } else {
             area.insertEnterAndIndent();
+            while(line.trim().length() == 0 && row > 0) {
+                row--;
+                line = area.getLineText(row);
+            }
+            line = line.trim();
+            if(line.endsWith("; end") || line.endsWith(";end")) {
+                area.shiftIndentLeft();
+            }
         }
     }
 
@@ -274,7 +282,10 @@ public class AutoIndentAndInsertEnd {
         area.selectLine();
         String text = area.getSelectedText() != null ? area.getSelectedText().trim() : "";
         area.setSelectedText(indent + text);
-        area.shiftIndentRight();
+
+        if(!line.endsWith("end")) {
+            area.shiftIndentRight();
+        }
     }
 
     private boolean endsNotBalanced() {
