@@ -69,22 +69,35 @@ public class RubyActions {
 
     private static void selectBeyondLine(View view, JEditTextArea textArea, Selection selection) {
         if (RubyPlugin.isRubyFile(view.getBuffer())) {
-            RubyMembers members = RubyParser.getMembers(view);
-            Member member = members.getCurrentMember(textArea.getCaretPosition());
-            if (member == null) {
+            try {
+                Member member = null;
+                try {
+                    RubyMembers members = RubyParser.getMembers(view);
+                    member = members.getCurrentMember(textArea.getCaretPosition());
+                    selectBeyondLineRuby(textArea, selection, member);
+                } catch (Exception e) {
+                    selectBeyondLineNonRuby(textArea, selection);
+                }
+            } catch (Exception e) {
                 selectBeyondLineNonRuby(textArea, selection);
-            } else {
-                selectMemberOrParent(member, textArea, selection);
             }
         } else {
             selectBeyondLineNonRuby(textArea, selection);
         }
     }
 
+    private static void selectBeyondLineRuby(JEditTextArea textArea, Selection selection, Member member) {
+        if (member == null) {
+            selectBeyondLineNonRuby(textArea, selection);
+        } else {
+            selectMemberOrParent(member, textArea, selection);
+        }
+    }
+
     private static void selectBeyondLineNonRuby(JEditTextArea textArea, Selection selection) {
         textArea.selectParagraph();
 
-        if (needToSelectMore(textArea, selection)) {
+        if (textArea.getSelection().length == 0 || needToSelectMore(textArea, selection)) {
             textArea.selectAll();
         }
     }
