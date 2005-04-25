@@ -59,15 +59,20 @@ public class LineCounter {
 
     public String getLine(int line) {
         if (line == 0) {
-            return text.substring(0, getEndOffset(0));
+            return getLine(0, getEndOffset(0));
         } else {
+            int beginIndex = getEndOffset(line - 1) + 1;
             int endOffset = getEndOffset(line);
-            char endChar = text.charAt(endOffset);
-            if (isNewLineCharacter(endChar)) {
-                return text.substring(getEndOffset(line - 1) + 1, endOffset);
-            } else {
-                return text.substring(getEndOffset(line - 1) + 1, endOffset + 1);
-            }
+            return getLine(beginIndex, endOffset);
+        }
+    }
+
+    private String getLine(int beginIndex, int endIndex) {
+        char endChar = text.charAt(endIndex);
+        if (isNewLineCharacter(endChar)) {
+            return text.substring(beginIndex, endIndex);
+        } else {
+            return text.substring(beginIndex, endIndex + 1);
         }
     }
 

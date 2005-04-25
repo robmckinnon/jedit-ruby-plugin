@@ -3,6 +3,7 @@ package org.jedit.ruby.test;
 import junit.framework.TestCase;
 import org.jedit.ruby.*;
 import org.jedit.ruby.parser.RubyParser;
+import org.jedit.ruby.parser.LineCounter;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jruby.lexer.yacc.SourcePosition;
@@ -92,8 +93,18 @@ public class TestRubyParser extends TestCase {
             "  end\n" +
             "end";
 
+    private static final String ONE_LINER = "def count; @contents.split.size; end";
+
     public void tearDown() {
         RubyCache.clear();
+    }
+
+    public void testOneLiner() {
+        LineCounter lineCounter = new LineCounter(ONE_LINER);
+        String line = lineCounter.getLine(0);
+        assertTrue("assert line end correct", line.endsWith("end"));
+        List<Member> membersAsList = RubyParser.getMembersAsList(ONE_LINER, getUniquePath(), null);
+        assertCorrect(0, "count", null, 4, membersAsList);
     }
 
     public void testEndOffsets() {

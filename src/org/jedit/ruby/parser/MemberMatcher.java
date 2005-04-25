@@ -65,7 +65,7 @@ interface MemberMatcher {
     static class ClassMatcher extends AbstractMatcher {
 
         public List<Match> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(class[ ]+)(\\w+.*)", text);
+            return getMatchList("([ ]*)(class[ ]+)(\\w+[^;\\s]*)", text);
         }
 
         public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {
@@ -77,7 +77,7 @@ interface MemberMatcher {
     static class MethodMatcher extends AbstractMatcher {
 
         public List<Match> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(def[ ]+)(.*)", text);
+            return getMatchList("([ ]*)(def[ ]+)([^;\\s]*)", text);
         }
 
         public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {

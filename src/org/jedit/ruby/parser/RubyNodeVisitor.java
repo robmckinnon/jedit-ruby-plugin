@@ -253,7 +253,8 @@ class RubyNodeVisitor extends AbstractVisitor {
     }
 
     private int getEndOffset(Node node) {
-        return lineCounter.getEndOffset(getEndLine(node));
+        int endLine = getEndLine(node);
+        return lineCounter.getEndOffset(endLine);
     }
 
     private int getEndLine(Node node) {
