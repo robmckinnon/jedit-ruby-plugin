@@ -23,18 +23,12 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 import org.jedit.ruby.parser.JRubyParser;
-import org.jedit.ruby.ri.ClassDescription;
-import org.jedit.ruby.ri.MethodDescription;
-import org.jedit.ruby.ast.*;
+import org.jedit.ruby.ri.RiParser;
 
 import javax.swing.SwingUtilities;
 import javax.swing.JOptionPane;
 import java.io.*;
 import java.awt.Point;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.jar.JarInputStream;
-import java.util.jar.JarEntry;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -53,103 +47,7 @@ public class RubyPlugin extends EditPlugin {
         JRubyParser.setExpectedLabel(jEdit.getProperty("ruby.syntax-error.expected.label"));
         JRubyParser.setFoundLabel(jEdit.getProperty("ruby.syntax-error.found.label"));
         JRubyParser.setNothingLabel(jEdit.getProperty("ruby.syntax-error.nothing.label"));
-        parseRdoc();
-    }
-
-    private void parseRdoc() {
-        log("parsing RDoc from jar");
-        List<JarEntry> entries = getEntries();
-        for (JarEntry entry : entries) {
-            loadClassDesciption(entry);
-        }
-    }
-
-    private void loadClassDesciption(JarEntry entry) {
-        String name = entry.getName();
-        log(name);
-        InputStream inputStream = getClass().getClassLoader().getResourceAsStream(name);
-        ObjectInputStream input = null;
-        try {
-            input = new ObjectInputStream(inputStream);
-            ClassDescription result = (ClassDescription)input.readObject();
-            cache(result);
-        } catch (Exception e) {
-            error(e, getClass());
-        } finally {
-            try {
-                if (input != null) {
-                    input.close();
-                }
-            } catch (IOException e) {
-                error(e, getClass());
-            }
-        }
-    }
-
-    private List<JarEntry> getEntries() {
-        List<JarEntry> entries = new ArrayList<JarEntry>();
-        try {
-            File file = getJarFile();
-            log(file.getName());
-            JarInputStream jar = new JarInputStream(new FileInputStream(file));
-            JarEntry entry = jar.getNextJarEntry();
-            while(entry != null) {
-                if(!entry.isDirectory() && entry.getName().endsWith(".dat")) {
-                    log(entry.getName());
-                    entries.add(entry);
-                }
-                entry = jar.getNextJarEntry();
-            }
-        } catch (IOException e) {
-            error(e, getClass());
-        }
-        return entries;
-    }
-
-    private File getJarFile() {
-        File file = getJarFile(jEdit.getSettingsDirectory());
-        if(!file.exists()) {
-            file = getJarFile(jEdit.getJEditHome());
-        }
-        return file;
-    }
-
-    private File getJarFile(String directory) {
-        File dir = new File(directory, "jars");
-        File file = new File(dir, "RubyPlugin.jar");
-        return file;
-    }
-
-    private void cache(ClassDescription result) {
-        ClassMember parent = new ClassMember(result.getName(), 0, 0);
-        parent.setNamespace(null);
-        parent.setParentMember(null);
-        parent.setReceiver("");
-        parent.setEndOffset(0);
-
-        addMethods(result.getInstanceMethods(), parent);
-        addMethods(result.getClassMethods(), parent);
-        Member[] members = new Member[1];
-        members[0] = parent;
-        RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>());
-        RubyCache.add(rubyMembers, "1.8/system");
-    }
-
-    private void addMethods(List<MethodDescription> methods, ClassMember parent) {
-        for (MethodDescription methodDescription : methods) {
-            String name = methodDescription.getName();
-            name = name.startsWith(".") ? name.substring(1) : name;
-            Method method = new Method(name, "", "", 0, 0, methodDescription.isClassMethod());
-            method.setNamespace(null);
-            method.setParentMember(null);
-            method.setReceiver("");
-            method.setEndOffset(0);
-            parent.addChildMember(method);
-        }
-    }
-
-    private static void log(String message) {
-        log(message, RubyPlugin.class);
+        RiParser.parseRdoc();
     }
 
     public static void log(String message, Class clas) {
@@ -177,7 +75,9 @@ public class RubyPlugin extends EditPlugin {
             Log.log(Log.ERROR, clas, message);
             View view = jEdit.getActiveView();
             if (view != null) {
-//                show("", message, view, JOptionPane.ERROR_MESSAGE);
+                if(debug) {
+                    show("", message, view, JOptionPane.ERROR_MESSAGE);
+                }
             }
         } catch (Exception e) {
             System.err.println(message);

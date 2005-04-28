@@ -19,6 +19,7 @@
  */
 package org.jedit.ruby.ast;
 
+import javax.swing.text.Utilities;
 import java.util.*;
 
 /**
@@ -30,7 +31,6 @@ public abstract class Member implements Comparable<Member> {
 
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
 
-    private String receiverName;
     private List<Member> parentPath;
     private int parentCount;
 
@@ -40,16 +40,17 @@ public abstract class Member implements Comparable<Member> {
     private String namespace;
     private String name;
     private String shortName;
+    private String documentation;
     private int startOuterOffset;
     private int startOffset;
     private int endOffset;
 
     public Member(String name, int startOuterOffset, int startOffset) {
         parentCount = -1;
-        this.name = name;
         this.startOffset = startOffset;
         this.startOuterOffset = startOuterOffset;
-        this.endOffset = startOffset;
+        setEndOffset(startOffset);
+        setName(name);
         shortName = (new StringTokenizer(name, " (")).nextToken();
     }
 
@@ -71,28 +72,21 @@ public abstract class Member implements Comparable<Member> {
         }
     }
 
+    protected String getNamespace() {
+        return namespace;
+    }
+
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }
 
-    public void setReceiver(String receiverName) {
-        this.receiverName = receiverName;
-        if (name.startsWith(receiverName)) {
-            name = name.substring(name.indexOf('.') + 1);
-        }
-    }
-
     /**
      * Returns member name including any
-     * namespace or receiver prefix.
+     * namespace prefix.
      */
     public String getFullName() {
         if (namespace == null) {
-            if (receiverName == null) {
-                return name;
-            } else {
-                return receiverName + '.' + name;
-            }
+            return name;
         } else {
             return namespace + name;
         }
@@ -104,6 +98,10 @@ public abstract class Member implements Comparable<Member> {
      */
     public String getName() {
         return name;
+    }
+
+    protected void setName(String name) {
+        this.name = name;
     }
 
     /**
@@ -252,4 +250,11 @@ public abstract class Member implements Comparable<Member> {
         this.parentMember = parentMember;
     }
 
+    public void setDocumentation(String comment) {
+        this.documentation = comment;
+    }
+
+    public String getDocumentation() {
+        return documentation;
+    }
 }

@@ -46,7 +46,7 @@ public class TestRDocSeacher extends TestCase {
 
     public void testParseMultipleMatches() {
         List<Member> methods = RDocSeacher.parseMultipleResults(RESULT);
-        assertEquals("Assert first method correct: ", "Array#to_s", methods.get(0).getName());
-        assertEquals("Assert first method correct: ", "Vector#to_s", methods.get(35).getName());
+        assertEquals("Assert first method correct: ", "Array#to_s", methods.get(0).getFullName());
+        assertEquals("Assert first method correct: ", "Vector#to_s", methods.get(35).getFullName());
     }
 }

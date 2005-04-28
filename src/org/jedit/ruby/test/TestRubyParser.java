@@ -140,7 +140,7 @@ public class TestRubyParser extends TestCase {
     public void testParseModuleMethod() {
         List<Member> members = RubyParser.getMembersAsList(MODULE_METHOD, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
-        assertChildrenCorrect(members, "Blue.deep", 18, "Blue");
+        assertChildrenCorrect(members, "Blue::deep", 18, "Blue");
     }
 
     public void testBigFile() {
@@ -399,7 +399,7 @@ public class TestRubyParser extends TestCase {
     public void testGlobalIf() {
         List<Member> members = RubyParser.getMembersAsList(globalIfFile, getUniquePath(), null);
         assertCorrect(0, "File", null, 6, members);
-        assertChildrenCorrect(members, "File.open(*args)", 31, "File");
+        assertChildrenCorrect(members, "File::open", 31, "File");
         assertCorrect(1, "Test", null, 70, members);
         assertCorrect(0, "initialize", "Test", 80, members.get(1).getChildMembersAsList());
     }

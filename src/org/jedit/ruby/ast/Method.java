@@ -26,6 +26,7 @@ public class Method extends Member {
 
     private String filePath;
     private String fileName;
+    private String receiverName;
     private boolean isClassMethod;
 
     public Method(String name, String filePath, String fileName, int startOuterOffset, int startOffset, boolean classMethod) {
@@ -37,6 +38,42 @@ public class Method extends Member {
 
     public void accept(MemberVisitor visitor) {
         visitor.handleMethod(this);
+    }
+
+    /**
+     * Returns member name including any
+     * namespace or receiver prefix.
+     */
+    public String getFullName() {
+        if (getNamespace() == null) {
+            if (receiverName == null) {
+                return getName();
+            } else {
+                return receiverName + getMethodDelimiter() + getName();
+            }
+        } else {
+            return getNamespace() + getMethodDelimiter() + getName();
+        }
+    }
+
+    public String getMethodDelimiter() {
+        if(isClassMethod()) {
+            return "::";
+        } else {
+            return "#";
+        }
+    }
+
+    public void setReceiver(String receiverName) {
+        this.receiverName = receiverName;
+        String name = getName();
+        if (name.startsWith(receiverName)) {
+            name = name.substring(name.indexOf('.') + 1);
+        }
+    }
+
+    public void setClassMethod(boolean classMethod) {
+        isClassMethod = classMethod;
     }
 
     public boolean isClassMethod() {
@@ -59,4 +96,9 @@ public class Method extends Member {
         }
         return comparison;
     }
+
+    public void setName(String name) {
+        super.setName(name);
+    }
+
 }

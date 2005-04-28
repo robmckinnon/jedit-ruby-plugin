@@ -20,24 +20,126 @@
 package org.jedit.ruby.ri;
 
 import org.jedit.ruby.ast.*;
+import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.RubyCache;
+import org.gjt.sp.jedit.jEdit;
 
 import java.beans.XMLEncoder;
 import java.beans.XMLDecoder;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
 public class RiParser {
 
-    public static void main(String[] args) {
-        RiParser parser = new RiParser();
-        parser.parseRdoc();
+    public static void parseRdoc() {
+        log("parsing RDoc from jar");
+        List<JarEntry> entries = getEntries();
+        for (JarEntry entry : entries) {
+            loadClassDesciption(entry);
+        }
     }
 
-    private void parseRdoc() {
+    public static void loadClassDesciption(JarEntry entry) {
+        String name = entry.getName();
+        log(name);
+        InputStream inputStream = RubyPlugin.class.getClassLoader().getResourceAsStream(name);
+        ObjectInputStream input = null;
+        try {
+            input = new ObjectInputStream(inputStream);
+            ClassDescription result = (ClassDescription)input.readObject();
+            cache(result);
+        } catch (Exception e) {
+            RubyPlugin.error(e, RiParser.class);
+        } finally {
+            try {
+                if (input != null) {
+                    input.close();
+                }
+            } catch (IOException e) {
+                RubyPlugin.error(e, RiParser.class);
+            }
+        }
+    }
+
+    public static List<JarEntry> getEntries() {
+        List<JarEntry> entries = new ArrayList<JarEntry>();
+        try {
+            File file = getJarFile();
+            log(file.getName());
+            JarInputStream jar = new JarInputStream(new FileInputStream(file));
+            JarEntry entry = jar.getNextJarEntry();
+            while(entry != null) {
+                if(!entry.isDirectory() && entry.getName().endsWith(".dat")) {
+                    log(entry.getName());
+                    entries.add(entry);
+                }
+                entry = jar.getNextJarEntry();
+            }
+        } catch (IOException e) {
+            RubyPlugin.error(e, RiParser.class);
+        }
+        return entries;
+    }
+
+    public static File getJarFile() {
+        File file = getJarFile(jEdit.getSettingsDirectory());
+        if(!file.exists()) {
+            file = getJarFile(jEdit.getJEditHome());
+        }
+        return file;
+    }
+
+    public static File getJarFile(String directory) {
+        File dir = new File(directory, "jars");
+        File file = new File(dir, "RubyPlugin.jar");
+        return file;
+    }
+
+    public static void cache(ClassDescription result) {
+        ClassMember parent = new ClassMember(result.getName(), 0, 0);
+        parent.setParentMember(null);
+        parent.setEndOffset(0);
+        parent.setNamespace(result.getNamespace());
+        parent.setDocumentation(result.getComment());
+
+        addMethods(result.getInstanceMethods(), parent);
+        addMethods(result.getClassMethods(), parent);
+        Member[] members = new Member[1];
+        members[0] = parent;
+        RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>());
+        RubyCache.add(rubyMembers, "1.8/system");
+    }
+
+    public static void addMethods(List<MethodDescription> methods, ClassMember parent) {
+        for (MethodDescription methodDescription : methods) {
+            String name = methodDescription.getName();
+            name = name.startsWith(".") ? name.substring(1) : name;
+            Method method = new Method(name, "", "", 0, 0, methodDescription.isClassMethod());
+            method.setNamespace(methodDescription.getNamespace());
+            method.setDocumentation(methodDescription.getComment());
+            method.setParentMember(null);
+            method.setReceiver("");
+            method.setEndOffset(0);
+            parent.addChildMember(method);
+        }
+    }
+
+    private static void log(String message) {
+        RubyPlugin.log(message, RiParser.class);
+    }
+
+    public static void main(String[] args) {
+        RiParser parser = new RiParser();
+        parser.convertXmlToBinary();
+    }
+
+    private void convertXmlToBinary() {
         File directory = new File("/home/a/apps/versions/jedit/plugins/RubyPlugin/ri/java-xml");
         List<File> classDescriptions = findClassDescriptions(directory);
         for (File file : classDescriptions) {

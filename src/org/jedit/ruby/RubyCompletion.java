@@ -22,79 +22,115 @@ package org.jedit.ruby;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Buffer;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Method;
 
+import javax.swing.*;
+import javax.swing.text.html.HTMLDocument;
+import javax.swing.text.html.HTMLEditorKit;
 import java.util.List;
+import java.awt.BorderLayout;
+import java.awt.Frame;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringBufferInputStream;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
 public class RubyCompletion extends SideKickCompletion {
 
-    private CodeCompletor completor;
-    private View view;
     private List<Method> methods;
+    private String partialMethod;
+    private JWindow frame;
+    private JTextPane textPane;
 
-    public RubyCompletion(View view, CodeCompletor completor) {
-        this.view = view;
-        this.completor = completor;
-        methods = completor.getMethods();
-    }
-
-    public int getTokenLength() {
-        String partialMethod = completor.getPartialMethod();
-        if(partialMethod == null) {
-            return 1;
-        } else {
-            return partialMethod.length() + 1;
-        }
+    public RubyCompletion(View view, String partialMethod, List<Method> methods) {
+        super(view, partialMethod == null ? "." : "." + partialMethod, methods);
+        this.methods = methods;
+        this.partialMethod = partialMethod;
+        frame = new JWindow((Frame)null);
+        frame.setFocusable(false);
+        textPane = new JTextPane();
+        textPane.setEditorKit(new HTMLEditorKit());
+		JScrollPane scroller = new JScrollPane(textPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        frame.getContentPane().add(scroller, BorderLayout.CENTER);
+        frame.setSize(400,400);
     }
 
     public boolean handleKeystroke(int selectedIndex, char keyChar) {
-        switch(keyChar) {
-            case ' ': case '\t': case '\n':
-                // execute below code
-                break;
-            default:
-                view.getTextArea().userInput(keyChar);
-                return true;
+        boolean emptyPopup = selectedIndex == -1;
+        boolean space = keyChar == ' ';
+        boolean stillTyping = !space && keyChar != '\t' && keyChar != '\n';
+
+        if (stillTyping || emptyPopup) {
+            textArea.userInput(keyChar);
+        } else {
+            insert(selectedIndex);
+            if(space) {
+                textArea.userInput(' ');
+            }
         }
 
-        RubyPlugin.log("selected: " + selectedIndex, getClass());
-        RubyPlugin.log("key: " + keyChar, getClass());
-        if(selectedIndex != -1)
-            insert(methods.get(selectedIndex), keyChar);
-        else
-            view.getTextArea().userInput(keyChar);
-
-        return false;
+        return stillTyping;
     }
 
     public void insert(int index) {
-        insert(methods.get(index),'\n');
+        insert(methods.get(index));
     }
 
-    private void insert(Method method, char keyChar) {
+    public String getCompletionDescription(int index) {
+        String documentation = methods.get(index).getDocumentation();
+        RubyPlugin.log(documentation, getClass());
+        RubyPlugin.log(documentation.indexOf("&lt;")+"", getClass());
+        try {
+            InputStream stream = new StringBufferInputStream(documentation);
+            textPane.read(stream, new HTMLDocument());
+        } catch (IOException e) {
+            RubyPlugin.error(e, getClass());
+        }
+
+        frame.setLocation(getPoint(frame));
+        if(!frame.isVisible()) {
+            frame.setVisible(true);
+        }
+        return null;
+    }
+
+    private Point getPoint(JWindow window) {
+        JEditTextArea textArea = view.getTextArea();
+        int caret = textArea.getCaretPosition();
+        Point location = textArea.offsetToXY(caret - getTokenLength());
+        location.x += 150;
+        location.y += textArea.getPainter().getFontMetrics().getHeight();
+
+        SwingUtilities.convertPointToScreen(location, textArea.getPainter());
+
+        Rectangle screenSize = window.getGraphicsConfiguration().getBounds();
+        if(location.y + window.getHeight() >= screenSize.height) {
+            location.y = location.y - window.getHeight() - textArea.getPainter().getFontMetrics().getHeight();
+}
+        Point point = location;
+        return point;
+    }
+
+    private void insert(Method method) {
         Buffer buffer = view.getBuffer();
         RubyPlugin.log("method: " + method.getName(), getClass());
-        int caretPosition = view.getTextArea().getCaretPosition();
+        int caretPosition = textArea.getCaretPosition();
         int offset = caretPosition;
-        String partialMethod = completor.getPartialMethod();
 
-        if(partialMethod != null) {
+        if (partialMethod != null) {
             offset -= partialMethod.length();
             buffer.remove(offset, partialMethod.length());
         }
 
         buffer.insert(offset, method.getName());
-    }
-
-    public int size() {
-        return methods.size();
-    }
-
-    public Object get(int index) {
-        return methods.get(index);
+        frame.setVisible(false);
+        frame.dispose();
+        frame = null;
     }
 
 }

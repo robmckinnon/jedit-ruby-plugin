@@ -27,6 +27,7 @@ import java.io.Serializable;
 public class Description implements Serializable {
 
     private String fullName;
+    private String namespace;
     private String name;
     private String comment;
 
@@ -44,6 +45,14 @@ public class Description implements Serializable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 
     public String getComment() {

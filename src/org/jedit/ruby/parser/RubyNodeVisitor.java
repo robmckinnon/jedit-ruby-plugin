@@ -25,6 +25,7 @@ import org.jruby.lexer.yacc.SourcePosition;
 import org.jruby.lexer.yacc.SyntaxException;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Root;
+import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.RubyPlugin;
 
 import java.util.List;
@@ -166,7 +167,7 @@ class RubyNodeVisitor extends AbstractVisitor {
     public void visitDefsNode(DefsNode node) {
         visitNode(node);
 
-        Member method = methods.get(methodIndex++);
+        Method method = (Method)methods.get(methodIndex++);
         method.setEndOffset(getEndOffset(node));
 
         String methodName = node.getName();
@@ -175,6 +176,8 @@ class RubyNodeVisitor extends AbstractVisitor {
             ConstNode constNode = (ConstNode) node.getReceiverNode();
             receiverName = constNode.getName();
             method.setReceiver(receiverName);
+            method.setName(methodName);
+            method.setClassMethod(true);
         } else {
             receiverName = "";
         }

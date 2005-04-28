@@ -101,16 +101,20 @@ public class RDocSeacher {
             if(line.startsWith(" ")) {
                 StringTokenizer tokenizer = new StringTokenizer(line.trim(), ", ");
                 while(tokenizer.hasMoreTokens()) {
-                    String namespace = "";
+                    String namespace = null;
                     String methodName = tokenizer.nextToken();
-                    int index = methodName.lastIndexOf("::");
+                    int index = methodName.lastIndexOf("#");
+                    int otherIndex = methodName.lastIndexOf("::");
+                    index = Math.max(index, otherIndex);
+                    boolean isClassMethod = index == otherIndex;
+                    int adj = isClassMethod ? 2 : 1;
 
-                    if(index != -1) {
-                        namespace = methodName.substring(0, index + 2);
-                        methodName = methodName.substring(index + 2);
+                    if (index != -1) {
+                        namespace = methodName.substring(0, index);
+                        methodName = methodName.substring(index + adj);
                     }
 
-                    Method method = new Method(methodName, "none", "none", 0, 0, false);
+                    Method method = new Method(methodName, "none", "none", 0, 0, isClassMethod);
                     method.setNamespace(namespace);
                     methods.add(method);
                 }

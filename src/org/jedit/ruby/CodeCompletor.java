@@ -92,10 +92,10 @@ public class CodeCompletor {
             List<Method> methods;
             if (className != null) {
                 methods = RubyCache.getMethodsOfMember(className);
-                if(analyzer.isClass()) {
+                if (analyzer.isClass()) {
                     for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
                         Method method = iterator.next();
-                        if(!method.isClassMethod()) {
+                        if (!method.isClassMethod()) {
                             iterator.remove();
                         }
                     }
@@ -104,11 +104,11 @@ public class CodeCompletor {
                 methods = completeUsingMethods(analyzer.getMethods());
             }
 
-            if(getPartialMethod() != null) {
+            if (getPartialMethod() != null) {
                 for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
                     Method method = iterator.next();
 
-                    if(!method.getShortName().startsWith(getPartialMethod())) {
+                    if (!method.getShortName().startsWith(getPartialMethod())) {
                         iterator.remove();
                     }
                 }

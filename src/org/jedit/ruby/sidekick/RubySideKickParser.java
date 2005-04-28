@@ -93,7 +93,7 @@ public class RubySideKickParser extends SideKickParser {
         CodeCompletor completor = new CodeCompletor(editPane.getView());
 
         if(completor.isInsertionPoint()) {
-            return new RubyCompletion(editPane.getView(), completor);
+            return new RubyCompletion(editPane.getView(), completor.getPartialMethod(), completor.getMethods());
         } else {
             return null;
         }
