@@ -19,7 +19,6 @@
  */
 package org.jedit.ruby.ast;
 
-import javax.swing.text.Utilities;
 import java.util.*;
 
 /**
@@ -251,6 +250,11 @@ public abstract class Member implements Comparable<Member> {
     }
 
     public void setDocumentation(String comment) {
+        int index = comment.indexOf("|lt;");
+        while (index != -1) {
+            comment = comment.substring(0, index) + "&lt;" + comment.substring(index+4);
+            index = comment.indexOf("|lt;");
+        }
         this.documentation = comment;
     }
 

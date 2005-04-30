@@ -167,12 +167,7 @@ public class RubyActions {
             Macros.message(textArea, jEdit.getProperty("ruby.find-declaration.no-matches.label"));
         }
     }
-
-    public static void completeMethod(View view) {
-        CodeCompletor codeCompletor = new CodeCompletor(view);
-        codeCompletor.completeRubyMethod();
-    }
-
+    
     public static void fileStructurePopup(View view) {
         FileStructurePopup fileStructurePopup = new FileStructurePopup(view);
         fileStructurePopup.show();

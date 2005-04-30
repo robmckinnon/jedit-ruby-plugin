@@ -30,10 +30,11 @@ import java.util.*;
 public class RubyCache {
 
     private static final RubyCache instance = new RubyCache();
-    private HashMap pathToMembers = new HashMap();
+
     private NameToMethod nameToMethod = new NameToMethod();
     private MethodToParent methodToParent = new MethodToParent();
     private ParentToMethod parentToMethod = new ParentToMethod();
+    private Map pathToMembers = new HashMap();
 
     public static void clear() {
         instance.pathToMembers.clear();
@@ -75,7 +76,7 @@ public class RubyCache {
                 parentToMethod.add(module);
             }
 
-            public void handleClass(org.jedit.ruby.ast.ClassMember classMember) {
+            public void handleClass(ClassMember classMember) {
                 parentToMethod.add(classMember);
             }
 
@@ -86,15 +87,25 @@ public class RubyCache {
         });
     }
 
+    public static List<Member> getAllMembers() {
+        return instance.getAll();
+    }
+
+    private List<Member> getAll() {
+        return parentToMethod.getAllMembers();
+    }
+
     private static class ParentToMethod {
 
-        private Map<String, Set<Method>> fullNameToMethodsMap = new HashMap<String, Set<Method>>();
-        private Map<String, Set<Method>> nameToMethodsMap = new HashMap<String, Set<Method>>();
+        private Map<String, Set<Method>> fullNameToMethods = new HashMap<String, Set<Method>>();
+        private Map<String, Set<Method>> nameToMethods = new HashMap<String, Set<Method>>();
+        private Map<String, Member> fullNameToMember = new HashMap<String, Member>();
+        private Map<String, Member> nameToMember = new HashMap<String, Member>();
 
         public List<Method> getMethodList(String memberName) {
-            Set<Method> methodSet = fullNameToMethodsMap.get(memberName);
+            Set<Method> methodSet = fullNameToMethods.get(memberName);
             if (methodSet == null) {
-                methodSet = nameToMethodsMap.get(memberName);
+                methodSet = nameToMethods.get(memberName);
             }
 
             List<Method> methods;
@@ -111,23 +122,50 @@ public class RubyCache {
             return methods;
         }
 
+        /**
+         * Note: Have to add methods separately because there
+         * may be some classes defined across more than one file.
+         */
         public void add(ParentMember member) {
             Set<Method> methods = member.getMethods();
             String fullName = member.getFullName();
             String name = member.getName();
 
-            if (fullNameToMethodsMap.containsKey(fullName)) {
-                fullNameToMethodsMap.get(fullName).addAll(methods);
-                nameToMethodsMap.get(name).addAll(methods);
+            if (fullNameToMethods.containsKey(fullName)) {
+                fullNameToMethods.get(fullName).addAll(methods);
+                nameToMethods.get(name).addAll(methods);
             } else {
-                fullNameToMethodsMap.put(fullName, methods);
-                nameToMethodsMap.put(name, methods);
+                fullNameToMethods.put(fullName, methods);
+                nameToMethods.put(name, methods);
             }
+
+            fullNameToMember.put(fullName, member);
+            nameToMember.put(name, member);
         }
 
         public void clear() {
-            fullNameToMethodsMap.clear();
-            nameToMethodsMap.clear();
+            fullNameToMethods.clear();
+            nameToMethods.clear();
+            fullNameToMember.clear();
+            nameToMember.clear();
+        }
+
+        public List<Member> getAllMembers() {
+            List<Member> members = new ArrayList<Member>();
+            List<String> parentNames = getAllParentNames();
+
+            for (String parentName : parentNames) {
+                members.add(fullNameToMember.get(parentName));
+                members.addAll(getMethodList(parentName));
+            }
+
+            return members;
+        }
+
+        private List<String> getAllParentNames() {
+            List<String> names = new ArrayList<String>(fullNameToMember.keySet());
+            Collections.sort(names);
+            return names;
         }
     }
 

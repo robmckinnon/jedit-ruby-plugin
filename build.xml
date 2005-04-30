@@ -46,7 +46,7 @@
 		<mkdir dir="${build.dir}"/>
 	</target>
 
-	
+
 	<target name="compile" depends="init">
 		<javac srcdir="${src.dir}"
 				destdir="${build.dir}"
@@ -55,6 +55,14 @@
 				debug="true">
 			<classpath refid="project.class.path"/>
 		</javac>
+	</target>
+
+	<target name="parse_rdoc" depends="compile">
+		<exec dir="ri" executable="ri/convert.rb"/>
+	</target>
+
+	<target name="convert_rdoc" depends="parse_rdoc">
+		<java classname="org.jedit.ruby.ri.RiParser" classpath="/home/a/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
 	</target>
 
 	<target name="retroweave" depends="compile">
