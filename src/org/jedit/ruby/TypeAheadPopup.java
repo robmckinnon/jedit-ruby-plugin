@@ -57,6 +57,7 @@ public class TypeAheadPopup extends JWindow {
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
     private static final char BACKSPACE_KEY = (char)-1;
     private static final char ESCAPE_KEY = (char)-2;
+    private static final int IGNORE = -2;
     private static final Border TOP_LINE_BORDER = new TopLineBorder(Color.GRAY);
 
     private Member toParentMember;
@@ -138,14 +139,26 @@ public class TypeAheadPopup extends JWindow {
             JPanel topPanel;
 
             if (state.displayShowAllCheckBox()) {
+                String key = "ruby.file-structure-popup.show-all";
+                showAllMnemonic = jEdit.getProperty(key + ".mnemonic").charAt(0);
+                showAllCheckBox = initCheckBox(key, state.showAllMembers(), showAllMnemonic, new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        setShowAllMembers(((JCheckBox)e.getSource()).isSelected());
+                    }
+                });
                 topPanel = new JPanel(new GridLayout(2, 1));
-                showAllCheckBox = initShowAllCheckBox();
                 topPanel.add(showAllCheckBox);
             } else {
                 topPanel = new JPanel(new GridLayout(1, 1));
             }
 
-            narrowListCheckBox = initNarrowListCheckBox();
+            String key = "ruby.file-structure-popup.narrow-search";
+            narrowListMnemonic = jEdit.getProperty(key + ".mnemonic").charAt(0);
+            narrowListCheckBox = initCheckBox(key, narrowListOnTyping, narrowListMnemonic, new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    setNarrowListOnTyping(((JCheckBox)e.getSource()).isSelected());
+                }
+            });
             topPanel.add(narrowListCheckBox);
 
             JPanel panel = new JPanel(new BorderLayout());
@@ -181,32 +194,12 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
-    private JCheckBox initNarrowListCheckBox() {
-        String label = jEdit.getProperty("ruby.file-structure-popup.narrow-search.label");
-        narrowListMnemonic = jEdit.getProperty("ruby.file-structure-popup.narrow-search.mnemonic").charAt(0);
-        final JCheckBox checkBox = new JCheckBox(label, narrowListOnTyping);
-        checkBox.setMnemonic(narrowListMnemonic);
+    private JCheckBox initCheckBox(String resourceKey, boolean selected, char mnemonic, ActionListener listener) {
+        String label = jEdit.getProperty(resourceKey + ".label");
+        final JCheckBox checkBox = new JCheckBox(label, selected);
+        checkBox.setMnemonic(mnemonic);
         checkBox.setFocusable(false);
-        checkBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                setNarrowListOnTyping(checkBox.isSelected());
-            }
-        });
-        return checkBox;
-    }
-
-    private JCheckBox initShowAllCheckBox() {
-        String label = jEdit.getProperty("ruby.file-structure-popup.show-all.label");
-        showAllMnemonic = jEdit.getProperty("ruby.file-structure-popup.show-all.mnemonic").charAt(0);
-        final JCheckBox checkBox = new JCheckBox(label, state.showAllMembers());
-        checkBox.setMnemonic(showAllMnemonic);
-        checkBox.setFocusable(false);
-        checkBox.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                boolean selected = checkBox.isSelected();
-                setShowAllMembers(selected);
-            }
-        });
+        checkBox.addActionListener(listener);
         return checkBox;
     }
 
@@ -223,7 +216,7 @@ public class TypeAheadPopup extends JWindow {
     private JList initPopupList(Member selectedMember) {
         int selectedIndex = getSelectedIndex(selectedMember, members);
 
-        if (selectedIndex != -1) {
+        if (selectedIndex >= 0) {
             boolean parentLinkAtTop = selectedMember != null
                     && selectedMember.hasParentMember()
                     && !state.showAllMembers()
@@ -232,6 +225,8 @@ public class TypeAheadPopup extends JWindow {
                 selectedIndex++;
             }
             return initPopupList(selectedIndex);
+        } else if (selectedIndex == IGNORE) {
+            return null;
         } else {
             RubyPlugin.error("couldn't find selected member " + selectedMember.getName(), getClass());
             return null;
@@ -255,7 +250,7 @@ public class TypeAheadPopup extends JWindow {
                         dispose();
                         parentsList.add(members);
                         new TypeAheadPopup(view, originalMembers, childMembers, parentsList, selectedMember, position, state);
-                        selectedIndex = -1;
+                        selectedIndex = IGNORE;
                         break;
                     }
                 }
