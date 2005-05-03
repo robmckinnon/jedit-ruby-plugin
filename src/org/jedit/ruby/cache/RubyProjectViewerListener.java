@@ -64,7 +64,7 @@ public class RubyProjectViewerListener implements ProjectViewerListener {
     public void groupRemoved(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
         RubyPlugin.log("group removed: " + group, getClass());
-        org.jedit.ruby.cache.RubyCache.clear();
+        RubyCache.instance().clear();
         reparse(event.getProject());
     }
 
@@ -107,7 +107,7 @@ public class RubyProjectViewerListener implements ProjectViewerListener {
         if (RubyPlugin.isRubyFile(file)) {
             String text = RubyPlugin.readFile(file);
             if (text != null) {
-                RubyCache.add(text, path);
+                RubyCache.instance().add(text, path);
             }
         }
     }

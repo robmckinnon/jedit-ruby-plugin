@@ -70,7 +70,7 @@ public class RDocViewer extends JPanel
         add(initSplitPane(position, searchPanel, documentationScrollPane));
         viewers.put(this, null);
 
-        setListData(RubyCache.getAllMembers());
+        setListData(RubyCache.instance().getAllMembers());
     }
 
     public static void setMethod(Method method) {
@@ -80,7 +80,7 @@ public class RDocViewer extends JPanel
     }
 
     private void setMember(Member member) {
-        setListData(RubyCache.getAllMembers());
+        setListData(RubyCache.instance().getAllMembers());
         resultList.setSelectedValue(member, true);
         handleSelection();
     }
@@ -143,7 +143,7 @@ public class RDocViewer extends JPanel
         if (searchField != null) {
             String text = searchField.getText();
             boolean noTerm = text.length() == 0;
-            final List<Member> members = noTerm ? org.jedit.ruby.cache.RubyCache.getAllMembers() : getMatchingMembers(text);
+            final List<Member> members = noTerm ? RubyCache.instance().getAllMembers() : getMatchingMembers(text);
 
             if (members.size() == 0) {
                 if(!keyHandler.lastWasBackspace()
@@ -192,7 +192,7 @@ public class RDocViewer extends JPanel
     }
 
     private void populateMatches(String text, boolean matchLength, List<Member> members) {
-        for (Member member : RubyCache.getAllMembers()) {
+        for (Member member : RubyCache.instance().getAllMembers()) {
             if (isMatch(member.getFullName(), text, matchLength)) {
                 members.add(member);
 
@@ -203,7 +203,7 @@ public class RDocViewer extends JPanel
     }
 
     private void populateMatches(final String instanceMethod, final String classMethod, final boolean matchLength, final List<Member> members) {
-        for (Member member : RubyCache.getAllMembers()) {
+        for (Member member : RubyCache.instance().getAllMembers()) {
             member.accept(new MemberVisitorAdapter() {
                 public void handleMethod(Method method) {
                     String text = method.isClassMethod() ? classMethod : instanceMethod;

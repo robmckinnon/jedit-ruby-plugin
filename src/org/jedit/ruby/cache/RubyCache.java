@@ -31,77 +31,79 @@ public class RubyCache {
 
     private static final RubyCache instance = new RubyCache();
 
-    private NameToMethods nameToMethod = new NameToMethods();
-    private MethodToParents methodToParent = new MethodToParents();
-    private ParentToMethods parentToMethod = new ParentToMethods();
+    private NameToMethods nameToMethods = new NameToMethods();
+    private NameToParents nameToParents = new NameToParents();
+    private MethodToParents methodToParents = new MethodToParents();
+    private ParentToMethods parentToMethods = new ParentToMethods();
+
     private Map pathToMembers = new HashMap();
 
     public static RubyCache instance() {
         return instance;
     }
 
-    public static void clear() {
-        instance.pathToMembers.clear();
-        instance.methodToParent.clear();
-        instance.parentToMethod.clear();
-        instance.nameToMethod.clear();
+    public void clear() {
+        pathToMembers.clear();
+        methodToParents.clear();
+        parentToMethods.clear();
+        nameToMethods.clear();
     }
 
-    public static void add(String text, String path) {
+    public void add(String text, String path) {
         RubyMembers members = RubyParser.getMembers(text, path, null, true);
 
         if (!members.containsErrors()) {
-            instance.add(path, members);
+            add(path, members);
         }
     }
 
-    public static void add(RubyMembers members, String path) {
+    public void add(RubyMembers members, String path) {
         if (!members.containsErrors()) {
-            instance.add(path, members);
+            add(path, members);
         }
     }
 
-    public static List<Method> getMethods(String method) {
-        return instance.nameToMethod.getMethods(method);
+    public List<Method> getMethods(String method) {
+        return nameToMethods.getMethods(method);
     }
 
-    public static List<Member> getMembersWithMethod(String method) {
-        return instance.getAllMembersWithMethod(method);
+    public List<Member> getMembersWithMethod(String method) {
+        return getAllMembersWithMethod(method);
     }
 
-    public static List<Method> getMethodsOfMember(String memberName) {
-        return instance.parentToMethod.getMethodList(memberName);
+    public List<Method> getMethodsOfMember(String memberName) {
+        return parentToMethods.getMethodList(memberName);
     }
 
     private List<Member> getAllMembersWithMethod(String method) {
-        return methodToParent.getParentList(method);
+        return methodToParents.getParentList(method);
     }
 
     private void add(String path, RubyMembers members) {
-        parentToMethod.reset();
+        parentToMethods.reset();
         pathToMembers.put(path, members);
         members.visitMembers(new MemberVisitorAdapter() {
             public void handleModule(Module module) {
-                parentToMethod.add(module);
+                parentToMethods.add(module);
             }
 
             public void handleClass(ClassMember classMember) {
-                parentToMethod.add(classMember);
+                parentToMethods.add(classMember);
             }
 
             public void handleMethod(Method method) {
-                methodToParent.add(method);
-                nameToMethod.add(method);
+                methodToParents.add(method);
+                nameToMethods.add(method);
             }
         });
     }
 
-    public static List<Method> getAllMethods() {
-        return instance.parentToMethod.getAllMethods();
+    public List<Method> getAllMethods() {
+        return parentToMethods.getAllMethods();
     }
 
-    public static List<Member> getAllMembers() {
-        return instance.parentToMethod.getAllMembers();
+    public List<Member> getAllMembers() {
+        return nameToParents.getAllMembers();
     }
 
     public void populateSuperclassMethods() {

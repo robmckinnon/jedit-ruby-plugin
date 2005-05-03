@@ -20,7 +20,6 @@
 package org.jedit.ruby.cache;
 
 import org.jedit.ruby.ast.Method;
-import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.ParentMember;
 
 import java.util.*;
@@ -32,10 +31,12 @@ class ParentToMethods {
 
     private Map<String, Set<Method>> fullNameToMethods = new HashMap<String, Set<Method>>();
     private Map<String, Set<Method>> nameToMethods = new HashMap<String, Set<Method>>();
-    private Map<String, Member> fullNameToMember = new HashMap<String, Member>();
-    private Map<String, Member> nameToMember = new HashMap<String, Member>();
-    private List<Member> allMembers;
+    private NameToParents nameToParents;
     private List<Method> allMethods;
+
+    void setNameToParents(NameToParents nameToParents) {
+        this.nameToParents = nameToParents;
+    }
 
     List<Method> getMethodList(String memberName) {
         Set<Method> methodSet = fullNameToMethods.get(memberName);
@@ -73,23 +74,18 @@ class ParentToMethods {
             fullNameToMethods.put(fullName, methods);
             nameToMethods.put(name, methods);
         }
-
-        fullNameToMember.put(fullName, member);
-        nameToMember.put(name, member);
     }
 
     void clear() {
         fullNameToMethods.clear();
         nameToMethods.clear();
-        fullNameToMember.clear();
-        nameToMember.clear();
     }
 
     List<Method> getAllMethods() {
         if(allMethods == null) {
             allMethods = new ArrayList<Method>();
 
-            for (String parentName : getAllParentNames()) {
+            for (String parentName : nameToParents.getAllParentNames()) {
                 allMethods.addAll(getMethodList(parentName));
             }
         }
@@ -97,27 +93,7 @@ class ParentToMethods {
         return allMethods;
     }
 
-    List<Member> getAllMembers() {
-        if (allMembers == null) {
-            allMembers = new ArrayList<Member>();
-
-            for (String parentName : getAllParentNames()) {
-                allMembers.add(fullNameToMember.get(parentName));
-                allMembers.addAll(getMethodList(parentName));
-            }
-        }
-
-        return allMembers;
-    }
-
-    private List<String> getAllParentNames() {
-        List<String> names = new ArrayList<String>(fullNameToMember.keySet());
-        Collections.sort(names);
-        return names;
-    }
-
     void reset() {
-        allMembers = null;
         allMethods = null;
     }
 }

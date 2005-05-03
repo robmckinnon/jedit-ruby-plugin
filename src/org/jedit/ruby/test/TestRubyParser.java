@@ -97,7 +97,7 @@ public class TestRubyParser extends TestCase {
     private static final String ONE_LINER = "def count; @contents.split.size; end";
 
     public void tearDown() {
-        org.jedit.ruby.cache.RubyCache.clear();
+        RubyCache.instance().clear();
     }
 
     public void testOneLiner() {

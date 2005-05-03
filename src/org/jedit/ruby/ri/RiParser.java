@@ -43,7 +43,7 @@ public class RiParser {
         for (JarEntry entry : entries) {
             loadClassDesciption(entry);
         }
-        org.jedit.ruby.cache.RubyCache.instance().populateSuperclassMethods();
+        RubyCache.instance().instance().populateSuperclassMethods();
     }
 
     public static void loadClassDesciption(JarEntry entry) {
@@ -114,7 +114,7 @@ public class RiParser {
         Member[] members = new Member[1];
         members[0] = parent;
         RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>());
-        RubyCache.add(rubyMembers, "1.8/system");
+        RubyCache.instance().add(rubyMembers, "1.8/system");
     }
 
     public static void addMethods(List<MethodDescription> methods, ClassMember parent) {

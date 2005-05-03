@@ -76,7 +76,7 @@ public class CodeCompletor {
 
             List<Method> methods;
             if (className != null) {
-                methods = org.jedit.ruby.cache.RubyCache.getMethodsOfMember(className);
+                methods = RubyCache.instance().getMethodsOfMember(className);
                 if (analyzer.isClass()) {
                     for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
                         Method method = iterator.next();
@@ -108,7 +108,7 @@ public class CodeCompletor {
         List<Member> members = null;
 
         for (String method : methods) {
-            List<Member> classes = org.jedit.ruby.cache.RubyCache.getMembersWithMethod(method);
+            List<Member> classes = RubyCache.instance().getMembersWithMethod(method);
             if (members != null) {
                 intersection(members, classes);
             } else {
@@ -120,10 +120,10 @@ public class CodeCompletor {
 
         if (members != null) {
             for (Member member : members) {
-                results.addAll(org.jedit.ruby.cache.RubyCache.getMethodsOfMember(member.getFullName()));
+                results.addAll(RubyCache.instance().getMethodsOfMember(member.getFullName()));
             }
         } else {
-            results.addAll(org.jedit.ruby.cache.RubyCache.getAllMethods());
+            results.addAll(RubyCache.instance().getAllMethods());
         }
 
         return results;

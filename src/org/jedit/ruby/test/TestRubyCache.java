@@ -33,17 +33,17 @@ import junit.framework.TestCase;
 public class TestRubyCache extends TestCase {
 
     private void addClassesToCache() {
-        RubyCache.add(TestRubyParser.CLASS, "CLASS");
-        org.jedit.ruby.cache.RubyCache.add(TestRubyParser.ARR_CLASS, "ARR_CLASS");
+        RubyCache.instance().add(TestRubyParser.CLASS, "CLASS");
+        RubyCache.instance().add(TestRubyParser.ARR_CLASS, "ARR_CLASS");
     }
 
     private void addModuleToCache() {
-        org.jedit.ruby.cache.RubyCache.add(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
+        RubyCache.instance().add(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
     }
 
     public void testGetMethods() {
         addClassesToCache();
-        List<Method> methods = org.jedit.ruby.cache.RubyCache.getMethods("red");
+        List<Method> methods = RubyCache.instance().getMethods("red");
 
         assertEquals("Assert file name correct", methods.get(0).getFileName(), "CLASS");
         assertEquals("Assert file name correct", methods.get(0).getName(), "red");
@@ -78,13 +78,13 @@ public class TestRubyCache extends TestCase {
     }
 
     private void assertFindByMethodCorrect(String method, int index, String parentName, int parentCount) {
-        List<Member> members = org.jedit.ruby.cache.RubyCache.getMembersWithMethod(method);
+        List<Member> members = RubyCache.instance().getMembersWithMethod(method);
         assertEquals("Assert parent match correct for: " + method, parentCount, members.size());
         assertEquals("Assert name correct", parentName, members.get(index).getName());
     }
 
     private void assertFindByClassCorrect(String parentName, int index, String methodName, int methodCount, String filePath) {
-        List<Method> members = RubyCache.getMethodsOfMember(parentName);
+        List<Method> members = RubyCache.instance().getMethodsOfMember(parentName);
         assertEquals("Assert child match correct", methodCount, members.size());
         assertEquals("Assert name correct", methodName, members.get(index).getName());
         assertEquals("Assert path correct", filePath, members.get(index).getFilePath());

@@ -163,7 +163,7 @@ public class RubyActions {
         textArea.setCaretPosition(caretPosition);
 
         RubyPlugin.log("looking for methods named: " + text, RubyActions.class);
-        List<Method> methods = org.jedit.ruby.cache.RubyCache.getMethods(text);
+        List<Method> methods = RubyCache.instance().getMethods(text);
         RubyPlugin.log("found: " + methods.size(), RubyActions.class);
 
         if (methods.size() > 0) {
