@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.cache;
 
 import projectviewer.event.ProjectViewerListener;
 import projectviewer.event.ProjectViewerEvent;
@@ -31,6 +31,7 @@ import java.io.*;
 
 import org.jedit.ruby.cache.*;
 import org.jedit.ruby.cache.RubyCache;
+import org.jedit.ruby.RubyPlugin;
 
 /**
  * @author robmckinnon at users.sourceforge.net

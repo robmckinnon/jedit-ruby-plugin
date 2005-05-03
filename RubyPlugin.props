@@ -57,8 +57,8 @@ ruby.complete-method.label=Complete method
 #options.ruby.general.code=new org.jedit.ruby.options.GeneralOptionPane();
 
 # ProjectViewer listeners
-plugin.projectviewer.org.jedit.ruby.RubyPlugin.global-pv-listeners=org.jedit.ruby.RubyProjectViewerListener
-plugin.projectviewer.org.jedit.ruby.RubyPlugin.prj-listeners=org.jedit.ruby.RubyProjectListener
+plugin.projectviewer.org.jedit.ruby.RubyPlugin.global-pv-listeners=org.jedit.ruby.cache.RubyProjectViewerListener
+plugin.projectviewer.org.jedit.ruby.RubyPlugin.prj-listeners=org.jedit.ruby.cache.RubyProjectListener
 
 ruby.not-ruby-file.title=Not recognized as a Ruby file.
 ruby.not-ruby-file.message=Not recognized as a Ruby file.\n\n To mark as a Ruby file, change edit mode \n on Utilities->Buffer Options dialog.\n

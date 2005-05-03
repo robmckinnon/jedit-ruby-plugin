@@ -34,6 +34,7 @@ import org.jedit.ruby.structure.RubySideKickParser;
 import org.jedit.ruby.structure.*;
 import org.jedit.ruby.structure.TypeAheadPopup;
 import org.jedit.ruby.structure.FileStructurePopup;
+import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 import org.jedit.ruby.cache.*;
 import org.jedit.ruby.ri.*;
 
