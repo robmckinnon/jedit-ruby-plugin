@@ -29,8 +29,8 @@ import java.util.*;
  */
 class NameToParents {
 
-    private Map<String, Member> fullNameToMember = new HashMap<String, Member>();
-    private Map<String, Member> nameToMember = new HashMap<String, Member>();
+    private Map<String, ParentMember> fullNameToMember = new HashMap<String, ParentMember>();
+    private Map<String, ParentMember> nameToMember = new HashMap<String, ParentMember>();
     private ParentToMethods parentToMethods;
     private List<Member> allMembers;
 
@@ -43,6 +43,16 @@ class NameToParents {
         String name = member.getName();
         fullNameToMember.put(fullName, member);
         nameToMember.put(name, member);
+    }
+
+    ParentMember getMember(String name) {
+        if (fullNameToMember.containsKey(name)) {
+            return fullNameToMember.get(name);
+        } else if(nameToMember.containsKey(name)) {
+            return nameToMember.get(name);
+        } else {
+            return null;
+        }
     }
 
     void clear() {
@@ -69,7 +79,12 @@ class NameToParents {
         return names;
     }
 
+    Collection<ParentMember> getAllParents() {
+        return fullNameToMember.values();
+    }
+
     void reset() {
         allMembers = null;
     }
+
 }

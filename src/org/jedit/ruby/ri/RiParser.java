@@ -43,7 +43,7 @@ public class RiParser {
         for (JarEntry entry : entries) {
             loadClassDesciption(entry);
         }
-        RubyCache.instance().instance().populateSuperclassMethods();
+        RubyCache.instance().populateSuperclassMethods();
     }
 
     public static void loadClassDesciption(JarEntry entry) {

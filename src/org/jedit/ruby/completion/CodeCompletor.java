@@ -25,14 +25,14 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
-import org.jedit.ruby.completion.*;
-import org.jedit.ruby.completion.CodeAnalyzer;
 import org.jedit.ruby.cache.RubyCache;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
 public class CodeCompletor {
+
+    private static final CodeCompletionComparator COMPARATOR = new CodeCompletionComparator();
 
     private JEditTextArea textArea;
     private Buffer buffer;
@@ -42,7 +42,7 @@ public class CodeCompletor {
     public CodeCompletor(View view) {
         textArea = view.getTextArea();
         buffer = view.getBuffer();
-        analyzer = new org.jedit.ruby.completion.CodeAnalyzer(textArea, buffer);
+        analyzer = new CodeAnalyzer(textArea, buffer);
         methods = findMethods();
     }
 
@@ -59,68 +59,76 @@ public class CodeCompletor {
     }
 
     public boolean isInsertionPoint() {
-        String partialMethod = getPartialMethod();
-        if (partialMethod != null && partialMethod.length() > 2) {
-            for (Method method : methods) {
-                if (method.getShortName().equals(partialMethod)) {
-                    return false;
-                }
-            }
-        }
         return analyzer.isInsertionPoint();
     }
 
     private List<Method> findMethods() {
-        if (analyzer.getName() != null) {
-            String className = analyzer.getClassName();
+        Set<Method> methods;
 
-            List<Method> methods;
-            if (className != null) {
-                methods = RubyCache.instance().getMethodsOfMember(className);
-                if (analyzer.isClass()) {
-                    for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
-                        Method method = iterator.next();
-                        if (!method.isClassMethod()) {
-                            iterator.remove();
-                        }
-                    }
-                }
+        if (analyzer.getName() == null) {
+            methods = new HashSet<Method>();
+
+        } else {
+            if (analyzer.getClassName() != null) {
+                methods = completeUsingClass(analyzer.getClassName());
             } else {
                 methods = completeUsingMethods(analyzer.getMethods());
             }
 
             if (getPartialMethod() != null) {
-                for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
-                    Method method = iterator.next();
-
-                    if (!method.getShortName().startsWith(getPartialMethod())) {
-                        iterator.remove();
-                    }
-                }
+                filterMethods(methods, getPartialMethod());
             }
-            return methods;
-        } else {
-            return new ArrayList<Method>();
+        }
+
+        List<Method> methodList = new ArrayList<Method>(methods);
+        if (methods.size() > 0) {
+            Collections.sort(methodList, COMPARATOR);
+        }
+        return methodList;
+    }
+
+    private void filterMethods(Set<Method> methods, String partialMethod) {
+        for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
+            Method method = iterator.next();
+
+            if (!method.getShortName().startsWith(partialMethod)) {
+                iterator.remove();
+            }
         }
     }
 
-    private List<Method> completeUsingMethods(List<String> methods) {
-        List<Member> members = null;
+    private Set<Method> completeUsingClass(String className) {
+        Set<Method> methods = RubyCache.instance().getMethodsOfMember(className);
+
+        if (analyzer.isClass()) {
+            for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
+                Method method = iterator.next();
+                if (!method.isClassMethod()) {
+                    iterator.remove();
+                }
+            }
+        }
+
+        return methods;
+    }
+
+    private Set<Method> completeUsingMethods(List<String> methods) {
+        Set<Member> members = null;
 
         for (String method : methods) {
-            List<Member> classes = RubyCache.instance().getMembersWithMethod(method);
+            Set<Member> classes = RubyCache.instance().getMembersWithMethod(method);
             if (members != null) {
-                intersection(members, classes);
+                members = intersection(members, classes);
             } else {
                 members = classes;
             }
         }
 
-        List<Method> results = new ArrayList<Method>();
+        Set<Method> results = new HashSet<Method>();
 
         if (members != null) {
             for (Member member : members) {
-                results.addAll(RubyCache.instance().getMethodsOfMember(member.getFullName()));
+                results.addAll(RubyCache.instance().getMethodsOfMemberAsList(member.getFullName()));
             }
         } else {
             results.addAll(RubyCache.instance().getAllMethods());
@@ -129,8 +137,8 @@ public class CodeCompletor {
         return results;
     }
 
-    List<Member> intersection(List<Member> list, List<Member> otherList) {
-        List<Member> intersection = new ArrayList<Member>();
+    Set<Member> intersection(Set<Member> list, Set<Member> otherList) {
+        Set<Member> intersection = new HashSet<Member>();
 
         if (!list.isEmpty()) {
             intersection.addAll(list);
@@ -143,4 +151,14 @@ public class CodeCompletor {
         return intersection;
     }
 
+    private static class CodeCompletionComparator implements Comparator<Method> {
+        public int compare(Method method, Method otherMethod) {
+            int compare = method.getName().compareTo(otherMethod.getName());
+            if(compare == 0) {
+                return method.getFullName().compareTo(otherMethod.getFullName());
+            } else {
+                return compare;
+            }
+        }
+    }
 }

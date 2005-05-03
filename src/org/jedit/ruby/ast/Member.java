@@ -246,6 +246,10 @@ public abstract class Member implements Comparable<Member> {
         return parentMember;
     }
 
+    public boolean hasParentMemberName() {
+        return parentMemberName != null && parentMemberName.length() > 0;
+    }
+
     public String getParentMemberName() {
         return parentMemberName;
     }

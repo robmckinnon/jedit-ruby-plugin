@@ -33,10 +33,15 @@ class MethodToParents {
 
     void add(Method method) {
         if (method.hasParentMember()) {
-            String methodName = method.getName();
-            Set<Member> parentSet = getParentSet(methodName);
-            parentSet.add(method.getParentMember());
+            Member parentMember = method.getParentMember();
+            add(method, parentMember);
         }
+    }
+
+    void add(Method method, Member parentMember) {
+        String methodName = method.getName();
+        Set<Member> parentSet = getParentSet(methodName);
+        parentSet.add(parentMember);
     }
 
     List<Member> getParentList(String methodName) {
@@ -48,7 +53,7 @@ class MethodToParents {
         return members;
     }
 
-    private Set<Member> getParentSet(String methodName) {
+    Set<Member> getParentSet(String methodName) {
         if (!methodToParentMap.containsKey(methodName)) {
             methodToParentMap.put(methodName, new HashSet<Member>());
         }

@@ -94,7 +94,8 @@ public class RubyCompletion extends SideKickCompletion {
             buffer.remove(offset, partialMethod.length());
         }
 
-        buffer.insert(offset, method.getName());
+        buffer.insert(offset, method.getName() + "()");
+        textArea.setCaretPosition(textArea.getCaretPosition()-1);
         frame.setVisible(false);
         frame.dispose();
         frame = null;

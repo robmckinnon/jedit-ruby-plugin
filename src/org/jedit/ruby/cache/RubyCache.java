@@ -74,12 +74,20 @@ public class RubyCache {
         return nameToMethods.getMethods(method);
     }
 
-    public List<Member> getMembersWithMethod(String method) {
+    public List<Member> getMembersWithMethodAsList(String method) {
         return methodToParents.getParentList(method);
     }
 
-    public List<Method> getMethodsOfMember(String memberName) {
+    public Set<Member> getMembersWithMethod(String method) {
+        return methodToParents.getParentSet(method);
+    }
+
+    public List<Method> getMethodsOfMemberAsList(String memberName) {
         return parentToMethods.getMethodList(memberName);
+    }
+
+    public Set<Method> getMethodsOfMember(String memberName) {
+        return parentToMethods.getMethodSet(memberName);
     }
 
     private void add(String path, RubyMembers members) {
@@ -112,7 +120,27 @@ public class RubyCache {
     }
 
     public void populateSuperclassMethods() {
+        Collection<ParentMember> allParents = nameToParents.getAllParents();
 
+        for (ParentMember member : allParents) {
+            ParentMember memberOrSuperclass = member;
+            populateSuperclassMethods(member, memberOrSuperclass);
+        }
+    }
+
+    private void populateSuperclassMethods(ParentMember member, ParentMember memberOrSuperclass) {
+        if (memberOrSuperclass.hasParentMemberName()) {
+            String parentName = memberOrSuperclass.getParentMemberName();
+            ParentMember parent = nameToParents.getMember(parentName);
+            if (parent != null) {
+                Set<Method> methods = parent.getMethods();
+                parentToMethods.add(member, methods);
+                for (Method method : methods) {
+                    methodToParents.add(method, member);
+                }
+                populateSuperclassMethods(member, parent);
+            }
+        }
     }
 
 }

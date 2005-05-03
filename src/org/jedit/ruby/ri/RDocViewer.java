@@ -328,17 +328,17 @@ public class RDocViewer extends JPanel
     }
 
     public boolean consumeKeyEvent(char typed) {
-        String text = searchField.getSelectedText();
+        String selectedChars = searchField.getSelectedText();
 
         if (mismatchCharacters == MAX_MISMATCHED_CHARACTERS) {
-            if (text.length() >= mismatchCharacters) {
-                mismatchCharacters -= (text.length());
+            if (selectedChars != null && selectedChars.length() >= mismatchCharacters) {
+                mismatchCharacters -= (selectedChars.length());
                 mismatchCharacters = mismatchCharacters < 0 ? 0 : mismatchCharacters;
                 return false;
             } else {
                 return true;
             }
-        } else if (text != null && text.endsWith(" ") && typed == ' ') {
+        } else if (selectedChars != null && selectedChars.endsWith(" ") && typed == ' ') {
             return true;
         } else if (typed == '\t') {
             documentationPane.requestFocusInWindow();

@@ -78,13 +78,13 @@ public class TestRubyCache extends TestCase {
     }
 
     private void assertFindByMethodCorrect(String method, int index, String parentName, int parentCount) {
-        List<Member> members = RubyCache.instance().getMembersWithMethod(method);
+        List<Member> members = RubyCache.instance().getMembersWithMethodAsList(method);
         assertEquals("Assert parent match correct for: " + method, parentCount, members.size());
         assertEquals("Assert name correct", parentName, members.get(index).getName());
     }
 
     private void assertFindByClassCorrect(String parentName, int index, String methodName, int methodCount, String filePath) {
-        List<Method> members = RubyCache.instance().getMethodsOfMember(parentName);
+        List<Method> members = RubyCache.instance().getMethodsOfMemberAsList(parentName);
         assertEquals("Assert child match correct", methodCount, members.size());
         assertEquals("Assert name correct", methodName, members.get(index).getName());
         assertEquals("Assert path correct", filePath, members.get(index).getFilePath());

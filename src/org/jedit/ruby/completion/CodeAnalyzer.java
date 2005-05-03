@@ -31,7 +31,7 @@ import java.util.ArrayList;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class CodeAnalyzer {
+public class CodeAnalyzer {
 
     private String name;
     private String partialMethod;
@@ -139,13 +139,17 @@ class CodeAnalyzer {
         return restOfLine;
     }
 
-    //
-    // Returns array of methods invoked on the variable
-    //
     List<String> getMethods() {
+        return getMethods(getTextWithoutLine(), name);
+    }
+
+    /**
+     * Returns array of methods invoked on the variable
+     */
+    public static List<String> getMethods(String text, String name) {
         try {
-            RE expression = new RE("("+name+"\\.|#)(\\w+)");
-            REMatch[] matches = expression.getAllMatches(getTextWithoutLine());
+            RE expression = new RE("("+name+"\\.|#)(\\w+\\?+)");
+            REMatch[] matches = expression.getAllMatches(text);
 
             List<String> methods = new ArrayList<String>();
 

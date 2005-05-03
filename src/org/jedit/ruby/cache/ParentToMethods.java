@@ -39,23 +39,25 @@ class ParentToMethods {
     }
 
     List<Method> getMethodList(String memberName) {
+        Set<Method> methodSet = getMethodSet(memberName);
+        List<Method> methods = new ArrayList<Method>(methodSet);
+
+        if (methods.size() > 0) {
+            Collections.sort(methods);
+        }
+
+        return methods;
+    }
+
+    Set<Method> getMethodSet(String memberName) {
         Set<Method> methodSet = fullNameToMethods.get(memberName);
         if (methodSet == null) {
             methodSet = nameToMethods.get(memberName);
         }
-
-        List<Method> methods;
-        if (methodSet != null) {
-            methods = new ArrayList<Method>(methodSet);
-
-            if (methods.size() > 0) {
-                Collections.sort(methods);
-            }
-        } else {
-            methods = new ArrayList<Method>();
+        if (methodSet == null) {
+            methodSet = new HashSet<Method>();
         }
-
-        return methods;
+        return methodSet;
     }
 
     /**
@@ -64,6 +66,10 @@ class ParentToMethods {
      */
     void add(ParentMember member) {
         Set<Method> methods = member.getMethods();
+        add(member, methods);
+    }
+
+    void add(ParentMember member, Set<Method> methods) {
         String fullName = member.getFullName();
         String name = member.getName();
 

@@ -1,5 +1,5 @@
 /*
- * RubyTestSuite.java - 
+ * LineCounter.java - 
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -19,22 +19,25 @@
  */
 package org.jedit.ruby.test;
 
-import junit.framework.TestSuite;
-import junit.framework.Test;
+import junit.framework.TestCase;
+import org.jedit.ruby.completion.CodeAnalyzer;
+
+import java.util.List;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubyTestSuite extends TestSuite {
+public class TestCodeAnalyzer extends TestCase {
 
-    public static Test suite() {
-        TestSuite suite = new TestSuite("ruby");
-        suite.addTestSuite(TestRubyParser.class);
-        suite.addTestSuite(TestRubyCache.class);
-        suite.addTestSuite(TestRDocSeacher.class);
-        suite.addTestSuite(TestYamlParser.class);
-        suite.addTestSuite(TestLineCounter.class);
-        suite.addTestSuite(TestCodeAnalyzer.class);
-        return suite;
+    private static final String TEXT = "a.respond_to?() \n" +
+                    "a.== \n" +
+                    "3 \n";
+
+
+    public void testFindMethod() {
+        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        assertEquals("assert found method", "respond_to?", methods.get(0));
+        assertEquals("assert found method", "==", methods.get(1));
     }
+
 }
