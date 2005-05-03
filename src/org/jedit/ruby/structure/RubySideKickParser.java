@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby.sidekick;
+package org.jedit.ruby.structure;
 
 import sidekick.SideKickParser;
 import sidekick.SideKickParsedData;
@@ -124,7 +124,7 @@ public class RubySideKickParser extends SideKickParser {
     private void addNodes(DefaultMutableTreeNode parentNode, Member[] members, Buffer buffer) {
         if(members != null) {
             for(Member member : members) {
-                MemberNode node = new MemberNode(member);
+                MemberNode node = new org.jedit.ruby.structure.MemberNode(member);
                 node.start = buffer.createPosition(member.getStartOffset());
                 node.end = buffer.createPosition(member.getEndOffset());
                 DefaultMutableTreeNode treeNode = node.createTreeNode();

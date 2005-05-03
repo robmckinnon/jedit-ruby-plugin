@@ -30,7 +30,7 @@ import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.parser.RubyParser;
-import org.jedit.ruby.sidekick.RubySideKickParser;
+import org.jedit.ruby.structure.RubySideKickParser;
 import org.jedit.ruby.structure.*;
 import org.jedit.ruby.structure.TypeAheadPopup;
 import org.jedit.ruby.structure.FileStructurePopup;
@@ -227,7 +227,7 @@ public class RubyActions {
 
     public static void nextError(JEditTextArea textArea) {
         int caretPosition = textArea.getCaretPosition();
-        ErrorSource.Error[] errors = RubySideKickParser.getErrors();
+        ErrorSource.Error[] errors = org.jedit.ruby.structure.RubySideKickParser.getErrors();
 
         for (ErrorSource.Error error : errors) {
             int offset = RubyPlugin.getNonSpaceStartOffset(error.getLineNumber());

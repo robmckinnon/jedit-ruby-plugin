@@ -4,6 +4,6 @@
 
 <SERVICES>
 	<SERVICE CLASS="sidekick.SideKickParser" NAME="ruby">
-		new org.jedit.ruby.sidekick.RubySideKickParser();
+		new org.jedit.ruby.structure.RubySideKickParser();
 	</SERVICE>
 </SERVICES>
