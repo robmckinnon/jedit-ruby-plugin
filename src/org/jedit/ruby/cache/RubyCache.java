@@ -31,12 +31,22 @@ public class RubyCache {
 
     private static final RubyCache instance = new RubyCache();
 
-    private NameToMethods nameToMethods = new NameToMethods();
-    private NameToParents nameToParents = new NameToParents();
-    private MethodToParents methodToParents = new MethodToParents();
-    private ParentToMethods parentToMethods = new ParentToMethods();
+    private NameToMethods nameToMethods;
+    private NameToParents nameToParents;
+    private MethodToParents methodToParents;
+    private ParentToMethods parentToMethods;
 
-    private Map pathToMembers = new HashMap();
+    private Map pathToMembers;
+
+    private RubyCache() {
+        nameToMethods = new NameToMethods();
+        nameToParents = new NameToParents();
+        methodToParents = new MethodToParents();
+        parentToMethods = new ParentToMethods();
+        pathToMembers = new HashMap();
+        nameToParents.setParentToMethods(parentToMethods);
+        parentToMethods.setNameToParents(nameToParents);
+    }
 
     public static RubyCache instance() {
         return instance;
@@ -51,10 +61,7 @@ public class RubyCache {
 
     public void add(String text, String path) {
         RubyMembers members = RubyParser.getMembers(text, path, null, true);
-
-        if (!members.containsErrors()) {
-            add(path, members);
-        }
+        add(members, path);
     }
 
     public void add(RubyMembers members, String path) {
@@ -68,15 +75,11 @@ public class RubyCache {
     }
 
     public List<Member> getMembersWithMethod(String method) {
-        return getAllMembersWithMethod(method);
+        return methodToParents.getParentList(method);
     }
 
     public List<Method> getMethodsOfMember(String memberName) {
         return parentToMethods.getMethodList(memberName);
-    }
-
-    private List<Member> getAllMembersWithMethod(String method) {
-        return methodToParents.getParentList(method);
     }
 
     private void add(String path, RubyMembers members) {
@@ -85,10 +88,12 @@ public class RubyCache {
         members.visitMembers(new MemberVisitorAdapter() {
             public void handleModule(Module module) {
                 parentToMethods.add(module);
+                nameToParents.add(module);
             }
 
             public void handleClass(ClassMember classMember) {
                 parentToMethods.add(classMember);
+                nameToParents.add(classMember);
             }
 
             public void handleMethod(Method method) {
