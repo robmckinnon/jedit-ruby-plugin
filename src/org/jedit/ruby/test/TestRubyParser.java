@@ -2,6 +2,7 @@ package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
 import org.jedit.ruby.*;
+import org.jedit.ruby.cache.*;
 import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.parser.LineCounter;
 import org.jedit.ruby.ast.Member;
@@ -96,7 +97,7 @@ public class TestRubyParser extends TestCase {
     private static final String ONE_LINER = "def count; @contents.split.size; end";
 
     public void tearDown() {
-        RubyCache.clear();
+        org.jedit.ruby.cache.RubyCache.clear();
     }
 
     public void testOneLiner() {

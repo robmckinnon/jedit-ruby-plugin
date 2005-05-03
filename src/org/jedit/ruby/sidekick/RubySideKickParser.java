@@ -29,8 +29,8 @@ import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.RubyPlugin;
-import org.jedit.ruby.CodeCompletor;
-import org.jedit.ruby.RubyCompletion;
+import org.jedit.ruby.completion.CodeCompletor;
+import org.jedit.ruby.completion.RubyCompletion;
 import errorlist.DefaultErrorSource;
 import errorlist.ErrorSource;
 
@@ -92,8 +92,8 @@ public class RubySideKickParser extends SideKickParser {
         RubyPlugin.log("completing", getClass());
         CodeCompletor completor = new CodeCompletor(editPane.getView());
 
-        if(completor.isInsertionPoint()) {
-            return new RubyCompletion(editPane.getView(), completor.getPartialMethod(), completor.getMethods());
+        if (completor.isInsertionPoint()) {
+            return new org.jedit.ruby.completion.RubyCompletion(editPane.getView(), completor.getPartialMethod(), completor.getMethods());
         } else {
             return null;
         }

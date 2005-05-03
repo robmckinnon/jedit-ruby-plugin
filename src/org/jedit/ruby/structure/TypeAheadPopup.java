@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.structure;
 
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.View;
@@ -28,11 +28,11 @@ import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ast.MemberVisitorAdapter;
-import org.jedit.ruby.icons.MemberIcon;
+import org.jedit.ruby.*;
+import org.jedit.ruby.ri.*;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -50,10 +50,11 @@ public class TypeAheadPopup extends JWindow {
     public static final PopupState SEARCH_POPUP = new SearchState();
     public static final PopupState FIND_DECLARATION_POPUP = new FindDeclarationState();
 
+    static final int VISIBLE_LIST_SIZE = 15;
+    static final String UP_TO_PARENT_TEXT = "..";
+
     private static final String NARROW_LIST_ON_TYPING = "rubyplugin.file-structure-popup.narrow-list-on-typing";
     private static final String SHOW_ALL = "rubyplugin.file-structure-popup.show-all";
-    private static final String UP_TO_PARENT_TEXT = "..";
-    private static final int VISIBLE_LIST_SIZE = 15;
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
     private static final char BACKSPACE_KEY = (char)-1;
     private static final char ESCAPE_KEY = (char)-2;
@@ -67,21 +68,20 @@ public class TypeAheadPopup extends JWindow {
     private LinkedList<Member[]> parentsList;
     private View view;
     private JEditTextArea textArea;
+    private TypeAheadPopupListCellRenderer cellRenderer;
     private JList popupList;
-    private String validCharacters;
     private String searchText;
     private String searchPrefix;
     private JLabel searchLabel;
     private Point position;
-    private int mismatchCharacters;
+    private JCheckBox showAllCheckBox;
+    private JCheckBox narrowListCheckBox;
+    private PopupState state;
     private boolean handleFocusOnDispose;
     private boolean narrowListOnTyping;
     private char narrowListMnemonic;
     private char showAllMnemonic;
-    private JCheckBox showAllCheckBox;
-    private JCheckBox narrowListCheckBox;
-    private boolean allHaveSameName;
-    private PopupState state;
+    private int mismatchCharacters;
 
     public TypeAheadPopup(View view, Member[] members, Member selectedMember, PopupState state) {
         this(view, members, members, null, selectedMember, null, state);
@@ -94,28 +94,17 @@ public class TypeAheadPopup extends JWindow {
         this.state = state;
         view = editorView;
         textArea = editorView.getTextArea();
-
-        if (parentMembers != null) {
-            parentsList = parentMembers;
-        } else {
-            parentsList = new LinkedList<Member[]>();
-        }
-
         position = location;
         searchPrefix = " " + jEdit.getProperty("ruby.file-structure-popup.search.label");
         mismatchCharacters = 0;
         searchText = "";
-        validCharacters = "_(),.[]";
         handleFocusOnDispose = true;
 
         narrowListOnTyping = jEdit.getBooleanProperty(NARROW_LIST_ON_TYPING, false);
 
+        parentsList = parentMembers != null ? parentMembers : new LinkedList<Member[]>();
         this.originalMembers = originalMembers;
-        if (state.showAllMembers()) {
-            members = getExpandedMembers(displayMembers);
-        } else {
-            members = displayMembers;
-        }
+        members = getMembers(state, displayMembers);
         popupList = initPopupList(selectedMember);
 
         if (popupList != null) {
@@ -123,54 +112,25 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
-    private Member[] getExpandedMembers(Member[] members) {
-        List<Member> memberList = new ArrayList<Member>();
-        populateMemberList(members, memberList);
-        return memberList.toArray(new Member[0]);
+    private Member[] getMembers(PopupState state, Member[] displayMembers) {
+        if (state.showAllMembers()) {
+            List<Member> memberList = new ArrayList<Member>();
+            populateMemberList(displayMembers, memberList);
+            return memberList.toArray(new Member[0]);
+        } else {
+            return displayMembers;
+        }
     }
 
     public void setVisible(boolean visible) {
         if (visible) {
-            searchLabel = new JLabel("");
-            searchLabel.setOpaque(true);
-            searchLabel.setBackground(Color.white);
-            searchLabel.setBorder(TOP_LINE_BORDER);
-
-            JPanel topPanel;
-
-            if (state.displayShowAllCheckBox()) {
-                String key = "ruby.file-structure-popup.show-all";
-                showAllMnemonic = jEdit.getProperty(key + ".mnemonic").charAt(0);
-                showAllCheckBox = initCheckBox(key, state.showAllMembers(), showAllMnemonic, new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                        setShowAllMembers(((JCheckBox)e.getSource()).isSelected());
-                    }
-                });
-                topPanel = new JPanel(new GridLayout(2, 1));
-                topPanel.add(showAllCheckBox);
-            } else {
-                topPanel = new JPanel(new GridLayout(1, 1));
-            }
-
-            String key = "ruby.file-structure-popup.narrow-search";
-            narrowListMnemonic = jEdit.getProperty(key + ".mnemonic").charAt(0);
-            narrowListCheckBox = initCheckBox(key, narrowListOnTyping, narrowListMnemonic, new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    setNarrowListOnTyping(((JCheckBox)e.getSource()).isSelected());
+            initContentPane();
+            view.getTextArea().addFocusListener(new FocusAdapter() {
+                public void focusLost(FocusEvent e) {
+                    handleFocusOnDispose = false;
+                    dispose();
                 }
             });
-            topPanel.add(narrowListCheckBox);
-
-            JPanel panel = new JPanel(new BorderLayout());
-            panel.add(topPanel, BorderLayout.NORTH);
-            panel.add(searchLabel, BorderLayout.SOUTH);
-            JScrollPane scroller = new JScrollPane(popupList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-            NonTraversablePanel contentPane = new NonTraversablePanel(new BorderLayout());
-            contentPane.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-            setContentPane(contentPane);
-            getContentPane().add(panel, BorderLayout.NORTH);
-            getContentPane().add(scroller);
 
             putFocusOnPopup();
             pack();
@@ -180,18 +140,65 @@ public class TypeAheadPopup extends JWindow {
             } else {
                 setLocation(position);
             }
+
             super.setVisible(true);
             Object selectedValue = popupList.getSelectedValue();
             popupList.setSelectedIndex(0);
             popupList.setSelectedValue(selectedValue, true);
 
-            KeyHandler keyHandler = new KeyHandler();
+            TypeAheadPopupKeyHandler keyHandler = new TypeAheadPopupKeyHandler(this);
             addKeyListener(keyHandler);
             popupList.addKeyListener(keyHandler);
             view.setKeyEventInterceptor(keyHandler);
         } else {
             super.setVisible(false);
         }
+    }
+
+    private void initContentPane() {
+        searchLabel = new JLabel("");
+        searchLabel.setOpaque(true);
+        searchLabel.setBackground(Color.white);
+        searchLabel.setBorder(TOP_LINE_BORDER);
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(initTopPanel(), BorderLayout.NORTH);
+        panel.add(searchLabel, BorderLayout.SOUTH);
+        JScrollPane scroller = new JScrollPane(popupList, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        NonTraversablePanel contentPane = new NonTraversablePanel(new BorderLayout());
+        contentPane.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        setContentPane(contentPane);
+        getContentPane().add(panel, BorderLayout.NORTH);
+        getContentPane().add(scroller);
+    }
+
+    private JPanel initTopPanel() {
+        JPanel topPanel;
+
+        if (state.displayShowAllCheckBox()) {
+            String key = "ruby.file-structure-popup.show-all";
+            showAllMnemonic = jEdit.getProperty(key + ".mnemonic").charAt(0);
+            showAllCheckBox = initCheckBox(key, state.showAllMembers(), showAllMnemonic, new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    setShowAllMembers(((JCheckBox)e.getSource()).isSelected());
+                }
+            });
+            topPanel = new JPanel(new GridLayout(2, 1));
+            topPanel.add(showAllCheckBox);
+        } else {
+            topPanel = new JPanel(new GridLayout(1, 1));
+        }
+
+        String key = "ruby.file-structure-popup.narrow-search";
+        narrowListMnemonic = jEdit.getProperty(key + ".mnemonic").charAt(0);
+        narrowListCheckBox = initCheckBox(key, narrowListOnTyping, narrowListMnemonic, new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setNarrowListOnTyping(((JCheckBox)e.getSource()).isSelected());
+            }
+        });
+        topPanel.add(narrowListCheckBox);
+        return topPanel;
     }
 
     private JCheckBox initCheckBox(String resourceKey, boolean selected, char mnemonic, ActionListener listener) {
@@ -300,11 +307,12 @@ public class TypeAheadPopup extends JWindow {
 
         list.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
-                handleSelection((Member)popupList.getSelectedValue(), true);
+                handleSelection(true);
             }
         });
 
-        list.setCellRenderer(new PopupListCellRenderer());
+        cellRenderer = new TypeAheadPopupListCellRenderer(toParentMember, state.showAllMembers());
+        list.setCellRenderer(cellRenderer);
     }
 
     public void dispose() {
@@ -313,14 +321,10 @@ public class TypeAheadPopup extends JWindow {
         if (handleFocusOnDispose) {
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    textArea.requestFocus();
+                    textArea.requestFocusInWindow();
                 }
             });
         }
-    }
-
-    private void handleSelection(Member member, boolean showMenu) {
-        state.handleSelection(member, showMenu, this, view);
     }
 
     private void goToMember(Member member, Buffer buffer) {
@@ -335,7 +339,7 @@ public class TypeAheadPopup extends JWindow {
         textArea.setCaretPosition(offset);
     }
 
-    private void updateMatchedMembers(char typed) {
+    void updateMatchedMembers(char typed) {
         if (typed == ESCAPE_KEY) {
             mismatchCharacters = 0;
         } else if (typed == BACKSPACE_KEY && mismatchCharacters > 0) {
@@ -345,6 +349,7 @@ public class TypeAheadPopup extends JWindow {
         String newSearchText = getNewSearchText(typed);
         setSearchText(newSearchText);
         List<Member> matches = getMatchingMembers(newSearchText);
+        cellRenderer.resetAllHaveSameName(matches);
 
         if (matches.size() == 0) {
             searchLabel.setForeground(Color.red);
@@ -415,230 +420,70 @@ public class TypeAheadPopup extends JWindow {
                 if (UP_TO_PARENT_TEXT.startsWith(text)) {
                     visibleMembers.add(member);
                 }
-            } else if (member.getFullName().toLowerCase().startsWith(text) ||
-                    member.getName().toLowerCase().startsWith(text)) {
+            } else if (member.getFullName().toLowerCase().startsWith(text)
+                    || member.getName().toLowerCase().startsWith(text)) {
                 visibleMembers.add(member);
             }
-        }
-
-        allHaveSameName = visibleMembers.size() > 1;
-        String name = null;
-        for (Member member : visibleMembers) {
-            if (name != null) {
-                allHaveSameName = allHaveSameName && name.equals(member.getFullName());
-            }
-            name = member.getFullName();
         }
 
         return visibleMembers;
     }
 
-    private static class TopLineBorder extends LineBorder {
-        public TopLineBorder(Color color) {
-            super(color);
+    void handleSelection(boolean showMenu) {
+        Member member = (Member)popupList.getSelectedValue();
+        state.handleSelection(member, showMenu, this, view);
+    }
+
+    boolean handleAltPressedWith(char keyChar) {
+        boolean handled = false;
+
+        if (keyChar == narrowListMnemonic) {
+            narrowListCheckBox.setSelected(!narrowListOnTyping);
+            setNarrowListOnTyping(!narrowListOnTyping);
+            handled = true;
+        } else if (keyChar == showAllMnemonic) {
+            showAllCheckBox.setSelected(!state.showAllMembers());
+            setShowAllMembers(!state.showAllMembers());
+            handled = true;
         }
 
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            Color oldColor = g.getColor();
-            int i;
-            g.setColor(lineColor);
-            for (i = 0; i < thickness; i++) {
-                int newWidth = width - i - i - 1;
-                int x1 = x + i;
-                int y1 = y + i;
-                int x2 = x1 + newWidth;
-                g.drawLine(x1, y1, x2, y1);
-            }
-            g.setColor(oldColor);
+        return handled;
+    }
+
+    void handleBackSpacePressed() {
+        if (searchText.length() != 0) {
+            updateMatchedMembers(BACKSPACE_KEY);
         }
     }
 
-    private class KeyHandler extends KeyAdapter {
-
-        public void keyPressed(KeyEvent event) {
-            switch (event.getKeyCode()) {
-                case KeyEvent.VK_ESCAPE:
-                    handleEscapePressed(event);
-                    break;
-
-                case KeyEvent.VK_UP:
-                    incrementSelection(event, -1);
-                    break;
-
-                case KeyEvent.VK_DOWN:
-                    incrementSelection(event, 1);
-                    break;
-
-                case KeyEvent.VK_PAGE_UP:
-                case KeyEvent.VK_LEFT:
-                    incrementSelection(event, -1 * (VISIBLE_LIST_SIZE - 1));
-                    break;
-
-                case KeyEvent.VK_PAGE_DOWN:
-                case KeyEvent.VK_RIGHT:
-                    incrementSelection(event, (VISIBLE_LIST_SIZE - 1));
-                    break;
-
-                case KeyEvent.VK_HOME:
-                    incrementSelection(event, -1 * getListSize());
-                    break;
-
-                case KeyEvent.VK_END:
-                    incrementSelection(event, getListSize());
-                    break;
-
-                case KeyEvent.VK_BACK_SPACE:
-                    handleBackSpacePressed(event);
-                    break;
-
-                case KeyEvent.VK_F4:
-                    handleSelection(event, false);
-
-                default:
-                    if (event.isAltDown() || event.isMetaDown()) {
-                        char keyChar = event.getKeyChar();
-                        if (keyChar == narrowListMnemonic) {
-                            narrowListCheckBox.setSelected(!narrowListOnTyping);
-                            setNarrowListOnTyping(!narrowListOnTyping);
-                            event.consume();
-                        } else if (keyChar == showAllMnemonic) {
-                            showAllCheckBox.setSelected(!state.showAllMembers());
-                            setShowAllMembers(!state.showAllMembers());
-                            event.consume();
-                        }
-                    }
-                    break;
-            }
-        }
-
-        public void keyTyped(KeyEvent event) {
-            char character = event.getKeyChar();
-            int keyCode = event.getKeyCode();
-            int keyChar = event.getKeyChar();
-            if (keyCode == KeyEvent.VK_TAB || keyCode == KeyEvent.VK_ENTER ||
-                    keyChar == KeyEvent.VK_TAB || keyChar == KeyEvent.VK_ENTER) {
-                handleSelection(event, true);
-
-            } else {
-                if (event != null && !ignoreKeyTyped(keyCode, character, event)) {
-                    handleCharacterTyped(character, event);
-                }
-            }
-        }
-
-        private void handleBackSpacePressed(KeyEvent event) {
-            if (searchText.length() != 0) {
-                updateMatchedMembers(BACKSPACE_KEY);
-            }
-            event.consume();
-        }
-
-        private int getListSize() {
-            return popupList.getModel().getSize();
-        }
-
-        private void incrementSelection(KeyEvent event, int increment) {
-            int selected = popupList.getSelectedIndex();
-            selected += increment;
-
-            int size = getListSize();
-
-            if (selected >= size) {
-                selected = size - 1;
-            } else if (selected < 0) {
-                selected = 0;
-            } else if (getFocusOwner() == popupList) {
-                return;
-            }
-
-            popupList.setSelectedIndex(selected);
-            popupList.ensureIndexIsVisible(selected);
-            event.consume();
-        }
-
-        private boolean ignoreKeyTyped(int keyCode, char keyChar, KeyEvent event) {
-            boolean ignore;
-
-            switch (keyCode) {
-                case KeyEvent.VK_ENTER:
-                case KeyEvent.VK_ESCAPE:
-                case KeyEvent.VK_UP:
-                case KeyEvent.VK_DOWN:
-                case KeyEvent.VK_PAGE_UP:
-                case KeyEvent.VK_PAGE_DOWN:
-                case KeyEvent.VK_HOME:
-                case KeyEvent.VK_END:
-                case KeyEvent.VK_LEFT:
-                case KeyEvent.VK_RIGHT:
-                    ignore = true;
-                default:
-                    // for some reason have to match backspace and tab using keyChar
-                    ignore = keyChar == KeyEvent.VK_BACK_SPACE
-                            || keyChar == KeyEvent.VK_TAB
-                            || event.isActionKey()
-                            || event.isControlDown()
-                            || event.isAltDown()
-                            || event.isMetaDown();
-            }
-            return ignore;
-        }
-
-        private void handleEscapePressed(KeyEvent event) {
-            if (searchText.length() > 0) {
-                updateMatchedMembers(ESCAPE_KEY);
-            } else {
-                dispose();
-            }
-            event.consume();
-        }
-
-        private void handleSelection(KeyEvent event, boolean showMenu) {
-            event.consume();
-            Member member = (Member)TypeAheadPopup.this.popupList.getSelectedValue();
-            TypeAheadPopup.this.handleSelection(member, showMenu);
-        }
-
-        private void handleCharacterTyped(char character, KeyEvent event) {
-            boolean valid = Character.isLetterOrDigit(character)
-                    || validCharacters.indexOf(character) != -1;
-
-            if (valid) {
-                updateMatchedMembers(character);
-                event.consume();
-            }
+    void handleEscapePressed() {
+        if (searchText.length() > 0) {
+            updateMatchedMembers(ESCAPE_KEY);
+        } else {
+            dispose();
         }
     }
 
-    private class PopupListCellRenderer extends DefaultListCellRenderer {
+    int getListSize() {
+        return popupList.getModel().getSize();
+    }
 
-        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-            super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus);
+    void incrementSelection(int increment) {
+        int selected = popupList.getSelectedIndex();
+        selected += increment;
 
-            Member member = (Member)value;
-            StringBuffer buffer = new StringBuffer();
+        int size = getListSize();
 
-            if (member == toParentMember) {
-                buffer.append("[ " + UP_TO_PARENT_TEXT + " ]");
-            } else {
-                if (state.showAllMembers()) {
-                    for (int i = 0; i < member.getParentCount(); i++) {
-                        buffer.append("  ");
-                    }
-                    buffer.append(member.getFullName());
-                } else {
-                    buffer.append(member.getFullName());
-                }
-
-                if (allHaveSameName && member.hasParentMember()) {
-                    buffer.append(" (" + member.getParentMember().getFullName() + ")");
-                }
-            }
-
-            setText(buffer.toString());
-            MemberIcon memberIcon = new MemberIcon(member);
-            setIcon(memberIcon.getIcon());
-            return this;
+        if (selected >= size) {
+            selected = size - 1;
+        } else if (selected < 0) {
+            selected = 0;
+        } else if (getFocusOwner() == popupList) {
+            return;
         }
+
+        popupList.setSelectedIndex(selected);
+        popupList.ensureIndexIsVisible(selected);
     }
 
     private interface PopupState {
@@ -680,6 +525,7 @@ public class TypeAheadPopup extends JWindow {
     }
 
     private static class FindDeclarationState implements PopupState {
+
         public void handleSelection(Member member, boolean showMenu, final TypeAheadPopup popup, final View view) {
             member.accept(new MemberVisitorAdapter() {
                 public void handleMethod(Method method) {
@@ -702,7 +548,7 @@ public class TypeAheadPopup extends JWindow {
     private static class SearchState implements PopupState {
         public void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view) {
             popup.dispose();
-            RDocSeacher.doSearch(view, member.getName());
+            org.jedit.ruby.ri.RDocSeacher.doSearch(view, member.getFullName());
         }
 
         public boolean showAllMembers() {

@@ -72,6 +72,8 @@ ruby.file-structure-popup.no-structure.label=No structure to show.
 
 ruby.find-declaration.no-matches.label=No matches found, try adding relevant files to Project Viewer.
 
+ruby.rdoc-viewer.no-description.label=no documentation available...
+
 ruby.search-documentation.error=Error:\nri An error has occurred, see the Activity Log for details.
 ruby.search-documentation.permission=\n To allow searches to return long result messages\n execute this file permission change on the command line:\n\n    chmod +x {0}\n
 ruby.search-documentation.dialog.label=Search using ri for:

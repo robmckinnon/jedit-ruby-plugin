@@ -17,10 +17,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.cache;
 
 import org.jedit.ruby.ast.*;
 import org.jedit.ruby.parser.RubyParser;
+import org.jedit.ruby.RubyPlugin;
 
 import java.util.*;
 
@@ -35,6 +36,10 @@ public class RubyCache {
     private MethodToParent methodToParent = new MethodToParent();
     private ParentToMethod parentToMethod = new ParentToMethod();
     private Map pathToMembers = new HashMap();
+
+    public static RubyCache instance() {
+        return instance;
+    }
 
     public static void clear() {
         instance.pathToMembers.clear();
@@ -62,14 +67,19 @@ public class RubyCache {
     }
 
     public static List<Member> getMembersWithMethod(String method) {
-        return instance.methodToParent.getParentList(method);
+        return instance.getAllMembersWithMethod(method);
     }
 
     public static List<Method> getMethodsOfMember(String memberName) {
         return instance.parentToMethod.getMethodList(memberName);
     }
 
+    private List<Member> getAllMembersWithMethod(String method) {
+        return methodToParent.getParentList(method);
+    }
+
     private void add(String path, RubyMembers members) {
+        parentToMethod.reset();
         pathToMembers.put(path, members);
         members.visitMembers(new MemberVisitorAdapter() {
             public void handleModule(Module module) {
@@ -87,12 +97,16 @@ public class RubyCache {
         });
     }
 
-    public static List<Member> getAllMembers() {
-        return instance.getAll();
+    public static List<Method> getAllMethods() {
+        return instance.parentToMethod.getAllMethods();
     }
 
-    private List<Member> getAll() {
-        return parentToMethod.getAllMembers();
+    public static List<Member> getAllMembers() {
+        return instance.parentToMethod.getAllMembers();
+    }
+
+    public void populateSuperclassMethods() {
+
     }
 
     private static class ParentToMethod {
@@ -101,6 +115,8 @@ public class RubyCache {
         private Map<String, Set<Method>> nameToMethods = new HashMap<String, Set<Method>>();
         private Map<String, Member> fullNameToMember = new HashMap<String, Member>();
         private Map<String, Member> nameToMember = new HashMap<String, Member>();
+        private List<Member> allMembers;
+        private List<Method> allMethods;
 
         public List<Method> getMethodList(String memberName) {
             Set<Method> methodSet = fullNameToMethods.get(memberName);
@@ -150,22 +166,40 @@ public class RubyCache {
             nameToMember.clear();
         }
 
-        public List<Member> getAllMembers() {
-            List<Member> members = new ArrayList<Member>();
-            List<String> parentNames = getAllParentNames();
+        public List<Method> getAllMethods() {
+            if(allMethods == null) {
+                allMethods = new ArrayList<Method>();
 
-            for (String parentName : parentNames) {
-                members.add(fullNameToMember.get(parentName));
-                members.addAll(getMethodList(parentName));
+                for (String parentName : getAllParentNames()) {
+                    allMethods.addAll(getMethodList(parentName));
+                }
             }
 
-            return members;
+            return allMethods;
+        }
+
+        public List<Member> getAllMembers() {
+            if (allMembers == null) {
+                allMembers = new ArrayList<Member>();
+
+                for (String parentName : getAllParentNames()) {
+                    allMembers.add(fullNameToMember.get(parentName));
+                    allMembers.addAll(getMethodList(parentName));
+                }
+            }
+
+            return allMembers;
         }
 
         private List<String> getAllParentNames() {
             List<String> names = new ArrayList<String>(fullNameToMember.keySet());
             Collections.sort(names);
             return names;
+        }
+
+        public void reset() {
+            allMembers = null;
+            allMethods = null;
         }
     }
 

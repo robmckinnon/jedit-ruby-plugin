@@ -17,12 +17,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.completion;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ri.RDocViewer;
+import org.jedit.ruby.RubyPlugin;
 import sidekick.SideKickCompletion;
 
 import javax.swing.JScrollPane;

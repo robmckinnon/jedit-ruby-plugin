@@ -28,6 +28,9 @@ public class Method extends Member {
     private String fileName;
     private String receiverName;
     private boolean isClassMethod;
+    private String parameters;
+    private String blockParameters;
+    private String fullDocumentation;
 
     public Method(String name, String filePath, String fileName, int startOuterOffset, int startOffset, boolean classMethod) {
         super(name, startOuterOffset, startOffset);
@@ -101,4 +104,45 @@ public class Method extends Member {
         super.setName(name);
     }
 
+    private String format(String parameters) {
+        parameters = parameters.trim();
+        if (parameters.startsWith("(") && parameters.endsWith(")")) {
+           parameters = getName() + parameters;
+        }
+        return parameters;
+    }
+
+    public String getDocumentation() {
+        if (fullDocumentation == null) {
+            StringBuffer buffer = new StringBuffer();
+            String parameters = getDocumentationParameters();
+            if (parameters.length() == 0) {
+                parameters = getDocumentationBlockParameters();
+            }
+
+            if (parameters.length() != 0) {
+                buffer.append("<hr><pre class=\"param\">"+ parameters + "</pre><hr><br>");
+            }
+            buffer.append(super.getDocumentation());
+            fullDocumentation = buffer.toString();
+        }
+
+        return fullDocumentation;
+    }
+
+    public void setDocumentationParams(String parameters) {
+        this.parameters = format(parameters);
+    }
+
+    public void setDocumentationBlockParams(String blockParameters) {
+        this.blockParameters = format(blockParameters);
+    }
+
+    public String getDocumentationBlockParameters() {
+        return blockParameters;
+    }
+
+    public String getDocumentationParameters() {
+        return parameters;
+    }
 }

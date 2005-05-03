@@ -29,6 +29,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.io.*;
 
+import org.jedit.ruby.cache.*;
+import org.jedit.ruby.cache.RubyCache;
+
 /**
  * @author robmckinnon at users.sourceforge.net
  */
@@ -60,7 +63,7 @@ public class RubyProjectViewerListener implements ProjectViewerListener {
     public void groupRemoved(ProjectViewerEvent event) {
         VPTGroup group = (VPTGroup) event.getSource();
         RubyPlugin.log("group removed: " + group, getClass());
-        RubyCache.clear();
+        org.jedit.ruby.cache.RubyCache.clear();
         reparse(event.getProject());
     }
 

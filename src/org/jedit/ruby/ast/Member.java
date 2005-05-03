@@ -33,6 +33,7 @@ public abstract class Member implements Comparable<Member> {
     private List<Member> parentPath;
     private int parentCount;
 
+    private String parentMemberName;
     private Member parentMember;
     private List<Member> childMembers;
 
@@ -245,17 +246,25 @@ public abstract class Member implements Comparable<Member> {
         return parentMember;
     }
 
+    public String getParentMemberName() {
+        return parentMemberName;
+    }
+
+    public void setParentMemberName(String superclass) {
+        this.parentMemberName = superclass;
+    }
+
     public void setParentMember(Member parentMember) {
         this.parentMember = parentMember;
     }
 
-    public void setDocumentation(String comment) {
-        int index = comment.indexOf("|lt;");
+    public void setDocumentationComment(String documentation) {
+        int index = documentation.indexOf("|lt;");
         while (index != -1) {
-            comment = comment.substring(0, index) + "&lt;" + comment.substring(index+4);
-            index = comment.indexOf("|lt;");
+            documentation = documentation.substring(0, index) + "&lt;" + documentation.substring(index+4);
+            index = documentation.indexOf("|lt;");
         }
-        this.documentation = comment;
+        this.documentation = documentation;
     }
 
     public String getDocumentation() {

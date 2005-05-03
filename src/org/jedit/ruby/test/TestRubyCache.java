@@ -19,7 +19,7 @@
  */
 package org.jedit.ruby.test;
 
-import org.jedit.ruby.RubyCache;
+import org.jedit.ruby.cache.RubyCache;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 
@@ -34,16 +34,16 @@ public class TestRubyCache extends TestCase {
 
     private void addClassesToCache() {
         RubyCache.add(TestRubyParser.CLASS, "CLASS");
-        RubyCache.add(TestRubyParser.ARR_CLASS, "ARR_CLASS");
+        org.jedit.ruby.cache.RubyCache.add(TestRubyParser.ARR_CLASS, "ARR_CLASS");
     }
 
     private void addModuleToCache() {
-        RubyCache.add(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
+        org.jedit.ruby.cache.RubyCache.add(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
     }
 
     public void testGetMethods() {
         addClassesToCache();
-        List<Method> methods = RubyCache.getMethods("red");
+        List<Method> methods = org.jedit.ruby.cache.RubyCache.getMethods("red");
 
         assertEquals("Assert file name correct", methods.get(0).getFileName(), "CLASS");
         assertEquals("Assert file name correct", methods.get(0).getName(), "red");
@@ -78,7 +78,7 @@ public class TestRubyCache extends TestCase {
     }
 
     private void assertFindByMethodCorrect(String method, int index, String parentName, int parentCount) {
-        List<Member> members = RubyCache.getMembersWithMethod(method);
+        List<Member> members = org.jedit.ruby.cache.RubyCache.getMembersWithMethod(method);
         assertEquals("Assert parent match correct for: " + method, parentCount, members.size());
         assertEquals("Assert name correct", parentName, members.get(index).getName());
     }

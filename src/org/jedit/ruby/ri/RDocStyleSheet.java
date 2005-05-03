@@ -25,41 +25,93 @@ import org.gjt.sp.jedit.syntax.Token;
 
 import javax.swing.text.html.StyleSheet;
 import java.awt.Color;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
 public class RDocStyleSheet extends StyleSheet {
+
     private View view;
 
     public RDocStyleSheet(View view) {
         this.view = view;
-        int size = jEdit.getFontProperty("view.font").getSize();
+        addRule(body());
+        addRule(pre());
+        addRule(preparam());
+        addRule(hr());
+        addRule(tt());
+        addRule(em());
+    }
 
-        addRule("body {" +
-                        "font-size: " + size + ";\n" +
-                        "color: " + getHexColor("view.fgColor") + ";\n" +
-                        "background-color: " + getHexColor("view.bgColor") + ";\n" +
-                   "}");
-        addRule("tt {" +
-                        "font-family: monospace;\n" +
-                        "font-size: " + (size - 1) + ";\n" +
-                        "color: " + getColor(Token.KEYWORD2) + ";\n" +
-                   "}");
-        addRule("pre {" +
-                        "font-family: monospace;\n" +
-                        "font-size: " + (size - 1) + ";\n" +
-                        "color: " + getColor(Token.KEYWORD2) + ";\n" +
-                   "}");
-        addRule("em {" +
-//                        "font-style: italic;\n" +
-                        "color: " + getColor(Token.KEYWORD1) + ";\n" +
-                   "}");
+    private Rule preparam() {
+        Rule r = new Rule("pre.param");
+        r.add("color", getColor("view.fgColor"));
+        return r;
+    }
+
+    private void addRule(Rule rule) {
+        super.addRule(rule.toString());
+    }
+
+    private Rule hr() {
+        Rule r = new Rule("hr");
+        r.add("border-width", "0px");
+        r.add("height", "1px");
+        r.add("background-color", getColor(Token.KEYWORD2));
+        return r;
+    }
+
+    private Rule body() {
+        Rule r = new Rule("body");
+        r.add("font-size", getViewFontSize());
+        r.add("background-color", getColor("view.bgColor"));
+        r.add("color", getColor("view.fgColor"));
+        return r;
+    }
+
+    private Rule pre() {
+        Rule r = new Rule("pre");
+        r.add("font-family", "monospace");
+        r.add("font-size", getViewFontSize() - 1);
+        r.add("color", getColor(Token.KEYWORD2));
+        return r;
+    }
+
+    private Rule tt() {
+        return new Rule("tt", pre().attributes);
+    }
+
+    private Rule em() {
+        Rule r = new Rule("em");
+//        r.add("font-style", "italic");
+        r.add("color", getColor(Token.KEYWORD1));
+        return r;
+    }
+
+    private int getViewFontSize() {
+        int size = jEdit.getFontProperty("view.font").getSize();
+        return size;
     }
 
     private String getColor(byte styleId) {
         Color color = view.getTextArea().getPainter().getStyles()[styleId].getForegroundColor();
         return getHexColor(color);
+    }
+
+    private String getColor(String property) {
+        Color color = jEdit.getColorProperty(property);
+        return getHexColor(color);
+    }
+
+    private String getHexColor(Color color) {
+        StringBuffer buffer = new StringBuffer("#");
+        buffer.append(getHex(color.getRed()));
+        buffer.append(getHex(color.getGreen()));
+        buffer.append(getHex(color.getBlue()));
+        return buffer.toString();
     }
 
     private String getHex(int part) {
@@ -74,17 +126,38 @@ public class RDocStyleSheet extends StyleSheet {
         }
     }
 
-    private String getHexColor(String property) {
-        Color color = jEdit.getColorProperty(property);
-        return getHexColor(color);
-    }
+    private static class Rule {
 
-    private String getHexColor(Color color) {
-        StringBuffer buffer = new StringBuffer("#");
-        buffer.append(getHex(color.getRed()));
-        buffer.append(getHex(color.getGreen()));
-        buffer.append(getHex(color.getBlue()));
-        return buffer.toString();
+        private String name;
+        private Map<String, String> attributes;
+
+        public Rule(String name, Map<String, String> attributes) {
+            this.name = name;
+            this.attributes = attributes;
+        }
+
+        public Rule(String name) {
+            this(name, new HashMap<String, String>());
+        }
+
+        public void add(String attribute, int value) {
+            attributes.put(attribute, "" + value);
+        }
+
+        public void add(String attribute, String value) {
+            attributes.put(attribute, value);
+        }
+
+        public String toString() {
+            StringBuffer buffer = new StringBuffer(name + " {\n");
+            Set<String> keys = attributes.keySet();
+            for (String attribute : keys) {
+                String value = attributes.get(attribute);
+                buffer.append("    " + attribute + ": " + value + ";\n");
+            }
+            buffer.append("}");
+            return buffer.toString();
+        }
     }
 
 }

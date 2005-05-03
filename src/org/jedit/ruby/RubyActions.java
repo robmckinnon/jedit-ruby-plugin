@@ -31,6 +31,11 @@ import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.sidekick.RubySideKickParser;
+import org.jedit.ruby.structure.*;
+import org.jedit.ruby.structure.TypeAheadPopup;
+import org.jedit.ruby.structure.FileStructurePopup;
+import org.jedit.ruby.cache.*;
+import org.jedit.ruby.ri.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,7 +146,7 @@ public class RubyActions {
 
     public static void searchDocumentation(View view) {
         try {
-            RDocSeacher.doSearch(view);
+            org.jedit.ruby.ri.RDocSeacher.doSearch(view);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -157,12 +162,12 @@ public class RubyActions {
         textArea.setCaretPosition(caretPosition);
 
         RubyPlugin.log("looking for methods named: " + text, RubyActions.class);
-        List<Method> methods = RubyCache.getMethods(text);
+        List<Method> methods = org.jedit.ruby.cache.RubyCache.getMethods(text);
         RubyPlugin.log("found: " + methods.size(), RubyActions.class);
 
         if (methods.size() > 0) {
             Member[] displayMembers = methods.toArray(new Member[0]);
-            new TypeAheadPopup(view, displayMembers, displayMembers[0], TypeAheadPopup.FIND_DECLARATION_POPUP);
+            new TypeAheadPopup(view, displayMembers, displayMembers[0], org.jedit.ruby.structure.TypeAheadPopup.FIND_DECLARATION_POPUP);
         } else {
             Macros.message(textArea, jEdit.getProperty("ruby.find-declaration.no-matches.label"));
         }

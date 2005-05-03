@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.completion;
 
 import java.util.*;
 
@@ -25,6 +25,9 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
+import org.jedit.ruby.completion.*;
+import org.jedit.ruby.completion.CodeAnalyzer;
+import org.jedit.ruby.cache.RubyCache;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -33,14 +36,14 @@ public class CodeCompletor {
 
     private JEditTextArea textArea;
     private Buffer buffer;
-    private CodeAnalyzer analyzer;
+    private org.jedit.ruby.completion.CodeAnalyzer analyzer;
     private List<Method> methods;
 
     public CodeCompletor(View view) {
         textArea = view.getTextArea();
         buffer = view.getBuffer();
-        analyzer = new CodeAnalyzer(textArea, buffer);
-        methods = getMethods(buffer.getText(0, buffer.getLength()), textArea.getCaretPosition());
+        analyzer = new org.jedit.ruby.completion.CodeAnalyzer(textArea, buffer);
+        methods = findMethods();
     }
 
     public List<Method> getMethods() {
@@ -57,24 +60,23 @@ public class CodeCompletor {
 
     public boolean isInsertionPoint() {
         String partialMethod = getPartialMethod();
-        for (Method method : methods) {
-            if(method.getShortName().equals(partialMethod)) {
-                return false;
+        if (partialMethod != null && partialMethod.length() > 2) {
+            for (Method method : methods) {
+                if (method.getShortName().equals(partialMethod)) {
+                    return false;
+                }
             }
         }
         return analyzer.isInsertionPoint();
     }
 
-    /**
-     * Prints list of methods possibly appropriate at the given location.
-     */
-    public List<Method> getMethods(String text, int location) {
+    private List<Method> findMethods() {
         if (analyzer.getName() != null) {
             String className = analyzer.getClassName();
 
             List<Method> methods;
             if (className != null) {
-                methods = RubyCache.getMethodsOfMember(className);
+                methods = org.jedit.ruby.cache.RubyCache.getMethodsOfMember(className);
                 if (analyzer.isClass()) {
                     for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
                         Method method = iterator.next();
@@ -106,8 +108,8 @@ public class CodeCompletor {
         List<Member> members = null;
 
         for (String method : methods) {
-            List<Member> classes = RubyCache.getMembersWithMethod(method);
-            if(members != null) {
+            List<Member> classes = org.jedit.ruby.cache.RubyCache.getMembersWithMethod(method);
+            if (members != null) {
                 intersection(members, classes);
             } else {
                 members = classes;
@@ -118,10 +120,10 @@ public class CodeCompletor {
 
         if (members != null) {
             for (Member member : members) {
-                results.addAll(RubyCache.getMethodsOfMember(member.getFullName()));
+                results.addAll(org.jedit.ruby.cache.RubyCache.getMethodsOfMember(member.getFullName()));
             }
         } else {
-            results.addAll(RubyCache.getMethodsOfMember("Object"));
+            results.addAll(org.jedit.ruby.cache.RubyCache.getAllMethods());
         }
 
         return results;

@@ -17,13 +17,16 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.ri;
 
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.Macros;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
+import org.jedit.ruby.structure.*;
+import org.jedit.ruby.structure.TypeAheadPopup;
+import org.jedit.ruby.RubyPlugin;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -86,7 +89,7 @@ public class RDocSeacher {
         if(result.startsWith("More than one method matched your request.")) {
             List<Member> methods = parseMultipleResults(result);
             Member[] members = methods.toArray(new Member[methods.size()]);
-            new TypeAheadPopup(view, members, members[0], TypeAheadPopup.SEARCH_POPUP);
+            new TypeAheadPopup(view, members, members[0], org.jedit.ruby.structure.TypeAheadPopup.SEARCH_POPUP);
         } else {
             showDialog(view, "", result);
         }

@@ -21,7 +21,7 @@ package org.jedit.ruby.ri;
 
 import org.jedit.ruby.ast.*;
 import org.jedit.ruby.RubyPlugin;
-import org.jedit.ruby.RubyCache;
+import org.jedit.ruby.cache.RubyCache;
 import org.gjt.sp.jedit.jEdit;
 
 import java.beans.XMLEncoder;
@@ -43,6 +43,7 @@ public class RiParser {
         for (JarEntry entry : entries) {
             loadClassDesciption(entry);
         }
+        org.jedit.ruby.cache.RubyCache.instance().populateSuperclassMethods();
     }
 
     public static void loadClassDesciption(JarEntry entry) {
@@ -101,15 +102,15 @@ public class RiParser {
         return file;
     }
 
-    public static void cache(ClassDescription result) {
-        ClassMember parent = new ClassMember(result.getName(), 0, 0);
-        parent.setParentMember(null);
+    public static void cache(ClassDescription description) {
+        ClassMember parent = new ClassMember(description.getName(), 0, 0);
+        parent.setParentMemberName(description.getSuperclass());
         parent.setEndOffset(0);
-        parent.setNamespace(result.getNamespace());
-        parent.setDocumentation(result.getComment());
+        parent.setNamespace(description.getNamespace());
+        parent.setDocumentationComment(description.getComment());
 
-        addMethods(result.getInstanceMethods(), parent);
-        addMethods(result.getClassMethods(), parent);
+        addMethods(description.getInstanceMethods(), parent);
+        addMethods(description.getClassMethods(), parent);
         Member[] members = new Member[1];
         members[0] = parent;
         RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>());
@@ -122,7 +123,9 @@ public class RiParser {
             name = name.startsWith(".") ? name.substring(1) : name;
             Method method = new Method(name, "", "", 0, 0, methodDescription.isClassMethod());
             method.setNamespace(methodDescription.getNamespace());
-            method.setDocumentation(methodDescription.getComment());
+            method.setDocumentationBlockParams(methodDescription.getBlockParameters());
+            method.setDocumentationParams(methodDescription.getParameters());
+            method.setDocumentationComment(methodDescription.getComment());
             method.setParentMember(null);
             method.setReceiver("");
             method.setEndOffset(0);

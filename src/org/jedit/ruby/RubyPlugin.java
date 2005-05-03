@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.JOptionPane;
 import java.io.*;
 import java.awt.Point;
+import java.awt.event.KeyEvent;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -213,4 +214,31 @@ public class RubyPlugin extends EditPlugin {
         JOptionPane.showMessageDialog(view, message, title, type);
     }
 
+    public static boolean ignoreKeyTyped(int keyCode, char keyChar, KeyEvent event) {
+        boolean ignore;
+
+        switch (keyCode) {
+            case KeyEvent.VK_ENTER:
+            case KeyEvent.VK_ESCAPE:
+            case KeyEvent.VK_UP:
+            case KeyEvent.VK_DOWN:
+            case KeyEvent.VK_PAGE_UP:
+            case KeyEvent.VK_PAGE_DOWN:
+            case KeyEvent.VK_HOME:
+            case KeyEvent.VK_END:
+            case KeyEvent.VK_LEFT:
+            case KeyEvent.VK_RIGHT:
+                ignore = true;
+            default:
+                // for some reason have to match backspace and tab using keyChar
+                ignore = keyChar == KeyEvent.VK_BACK_SPACE
+                        || keyChar == KeyEvent.VK_TAB
+                        || event.isActionKey()
+                        || event.isControlDown()
+                        || event.isAltDown()
+                        || event.isMetaDown();
+        }
+        return ignore;
+    }
+    
 }

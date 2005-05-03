@@ -19,7 +19,7 @@
  */
 package org.jedit.ruby.test;
 
-import org.jedit.ruby.RDocSeacher;
+import org.jedit.ruby.ri.RDocSeacher;
 import org.jedit.ruby.ast.Member;
 
 import java.util.List;
@@ -45,7 +45,7 @@ public class TestRDocSeacher extends TestCase {
             "     Process::Status#to_s, Enumerable#to_set";
 
     public void testParseMultipleMatches() {
-        List<Member> methods = RDocSeacher.parseMultipleResults(RESULT);
+        List<Member> methods = org.jedit.ruby.ri.RDocSeacher.parseMultipleResults(RESULT);
         assertEquals("Assert first method correct: ", "Array#to_s", methods.get(0).getFullName());
         assertEquals("Assert first method correct: ", "Vector#to_s", methods.get(35).getFullName());
     }

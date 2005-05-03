@@ -35,6 +35,18 @@ public class TestLineCounter extends TestCase {
                     "  2 \n" +
                     "3 ";
 
+    public void testEnhancedForLoop() {
+        StringBuffer buffer = new StringBuffer();
+        for (String i : getJunk(buffer)) {
+            i.toLowerCase();
+        }
+        assertEquals("Enhance loop values called once", "*", buffer.toString());
+    }
+
+    public String[] getJunk(StringBuffer buffer) {
+        buffer.append("*");
+        return new String[] {"red", "blue", "green"};
+    }
     public void testOffsets() {
         LineCounter lineCounter = new LineCounter(TEXT);
         checkOffset(0, 2, '\n', lineCounter, TEXT);

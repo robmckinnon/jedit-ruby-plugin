@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby;
+package org.jedit.ruby.structure;
 
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Buffer;
@@ -25,6 +25,9 @@ import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Problem;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.parser.RubyParser;
+import org.jedit.ruby.structure.*;
+import org.jedit.ruby.structure.TypeAheadPopup;
+import org.jedit.ruby.RubyPlugin;
 
 /**
  * Shows file structure popup to allow user to navigate
@@ -90,7 +93,7 @@ public class FileStructurePopup {
 
     private void showPopup(View view, Member[] displayMembers, Member selectedMember) {
         try {
-            new TypeAheadPopup(view, displayMembers, selectedMember, TypeAheadPopup.FILE_STRUCTURE_POPUP);
+            new org.jedit.ruby.structure.TypeAheadPopup(view, displayMembers, selectedMember, TypeAheadPopup.FILE_STRUCTURE_POPUP);
         } catch (Exception e) {
             RubyPlugin.error(e, getClass());
         }
