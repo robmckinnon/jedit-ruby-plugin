@@ -228,16 +228,17 @@ class RubyNodeVisitor extends AbstractVisitor {
 
     public void visitIfNode(IfNode node) {
         visitNode(node);
-        Node thenBody = node.getThenBody();
-        if (thenBody != null) {
-            thenBody.accept(this);
+        if (node.getThenBody() != null) {
+            node.getThenBody().accept(this);
         }
     }
 
     public void visitIterNode(IterNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
-        node.getBodyNode().accept(this);
+        if (node.getBodyNode() != null) {
+            node.getBodyNode().accept(this);
+        }
     }
 
     public void visitFCallNode(FCallNode node) {

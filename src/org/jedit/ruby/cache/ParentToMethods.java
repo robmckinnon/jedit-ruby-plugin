@@ -57,7 +57,7 @@ class ParentToMethods {
         if (methodSet == null) {
             methodSet = new HashSet<Method>();
         }
-        return new HashSet<Method>(methodSet);
+        return methodSet;
     }
 
     /**

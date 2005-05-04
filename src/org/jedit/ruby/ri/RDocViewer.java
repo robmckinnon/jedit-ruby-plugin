@@ -70,17 +70,19 @@ public class RDocViewer extends JPanel
         add(initSplitPane(position, searchPanel, documentationScrollPane));
         viewers.put(this, null);
 
-        setListData(RubyCache.instance().getAllMembers());
+        setListData(RubyCache.instance().getAllImmediateMembers());
     }
 
     public static void setMethod(Method method) {
         for (RDocViewer viewer : viewers.keySet()) {
-            viewer.setMember(method);
+            if (viewer.isVisible()) {
+                viewer.setMember(method);
+            }
         }
     }
 
     private void setMember(Member member) {
-        setListData(RubyCache.instance().getAllMembers());
+        setListData(RubyCache.instance().getAllImmediateMembers());
         resultList.setSelectedValue(member, true);
         handleSelection();
     }
@@ -143,7 +145,7 @@ public class RDocViewer extends JPanel
         if (searchField != null) {
             String text = searchField.getText();
             boolean noTerm = text.length() == 0;
-            final List<Member> members = noTerm ? RubyCache.instance().getAllMembers() : getMatchingMembers(text);
+            final List<Member> members = noTerm ? RubyCache.instance().getAllImmediateMembers() : getMatchingMembers(text);
 
             if (members.size() == 0) {
                 if(!keyHandler.lastWasBackspace()
@@ -192,7 +194,7 @@ public class RDocViewer extends JPanel
     }
 
     private void populateMatches(String text, boolean matchLength, List<Member> members) {
-        for (Member member : RubyCache.instance().getAllMembers()) {
+        for (Member member : RubyCache.instance().getAllImmediateMembers()) {
             if (isMatch(member.getFullName(), text, matchLength)) {
                 members.add(member);
 
@@ -203,7 +205,7 @@ public class RDocViewer extends JPanel
     }
 
     private void populateMatches(final String instanceMethod, final String classMethod, final boolean matchLength, final List<Member> members) {
-        for (Member member : RubyCache.instance().getAllMembers()) {
+        for (Member member : RubyCache.instance().getAllImmediateMembers()) {
             member.accept(new MemberVisitorAdapter() {
                 public void handleMethod(Method method) {
                     String text = method.isClassMethod() ? classMethod : instanceMethod;

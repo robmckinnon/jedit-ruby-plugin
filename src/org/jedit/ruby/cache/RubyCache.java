@@ -74,23 +74,15 @@ public class RubyCache {
     }
 
     public synchronized List<Method> getMethods(String method) {
-        return nameToMethods.getMethods(method);
-    }
-
-    public synchronized List<Member> getMembersWithMethodAsList(String method) {
-        return methodToParents.getParentList(method);
+        return new ArrayList<Method>(nameToMethods.getMethods(method));
     }
 
     public synchronized Set<Member> getMembersWithMethod(String method) {
-        return methodToParents.getParentSet(method);
-    }
-
-    public synchronized List<Method> getMethodsOfMemberAsList(String memberName) {
-        return parentToMethods.getMethodList(memberName);
+        return new HashSet<Member>(methodToParents.getParentSet(method));
     }
 
     public synchronized Set<Method> getMethodsOfMember(String memberName) {
-        return parentToMethods.getMethodSet(memberName);
+        return new HashSet<Method>(parentToMethods.getMethodSet(memberName));
     }
 
     public synchronized List<Method> getAllMethods() {
@@ -98,14 +90,22 @@ public class RubyCache {
     }
 
     public synchronized List<Member> getAllImmediateMembers() {
-        return nameToParents.getAllMembers();
+        return new ArrayList<Member>(nameToParents.getAllMembers());
+    }
+
+    public synchronized List<Member> getMembersWithMethodAsList(String method) {
+        return new ArrayList<Member>(methodToParents.getParentList(method));
+    }
+
+    public synchronized List<Method> getMethodsOfMemberAsList(String memberName) {
+        return new ArrayList<Method>(parentToMethods.getMethodList(memberName));
     }
 
     public synchronized void populateSuperclassMethods() {
         Collection<ParentMember> allParents = nameToParents.getAllParents();
 
         for (ParentMember member : allParents) {
-            populateSuperclassMethods(member, member, "null");
+            populateSuperclassMethods(member, member);
         }
     }
 
@@ -132,7 +132,7 @@ public class RubyCache {
         });
     }
 
-    private void populateSuperclassMethods(ParentMember member, ParentMember memberOrSuperclass, String test) {
+    private void populateSuperclassMethods(ParentMember member, ParentMember memberOrSuperclass) {
         if (memberOrSuperclass.hasParentMemberName()) {
             String parentName = memberOrSuperclass.getParentMemberName();
             ParentMember parent = nameToParents.getMember(parentName);
@@ -142,7 +142,7 @@ public class RubyCache {
                 for (Method method : methods) {
                     methodToParents.add(method, member);
                 }
-                populateSuperclassMethods(member, parent, "null");
+                populateSuperclassMethods(member, parent);
             }
         }
     }

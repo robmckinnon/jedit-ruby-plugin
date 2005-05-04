@@ -22,7 +22,6 @@ package org.jedit.ruby.completion;
 import gnu.regexp.RE;
 import gnu.regexp.REMatch;
 import gnu.regexp.REException;
-import gnu.regexp.RESyntax;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.RubyPlugin;

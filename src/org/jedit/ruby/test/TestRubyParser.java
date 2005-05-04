@@ -139,7 +139,7 @@ public class TestRubyParser extends TestCase {
         assertEquals("Assert error count correct", 3, members.getProblems().length);
     }
 
-    private String getUniquePath() {
+    static String getUniquePath() {
         return PATH + System.currentTimeMillis();
     }
 
