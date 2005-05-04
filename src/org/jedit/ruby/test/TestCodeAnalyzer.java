@@ -30,14 +30,32 @@ import java.util.List;
 public class TestCodeAnalyzer extends TestCase {
 
     private static final String TEXT = "a.respond_to?() \n" +
-                    "a.== \n" +
+            "a#respond_to?() \n" +
+            "a#respond_to? tree\n" +
+            "a#respond_to(tree)\n" +
+                    "a.[] \n" +
                     "3 \n";
 
 
-    public void testFindMethod() {
+    public void testFindMethod1() {
         List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(0));
-        assertEquals("assert found method", "==", methods.get(1));
+    }
+    public void testFindMethod2() {
+        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        assertEquals("assert found method", "respond_to?", methods.get(1));
+    }
+    public void testFindMethod3() {
+        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        assertEquals("assert found method", "respond_to?", methods.get(2));
+    }
+    public void testFindMethod4() {
+        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        assertEquals("assert found method", "respond_to", methods.get(3));
+    }
+    public void testFindMethod5() {
+        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        assertEquals("assert found method", "[]", methods.get(4));
     }
 
 }

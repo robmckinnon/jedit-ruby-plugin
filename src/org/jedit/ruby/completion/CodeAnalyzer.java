@@ -22,6 +22,7 @@ package org.jedit.ruby.completion;
 import gnu.regexp.RE;
 import gnu.regexp.REMatch;
 import gnu.regexp.REException;
+import gnu.regexp.RESyntax;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 
@@ -148,20 +149,25 @@ public class CodeAnalyzer {
      */
     public static List<String> getMethods(String text, String name) {
         try {
-            RE expression = new RE("("+name+"\\.|#)(\\w+\\?+)");
-            REMatch[] matches = expression.getAllMatches(text);
-
             List<String> methods = new ArrayList<String>();
 
-            for (REMatch match : matches) {
-                String method = match.toString(2);
-                methods.add(method);
-            }
+            addMatches(text, methods, "("+name+"\\.|#)(\\w+\\??)");
+//            addMatches(name, text, methods, "("+name+"\\.|#)(\\+\\?+)");
 
             return methods;
         } catch (REException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    private static void addMatches(String text, List<String> methods, String pattern) throws REException {
+        RE expression = new RE(pattern);
+        REMatch[] matches = expression.getAllMatches(text);
+
+        for (REMatch match : matches) {
+            String method = match.toString(2);
+            methods.add(method);
         }
     }
 }
