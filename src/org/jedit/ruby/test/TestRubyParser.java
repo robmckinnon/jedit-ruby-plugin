@@ -94,10 +94,22 @@ public class TestRubyParser extends TestCase {
             "  end\n" +
             "end";
 
+    public static final String ITER = "b.each do |i|\n" +
+            " \n" +
+            "end";
+
     private static final String ONE_LINER = "def count; @contents.split.size; end";
 
     public void tearDown() {
         RubyCache.instance().clear();
+    }
+
+    public void testIterParse() {
+        try {
+            RubyParser.getMembers(ITER, getUniquePath());
+        } catch (Exception e) {
+            fail("Unexpected exception: " + e.getClass().getName());
+        }
     }
 
     public void testOneLiner() {
