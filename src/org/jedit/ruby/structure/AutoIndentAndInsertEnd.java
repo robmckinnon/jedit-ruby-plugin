@@ -291,7 +291,7 @@ public class AutoIndentAndInsertEnd {
 
     private boolean endsNotBalanced() {
         String line;
-        // int row = area.getCaretLine();
+//        int row = area.getCaretLine();
         int count = area.getLineCount();
         int balancedCount = 0;
 //        StringBuffer buffer = new StringBuffer("");
@@ -303,7 +303,7 @@ public class AutoIndentAndInsertEnd {
 //                buffer.append(balancedCount + "");
 //                for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : "")) ;
 //                buffer.append(line + "\n");
-                balancedCount -= 1;
+                balancedCount--;
             }
             if (line.indexOf("<<-EOF") != -1) {
                 isString = true;
@@ -326,7 +326,15 @@ public class AutoIndentAndInsertEnd {
 //                        buffer.append(balancedCount + "");
 //                        for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : "")) ;
 //                        buffer.append(line + "\n");
-                        balancedCount += 1;
+                        balancedCount++;
+
+                        int moduleIndex = line.indexOf("module");
+                        while(moduleIndex != -1) {
+                            moduleIndex = line.indexOf("module", moduleIndex+5);
+                            if(moduleIndex != -1) {
+                                balancedCount++;
+                            }
+                        }
                     }
                 }
             }
