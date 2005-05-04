@@ -27,19 +27,13 @@ import java.util.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class ParentToMethods {
+class ParentToImmediateMethods {
 
-    private Map<String, Set<Method>> fullNameToMethods = new HashMap<String, Set<Method>>();
-    private Map<String, Set<Method>> nameToMethods = new HashMap<String, Set<Method>>();
-    private NameToParents nameToParents;
-    private List<Method> allMethods;
+    private Map<String, Set<Method>> fullNameToImmediateMethods = new HashMap<String, Set<Method>>();
+    private Map<String, Set<Method>> nameToImmediateMethods = new HashMap<String, Set<Method>>();
 
-    void setNameToParents(NameToParents nameToParents) {
-        this.nameToParents = nameToParents;
-    }
-
-    List<Method> getMethodList(String memberName) {
-        Set<Method> methodSet = getMethodSet(memberName);
+    List<Method> getImmediateMethodList(String memberName) {
+        Set<Method> methodSet = getImmediateMethodSet(memberName);
         List<Method> methods = new ArrayList<Method>(methodSet);
 
         if (methods.size() > 0) {
@@ -49,15 +43,15 @@ class ParentToMethods {
         return methods;
     }
 
-    Set<Method> getMethodSet(String memberName) {
-        Set<Method> methodSet = fullNameToMethods.get(memberName);
+    Set<Method> getImmediateMethodSet(String memberName) {
+        Set<Method> methodSet = fullNameToImmediateMethods.get(memberName);
         if (methodSet == null) {
-            methodSet = nameToMethods.get(memberName);
+            methodSet = nameToImmediateMethods.get(memberName);
         }
         if (methodSet == null) {
             methodSet = new HashSet<Method>();
         }
-        return new HashSet<Method>(methodSet);
+        return methodSet;
     }
 
     /**
@@ -66,14 +60,9 @@ class ParentToMethods {
      */
     void add(ParentMember member) {
         Set<Method> methods = member.getMethods();
-        add(member, methods);
-    }
-
-    void add(ParentMember member, Set<Method> methods) {
         String fullName = member.getFullName();
         String name = member.getName();
-
-        load(fullName, methods, name, fullNameToMethods, nameToMethods);
+        load(fullName, methods, name, fullNameToImmediateMethods, nameToImmediateMethods);
     }
 
     private void load(String fullName, Set<Method> methods, String name, Map<String, Set<Method>> fullNameToMethods, Map<String, Set<Method>> nameToMethods) {
@@ -87,23 +76,8 @@ class ParentToMethods {
     }
 
     void clear() {
-        fullNameToMethods.clear();
-        nameToMethods.clear();
+        fullNameToImmediateMethods.clear();
+        nameToImmediateMethods.clear();
     }
 
-    List<Method> getAllMethods() {
-        if(allMethods == null) {
-            allMethods = new ArrayList<Method>();
-
-            for (String parentName : nameToParents.getAllParentNames()) {
-                allMethods.addAll(getMethodList(parentName));
-            }
-        }
-
-        return allMethods;
-    }
-
-    void reset() {
-        allMethods = null;
-    }
 }

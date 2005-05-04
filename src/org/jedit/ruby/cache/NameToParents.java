@@ -31,12 +31,8 @@ class NameToParents {
 
     private Map<String, ParentMember> fullNameToMember = new HashMap<String, ParentMember>();
     private Map<String, ParentMember> nameToMember = new HashMap<String, ParentMember>();
-    private ParentToMethods parentToMethods;
     private List<Member> allMembers;
-
-    void setParentToMethods(ParentToMethods parentToMethods) {
-        this.parentToMethods = parentToMethods;
-    }
+    private ParentToImmediateMethods parentToImmediateMethods;
 
     void add(ParentMember member) {
         String fullName = member.getFullName();
@@ -66,7 +62,7 @@ class NameToParents {
 
             for (String parentName : getAllParentNames()) {
                 allMembers.add(fullNameToMember.get(parentName));
-                allMembers.addAll(parentToMethods.getMethodList(parentName));
+                allMembers.addAll(parentToImmediateMethods.getImmediateMethodList(parentName));
             }
         }
 
@@ -87,4 +83,7 @@ class NameToParents {
         allMembers = null;
     }
 
+    public void setParentToImmediateMethods(ParentToImmediateMethods parentToImmediateMethods) {
+        this.parentToImmediateMethods = parentToImmediateMethods;
+    }
 }

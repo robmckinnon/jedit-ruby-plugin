@@ -57,7 +57,8 @@ class MethodToParents {
         if (!methodToParentMap.containsKey(methodName)) {
             methodToParentMap.put(methodName, new HashSet<Member>());
         }
-        return methodToParentMap.get(methodName);
+        HashSet<Member> parentSet = new HashSet<Member>(methodToParentMap.get(methodName));
+        return parentSet;
     }
 
     void clear() {

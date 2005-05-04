@@ -35,6 +35,7 @@ public class RubyCache {
     private NameToParents nameToParents;
     private MethodToParents methodToParents;
     private ParentToMethods parentToMethods;
+    private ParentToImmediateMethods parentToImmediateMethods;
 
     private Map pathToMembers;
 
@@ -43,8 +44,9 @@ public class RubyCache {
         nameToParents = new NameToParents();
         methodToParents = new MethodToParents();
         parentToMethods = new ParentToMethods();
+        parentToImmediateMethods = new ParentToImmediateMethods();
         pathToMembers = new HashMap();
-        nameToParents.setParentToMethods(parentToMethods);
+        nameToParents.setParentToImmediateMethods(parentToImmediateMethods);
         parentToMethods.setNameToParents(nameToParents);
     }
 
@@ -52,42 +54,59 @@ public class RubyCache {
         return instance;
     }
 
-    public void clear() {
+    public synchronized void clear() {
         pathToMembers.clear();
         methodToParents.clear();
         parentToMethods.clear();
+        parentToImmediateMethods.clear();
         nameToMethods.clear();
     }
 
-    public void add(String text, String path) {
+    public synchronized void add(String text, String path) {
         RubyMembers members = RubyParser.getMembers(text, path, null, true);
         add(members, path);
     }
 
-    public void add(RubyMembers members, String path) {
+    public synchronized void add(RubyMembers members, String path) {
         if (!members.containsErrors()) {
             add(path, members);
         }
     }
 
-    public List<Method> getMethods(String method) {
+    public synchronized List<Method> getMethods(String method) {
         return nameToMethods.getMethods(method);
     }
 
-    public List<Member> getMembersWithMethodAsList(String method) {
+    public synchronized List<Member> getMembersWithMethodAsList(String method) {
         return methodToParents.getParentList(method);
     }
 
-    public Set<Member> getMembersWithMethod(String method) {
+    public synchronized Set<Member> getMembersWithMethod(String method) {
         return methodToParents.getParentSet(method);
     }
 
-    public List<Method> getMethodsOfMemberAsList(String memberName) {
+    public synchronized List<Method> getMethodsOfMemberAsList(String memberName) {
         return parentToMethods.getMethodList(memberName);
     }
 
-    public Set<Method> getMethodsOfMember(String memberName) {
+    public synchronized Set<Method> getMethodsOfMember(String memberName) {
         return parentToMethods.getMethodSet(memberName);
+    }
+
+    public synchronized List<Method> getAllMethods() {
+        return parentToMethods.getAllMethods();
+    }
+
+    public synchronized List<Member> getAllImmediateMembers() {
+        return nameToParents.getAllMembers();
+    }
+
+    public synchronized void populateSuperclassMethods() {
+        Collection<ParentMember> allParents = nameToParents.getAllParents();
+
+        for (ParentMember member : allParents) {
+            populateSuperclassMethods(member, member, "null");
+        }
     }
 
     private void add(String path, RubyMembers members) {
@@ -95,11 +114,13 @@ public class RubyCache {
         pathToMembers.put(path, members);
         members.visitMembers(new MemberVisitorAdapter() {
             public void handleModule(Module module) {
+                parentToImmediateMethods.add(module);
                 parentToMethods.add(module);
                 nameToParents.add(module);
             }
 
             public void handleClass(ClassMember classMember) {
+                parentToImmediateMethods.add(classMember);
                 parentToMethods.add(classMember);
                 nameToParents.add(classMember);
             }
@@ -111,24 +132,7 @@ public class RubyCache {
         });
     }
 
-    public List<Method> getAllMethods() {
-        return parentToMethods.getAllMethods();
-    }
-
-    public List<Member> getAllMembers() {
-        return nameToParents.getAllMembers();
-    }
-
-    public void populateSuperclassMethods() {
-        Collection<ParentMember> allParents = nameToParents.getAllParents();
-
-        for (ParentMember member : allParents) {
-            ParentMember memberOrSuperclass = member;
-            populateSuperclassMethods(member, memberOrSuperclass);
-        }
-    }
-
-    private void populateSuperclassMethods(ParentMember member, ParentMember memberOrSuperclass) {
+    private void populateSuperclassMethods(ParentMember member, ParentMember memberOrSuperclass, String test) {
         if (memberOrSuperclass.hasParentMemberName()) {
             String parentName = memberOrSuperclass.getParentMemberName();
             ParentMember parent = nameToParents.getMember(parentName);
@@ -138,7 +142,7 @@ public class RubyCache {
                 for (Method method : methods) {
                     methodToParents.add(method, member);
                 }
-                populateSuperclassMethods(member, parent);
+                populateSuperclassMethods(member, parent, "null");
             }
         }
     }

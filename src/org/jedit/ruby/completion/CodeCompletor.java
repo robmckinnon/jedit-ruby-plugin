@@ -26,6 +26,7 @@ import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.cache.RubyCache;
+import org.jedit.ruby.RubyPlugin;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -36,7 +37,7 @@ public class CodeCompletor {
 
     private JEditTextArea textArea;
     private Buffer buffer;
-    private org.jedit.ruby.completion.CodeAnalyzer analyzer;
+    private CodeAnalyzer analyzer;
     private List<Method> methods;
 
     public CodeCompletor(View view) {
@@ -65,10 +66,7 @@ public class CodeCompletor {
     private List<Method> findMethods() {
         Set<Method> methods;
 
-        if (analyzer.getName() == null) {
-            methods = new HashSet<Method>();
-
-        } else {
+        if (analyzer.getName() != null) {
             if (analyzer.getClassName() != null) {
                 methods = completeUsingClass(analyzer.getClassName());
             } else {
@@ -78,6 +76,9 @@ public class CodeCompletor {
             if (getPartialMethod() != null) {
                 filterMethods(methods, getPartialMethod());
             }
+
+        } else {
+            methods = new HashSet<Method>();
         }
 
         List<Method> methodList = new ArrayList<Method>(methods);
@@ -98,7 +99,9 @@ public class CodeCompletor {
     }
 
     private Set<Method> completeUsingClass(String className) {
+        RubyPlugin.log("class: " + className, getClass());
         Set<Method> methods = RubyCache.instance().getMethodsOfMember(className);
+        RubyPlugin.log("methods: " + methods.size(), getClass());
 
         if (analyzer.isClass()) {
             for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {

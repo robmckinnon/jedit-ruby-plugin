@@ -25,6 +25,7 @@ import gnu.regexp.REException;
 import gnu.regexp.RESyntax;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.jedit.ruby.RubyPlugin;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -45,11 +46,13 @@ public class CodeAnalyzer {
         this.textArea = textArea;
         this.buffer = buffer;
         String line = getLineUpToCaret();
+        RubyPlugin.log("line: "+line, getClass());
         try {
             RE expression = new RE("((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)(\\w*)$");
             REMatch match = expression.getMatch(line);
             if (match != null) {
                 name = match.toString(1);
+                RubyPlugin.log("name: "+name, getClass());
                 restOfLine = match.toString(1) + match.toString(2) + match.toString(3) + match.toString(4);
                 if(match.toString(5).length() > 0) {
                     partialMethod = match.toString(5);
@@ -84,7 +87,9 @@ public class CodeAnalyzer {
     public boolean isClass() {
         try {
             RE expression = new RE("^[A-Z]\\w*");
-            return expression.isMatch(name);
+            boolean isClass = expression.isMatch(name);
+            RubyPlugin.log("isClass: " + isClass, getClass());
+            return isClass;
         } catch (REException e) {
             e.printStackTrace();
             return false;
