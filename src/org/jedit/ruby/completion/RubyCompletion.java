@@ -114,7 +114,7 @@ public class RubyCompletion extends SideKickCompletion {
         frame = null;
     }
 
-    private static final String noDotStarts = "=<>%*-+/|~";
+    private static final String noDotStarts = "=<>%*-+/|~&^";
 
     private Completion getCompletion(Method method) {
         String name = method.getName();
