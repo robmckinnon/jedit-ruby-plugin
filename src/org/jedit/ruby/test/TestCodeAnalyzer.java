@@ -53,9 +53,9 @@ public class TestCodeAnalyzer extends TestCase {
         List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
         assertEquals("assert found method", "respond_to", methods.get(3));
     }
-    public void testFindMethod5() {
-        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
-        assertEquals("assert found method", "[]", methods.get(4));
-    }
+//    public void testFindMethod5() {
+//        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+//        assertEquals("assert found method", "[]", methods.get(4));
+//    }
 
 }

@@ -48,7 +48,7 @@ public class CodeAnalyzer {
         RubyPlugin.log("line: "+line, getClass());
         try {
 //            RE expression = new RE("((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)(\\w*)$");
-            RE expression = new RE("((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)(\\S*)$");
+            RE expression = new RE("((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)(\\S*)$");
             REMatch match = expression.getMatch(line);
             if (match != null) {
                 name = match.toString(1);
@@ -97,11 +97,101 @@ public class CodeAnalyzer {
     }
 
     String getClassName() {
-        if(isClass()) {
-            return name;
+        String className = null;
+
+        if (isClass()) {
+            className = name;
+
+        } else if (name != null && name.length() > 0) {
+            className = determineClassName(name);
+
         } else {
-            return findClassName();
+            className = findClassName();
         }
+
+        return className;
+    }
+
+    private String determineClassName(String name) {
+        if (matches("[", "]", name)) {
+            return "Array";
+
+        } else if (matches("'", "'", name) || matches("\"", "\"", name)) {
+            return "String";
+
+        } else if (matches("{", "}", name)) {
+            return "Hash";
+
+        } else if (matches("/", "/", name)) {
+            return "Regexp";
+
+        } else if (isFixNum(name)) {
+            return "FixNum";
+
+        } else if (isFloat(name)) {
+            return "Float";
+
+        } else if (name.startsWith("%r") && isDemarked(name, 2)) {
+            return "Regexp";
+
+        } else if (name.startsWith("%q") && isDemarked(name, 2)) {
+            return "String";
+
+        } else if (name.startsWith("%Q") && isDemarked(name, 2)) {
+            return "String";
+
+        } else if (name.startsWith("%w") && isDemarked(name, 2)) {
+            return "Array";
+
+        } else if (name.startsWith("%") && isDemarked(name, 1)) {
+            return "String";
+
+        } else {
+            return null;
+        }
+    }
+
+    private boolean isFixNum(String name) {
+        try {
+            Long.parseLong(name);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean isFloat(String name) {
+        try {
+            Double.parseDouble(name);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean isDemarked(String name, int start) {
+        boolean demarked = false;
+        if (name.length() >= (start+2)) {
+            String rest = name.substring(start);
+            demarked = demarked(rest);
+        }
+        return demarked;
+    }
+
+    private static final String demarkers = "~`!@#$%^&*-=_+|\\:;\"',.?/";
+
+    private boolean demarked(String rest) {
+        boolean demarked = matches("{", "}", rest) || matches("(", ")", rest) || matches("[", "]", rest);
+
+        if (!demarked) {
+            int index = demarkers.indexOf(rest.charAt(0));
+            demarked = index != -1 && rest.endsWith(""+demarkers.charAt(index));
+        }
+        return demarked;
+    }
+
+    private boolean matches(String prefix, String suffix, String name) {
+        return name.startsWith(prefix) && name.endsWith(suffix);
     }
 
     String getTextWithoutLine() {

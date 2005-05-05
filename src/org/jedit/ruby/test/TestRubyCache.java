@@ -33,20 +33,20 @@ import junit.framework.TestCase;
 public class TestRubyCache extends TestCase {
 
     private void addClassesToCache() {
-        RubyCache.instance().add(TestRubyParser.CLASS, TestRubyParser.getUniquePath());
-        RubyCache.instance().add(TestRubyParser.ARR_CLASS, TestRubyParser.getUniquePath());
+        RubyCache.instance().add(TestRubyParser.CLASS, "CLASS");
+        RubyCache.instance().add(TestRubyParser.ARR_CLASS, "ARR_CLASS");
     }
 
     private void addModuleToCache() {
-        RubyCache.instance().add(TestRubyParser.DEF_IN_MODULE, TestRubyParser.getUniquePath());
+        RubyCache.instance().add(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
     }
 
     public void testGetMethods() {
         addClassesToCache();
         List<Method> methods = RubyCache.instance().getMethods("red");
 
-        assertEquals("Assert file name correct", methods.get(0).getFileName(), "CLASS");
-        assertEquals("Assert file name correct", methods.get(0).getName(), "red");
+        assertEquals("Assert file name correct", "CLASS", methods.get(0).getFileName());
+        assertEquals("Assert file name correct", "red", methods.get(0).getName());
     }
 
     public void testGetClassByMethod() {
