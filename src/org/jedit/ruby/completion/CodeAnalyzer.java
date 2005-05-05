@@ -47,7 +47,8 @@ public class CodeAnalyzer {
         String line = getLineUpToCaret();
         RubyPlugin.log("line: "+line, getClass());
         try {
-            RE expression = new RE("((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)(\\w*)$");
+//            RE expression = new RE("((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)(\\w*)$");
+            RE expression = new RE("((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)(\\S*)$");
             REMatch match = expression.getMatch(line);
             if (match != null) {
                 name = match.toString(1);

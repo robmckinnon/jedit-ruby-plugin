@@ -21,6 +21,7 @@ package org.jedit.ruby.completion;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
+import org.gjt.sp.jedit.textarea.Selection;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ri.RDocViewer;
 import org.jedit.ruby.RubyPlugin;
@@ -94,11 +95,54 @@ public class RubyCompletion extends SideKickCompletion {
             buffer.remove(offset, partialMethod.length());
         }
 
-        buffer.insert(offset, method.getName() + "()");
-        textArea.setCaretPosition(textArea.getCaretPosition()-1);
+        Completion completion = getCompletion(method);
+        if (!completion.showDot) {
+            caretPosition = textArea.getCaretPosition();
+            Selection.Range range = new Selection.Range(caretPosition - 1, caretPosition);
+            textArea.setSelection(range);
+            if (completion.caretAdjustment == 0) {
+                textArea.setSelectedText(" ");
+            } else {
+                textArea.setSelectedText("");
+                offset--;
+            }
+        }
+        buffer.insert(offset, completion.text);
+        textArea.setCaretPosition(textArea.getCaretPosition() + completion.caretAdjustment);
         frame.setVisible(false);
         frame.dispose();
         frame = null;
+    }
+
+    private static final String noDotStarts = "=<>%*-+/|~";
+
+    private Completion getCompletion(Method method) {
+        String name = method.getName();
+
+        if (name.equals("each")) {
+            return new Completion("each do ||", -1, true);
+
+        } else if (name.startsWith("[")) {
+            return new Completion(name, -1, false);
+
+        } else if (noDotStarts.indexOf(name.charAt(0)) != -1) {
+            return new Completion(name + " ", 0, false);
+
+        } else {
+            return new Completion(name + "()", -1, true);
+        }
+    }
+
+    private static final class Completion {
+        String text;
+        int caretAdjustment;
+        boolean showDot;
+
+        public Completion(String text, int caretPositionAdjustment, boolean showDot) {
+            this.caretAdjustment = caretPositionAdjustment;
+            this.text = text;
+            this.showDot = showDot;
+        }
     }
 
 }
