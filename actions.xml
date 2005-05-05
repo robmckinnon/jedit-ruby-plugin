@@ -42,11 +42,6 @@
 			org.jedit.ruby.RubyActions.previousMethod(view);
 		</CODE>
 	</ACTION>
-	<ACTION NAME="ruby.complete-method">
-		<CODE>
-			org.jedit.ruby.RubyActions.completeMethod(view);
-		</CODE>
-	</ACTION>
 	<ACTION NAME="ruby.next-error">
 		<CODE>
 			org.jedit.ruby.RubyActions.nextError(view.getTextArea());
