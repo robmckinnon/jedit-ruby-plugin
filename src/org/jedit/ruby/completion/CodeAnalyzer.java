@@ -34,12 +34,14 @@ import java.util.ArrayList;
  */
 public class CodeAnalyzer {
 
-    private String name;
+    private static final String demarkers = "~`!@#$%^&*-=_+|\\:;\"',.?/";
+
+    private Buffer buffer;
+    private JEditTextArea textArea;
+    private String textWithoutLine;
     private String partialMethod;
     private String restOfLine;
-    private String textWithoutLine;
-    private JEditTextArea textArea;
-    private Buffer buffer;
+    private String name;
 
     public CodeAnalyzer(JEditTextArea textArea, Buffer buffer) {
         this.textArea = textArea;
@@ -101,12 +103,12 @@ public class CodeAnalyzer {
 
         if (isClass()) {
             className = name;
-
-        } else if (name != null && name.length() > 0) {
-            className = determineClassName(name);
-
         } else {
             className = findClassName();
+        }
+
+        if (className == null && name != null && name.length() > 0) {
+            className = determineClassName(name);
         }
 
         return className;
@@ -126,7 +128,7 @@ public class CodeAnalyzer {
             return "Regexp";
 
         } else if (isFixNum(name)) {
-            return "FixNum";
+            return "Fixnum";
 
         } else if (isFloat(name)) {
             return "Float";
@@ -178,8 +180,6 @@ public class CodeAnalyzer {
         return demarked;
     }
 
-    private static final String demarkers = "~`!@#$%^&*-=_+|\\:;\"',.?/";
-
     private boolean demarked(String rest) {
         boolean demarked = matches("{", "}", rest) || matches("(", ")", rest) || matches("[", "]", rest);
 
@@ -214,16 +214,30 @@ public class CodeAnalyzer {
     String findClassName() {
         String text = getTextWithoutLine();
         try {
-            RE expression = new RE("(" + name + " *= *)([A-Z]\\w+(::\\w+)?)((\\.|::)new)");
-            REMatch[] matches = expression.getAllMatches(text);
-            if(matches.length > 0) {
-                return matches[0].toString(2);
-            } else {
-                return null;
+            String className = findAssignment(text, "([A-Z]\\w+(::\\w+)?)((\\.|::)new)");
+
+            if (className == null) {
+                String value = findAssignment(text, "(\\S+)");
+                if (value != null) {
+                    className = determineClassName(value);
+                }
             }
+
+            return className;
         } catch (REException e) {
             e.printStackTrace();
-            return  null;
+            return null;
+        }
+    }
+
+    private String findAssignment(String text, String pattern) throws REException {
+        RE expression = new RE("(" + name + " *= *)" + pattern);
+        REMatch[] matches = expression.getAllMatches(text);
+        int count = matches.length;
+        if(count > 0) {
+            return matches[count - 1].toString(2);
+        } else {
+            return null;
         }
     }
 
