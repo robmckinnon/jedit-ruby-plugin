@@ -137,14 +137,41 @@ public class RubyCache {
             String parentName = memberOrSuperclass.getParentMemberName();
             ParentMember parent = nameToParents.getMember(parentName);
             if (parent != null) {
-                Set<Method> methods = parent.getMethods();
-                parentToMethods.add(member, methods);
-                for (Method method : methods) {
+                Set<Method> parentMethods = parent.getMethods();
+
+                for (Method method : parentMethods) {
                     methodToParents.add(method, member);
                 }
+
+                parentMethods = filterOutDuplicates(member, parentMethods);
+
+                parentToMethods.add(member, parentMethods);
+
                 populateSuperclassMethods(member, parent);
             }
         }
+    }
+
+    private Set<Method> filterOutDuplicates(ParentMember member, Set<Method> parentMethods) {
+        Set<String> methodNames = getMethodNames(member);
+        Iterator<Method> parentMethodIterator = parentMethods.iterator();
+
+        while (parentMethodIterator.hasNext()) {
+            Method parentMethod = parentMethodIterator.next();
+            if (methodNames.contains(parentMethod.getName())) {
+                parentMethodIterator.remove();
+            }
+        }
+        return parentMethods;
+    }
+
+    private Set<String> getMethodNames(ParentMember member) {
+        Set<Method> methods = parentToMethods.getMethodSet(member.getName());
+        Set<String> methodNames = new HashSet<String>();
+        for (Method method : methods) {
+            methodNames.add(method.getName());
+        }
+        return methodNames;
     }
 
 }
