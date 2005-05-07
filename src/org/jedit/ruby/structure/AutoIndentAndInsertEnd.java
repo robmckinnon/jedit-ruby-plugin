@@ -63,6 +63,8 @@ public class AutoIndentAndInsertEnd {
     private final RE ENHANCED_END_REG_EXP = new EnhancedEndRegularExpression();
     private final RE COMMENT_REG_EXP = new CommentRegularExpression();
     private final RE TRAILING_CONDITION_REG_EXP = new TrailingConditionRegularExpression();
+    private final RE IF_ELSIF_REG_EXP = new IfRegularExpression();
+    private final RE WHEN_REG_EXP = new WhenRegularExpression();
 
     private JEditTextArea area;
 
@@ -118,13 +120,14 @@ public class AutoIndentAndInsertEnd {
     }
 
     private void handleInsertEnter(String trimLine, int row, String line) {
+        boolean matchesConditionalAssignment = TRAILING_CONDITION_REG_EXP.isMatch(line);
         boolean matchesDo = DO_REG_EXP.isMatch(line) && !isDoInComment(line);
         boolean matchesSyntax = MATCH_REG_EXP.isMatch(line);
 
         boolean ignore = IGNORE_REG_EXP.isMatch(line);
 
-        if (!ignore && (matchesDo || matchesSyntax)) {
-            handleInsertEnd(matchesDo, line);
+        if (matchesConditionalAssignment || (!ignore && (matchesDo || matchesSyntax))) {
+            handleInsertEnd(matchesDo, matchesConditionalAssignment, line);
 
         } else if (END_REG_EXP.isMatch(trimLine)) {
             handleEnd(trimLine, row);
@@ -153,25 +156,38 @@ public class AutoIndentAndInsertEnd {
                 index--;
                 String line = area.getLineText(index);
                 if (TRAILING_CONDITION_REG_EXP.isMatch(line) && line.indexOf("elsif") == -1) {
-                    REMatch matches = TRAILING_CONDITION_REG_EXP.getMatch(line);
+                    indentAfterTrailingConditionalAssignment(line, trimLine);
+                    break;
+
+                } else if(IF_ELSIF_REG_EXP.isMatch(line)) {
+                    REMatch matches = IF_ELSIF_REG_EXP.getMatch(line);
                     String indent = matches.toString(1);
-                    for (int i = 0; i < matches.toString(2).length(); i++) {
-                        indent += " ";
-                    }
                     reIndent(trimLine, indent);
                     area.selectLine();
                     area.setSelectedText(indent + area.getSelectedText().trim());
                     area.shiftIndentRight();
-
-                    if (matches.toString(3).startsWith("case")) {
-                        area.goToPrevLine(false);
-                        area.shiftIndentRight();
-                        area.goToNextLine(false);
-                        area.shiftIndentRight();
-                    }
                     break;
                 }
             }
+        }
+    }
+
+    private void indentAfterTrailingConditionalAssignment(String line, String trimLine) {
+        REMatch matches = TRAILING_CONDITION_REG_EXP.getMatch(line);
+        String indent = matches.toString(1);
+        for (int i = 0; i < matches.toString(2).length(); i++) {
+            indent += " ";
+        }
+        reIndent(trimLine, indent);
+        area.selectLine();
+        area.setSelectedText(indent + area.getSelectedText().trim());
+        area.shiftIndentRight();
+
+        if (matches.toString(3).startsWith("case")) {
+            area.goToPrevLine(false);
+            area.shiftIndentRight();
+            area.goToNextLine(false);
+            area.shiftIndentRight();
         }
     }
 
@@ -267,8 +283,17 @@ public class AutoIndentAndInsertEnd {
         return inComment;
     }
 
-    private void handleInsertEnd(boolean matchesDo, String line) {
-        String indent = getIndent(matchesDo, line);
+    private void handleInsertEnd(boolean matchesDo, boolean matchesConditionalAssignment, String line) {
+        String indent;
+        if(matchesConditionalAssignment) {
+            REMatch matches = TRAILING_CONDITION_REG_EXP.getMatch(line);
+            indent = matches.toString(1);
+            for (int i = 0; i < matches.toString(2).length(); i++) {
+                indent += " ";
+            }
+        } else {
+            indent = getIndent(matchesDo, line);
+        }
 
         area.insertEnterAndIndent();
         area.selectLine();
@@ -318,8 +343,9 @@ public class AutoIndentAndInsertEnd {
 //                }
                 boolean isDoStatement = isDoMatch && !doInComment;
                 boolean ignore = IGNORE_REG_EXP.isMatch(line);
+                boolean conditionalAssignment = TRAILING_CONDITION_REG_EXP.isMatch(line);
 
-                if (!ignore && (isDoStatement || MATCH_REG_EXP.isMatch(line))) {
+                if (conditionalAssignment || (!ignore && (isDoStatement || MATCH_REG_EXP.isMatch(line)))) {
                     boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
                     boolean elsif = line.indexOf("elsif") != -1;
                     if (!openingBrace && !elsif) {
@@ -440,7 +466,19 @@ public class AutoIndentAndInsertEnd {
 
     private static class TrailingConditionRegularExpression extends RegularExpression {
         protected String getPattern() {
-            return "(\\s*)([^#]*)(((if)|(unless)|(case)).*)";
+            return "(\\s*)([^#]*=\\s*)(((if)|(unless)|(case)).*)";
+        }
+    }
+
+    private static class IfRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "(\\s*)((if)|(elsif))(.*)";
+        }
+    }
+
+    private static class WhenRegularExpression extends RegularExpression {
+        protected String getPattern() {
+            return "(\\s*)(when)(.*)";
         }
     }
 
