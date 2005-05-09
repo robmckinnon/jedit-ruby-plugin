@@ -43,6 +43,8 @@ import java.util.Collections;
 import java.util.List;
 import java.io.IOException;
 
+import sidekick.SideKickActions;
+
 /**
  * @author robmckinnon at users,sourceforge,net
  */
@@ -74,7 +76,7 @@ public class RubyActions {
     }
 
     private static void selectBeyondLine(View view, JEditTextArea textArea, Selection selection) {
-        if (RubyPlugin.isRubyFile(view.getBuffer())) {
+        if (isRubyFile(view)) {
             try {
                 Member member = null;
                 try {
@@ -147,7 +149,7 @@ public class RubyActions {
 
     public static void searchDocumentation(View view) {
         try {
-            org.jedit.ruby.ri.RDocSeacher.doSearch(view);
+            RDocSeacher.doSearch(view);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -185,72 +187,93 @@ public class RubyActions {
     }
 
     public static void autoIndentAndInsertEnd(View view) {
+        if(isRubyFile(view)) {
 // start = System.currentTimeMillis();
         AutoIndentAndInsertEnd.performIndent(view);
 // end = System.currentTimeMillis();
 // Macros.message(view, "" + (end - start));
+        } else {
+            view.getTextArea().insertEnterAndIndent();
+        }
     }
 
     public static void nextMethod(View view) {
-        RubyMembers members = RubyParser.getMembers(view);
+        if(isRubyFile(view)) {
+            RubyMembers members = RubyParser.getMembers(view);
 
-        if (!members.containsErrors()) {
-            JEditTextArea textArea = view.getTextArea();
-            int caretPosition = textArea.getCaretPosition();
-            Member member = members.getNextMember(caretPosition);
+            if (!members.containsErrors()) {
+                JEditTextArea textArea = view.getTextArea();
+                int caretPosition = textArea.getCaretPosition();
+                Member member = members.getNextMember(caretPosition);
 
-            if (member != null) {
-                textArea.setCaretPosition(member.getStartOffset(), true);
-            } else {
-                textArea.setCaretPosition(textArea.getBufferLength() - 1, true);
+                if (member != null) {
+                    textArea.setCaretPosition(member.getStartOffset(), true);
+                } else {
+                    textArea.setCaretPosition(textArea.getBufferLength() - 1, true);
+                }
             }
+        } else {
+            SideKickActions.goToNextAsset(view);
         }
     }
 
     public static void previousMethod(View view) {
-        RubyMembers members = RubyParser.getMembers(view);
+        if(isRubyFile(view)) {
+            RubyMembers members = RubyParser.getMembers(view);
 
-        if (!members.containsErrors()) {
+            if (!members.containsErrors()) {
+                JEditTextArea textArea = view.getTextArea();
+                int caretPosition = textArea.getCaretPosition();
+                Member member = members.getCurrentMember(caretPosition);
+                if (member != null && caretPosition == member.getStartOffset()) {
+                    member = members.getPreviousMember(caretPosition);
+                }
+
+                if (member != null) {
+                    textArea.setCaretPosition(member.getStartOffset(), true);
+                } else {
+                    textArea.setCaretPosition(0, true);
+                }
+            }
+        } else {
+            SideKickActions.goToPrevAsset(view);
+        }
+    }
+
+    public static void nextError(View view) {
+        if(isRubyFile(view)) {
             JEditTextArea textArea = view.getTextArea();
             int caretPosition = textArea.getCaretPosition();
-            Member member = members.getCurrentMember(caretPosition);
-            if (member != null && caretPosition == member.getStartOffset()) {
-                member = members.getPreviousMember(caretPosition);
-            }
+            ErrorSource.Error[] errors = org.jedit.ruby.structure.RubySideKickParser.getErrors();
 
-            if (member != null) {
-                textArea.setCaretPosition(member.getStartOffset(), true);
-            } else {
-                textArea.setCaretPosition(0, true);
-            }
-        }
-    }
-
-    public static void nextError(JEditTextArea textArea) {
-        int caretPosition = textArea.getCaretPosition();
-        ErrorSource.Error[] errors = org.jedit.ruby.structure.RubySideKickParser.getErrors();
-
-        for (ErrorSource.Error error : errors) {
-            int offset = RubyPlugin.getNonSpaceStartOffset(error.getLineNumber());
-            if (caretPosition < offset) {
-                textArea.setCaretPosition(offset, true);
-                break;
+            for (ErrorSource.Error error : errors) {
+                int offset = RubyPlugin.getNonSpaceStartOffset(error.getLineNumber());
+                if (caretPosition < offset) {
+                    textArea.setCaretPosition(offset, true);
+                    break;
+                }
             }
         }
     }
 
-    public static void previousError(JEditTextArea textArea) {
-        int caretPosition = textArea.getCaretPosition();
-        List<ErrorSource.Error> errors = Arrays.asList(RubySideKickParser.getErrors());
-        Collections.reverse(errors);
+    public static void previousError(View view) {
+        if(isRubyFile(view)) {
+            JEditTextArea textArea = view.getTextArea();
+            int caretPosition = textArea.getCaretPosition();
+            List<ErrorSource.Error> errors = Arrays.asList(RubySideKickParser.getErrors());
+            Collections.reverse(errors);
 
-        for (ErrorSource.Error error : errors) {
-            int offset = RubyPlugin.getNonSpaceStartOffset(error.getLineNumber());
-            if (caretPosition > offset) {
-                textArea.setCaretPosition(offset, true);
-                break;
+            for (ErrorSource.Error error : errors) {
+                int offset = RubyPlugin.getNonSpaceStartOffset(error.getLineNumber());
+                if (caretPosition > offset) {
+                    textArea.setCaretPosition(offset, true);
+                    break;
+                }
             }
         }
     }
 
+    private static boolean isRubyFile(View view) {
+        return RubyPlugin.isRubyFile(view.getBuffer());
+    }
 }

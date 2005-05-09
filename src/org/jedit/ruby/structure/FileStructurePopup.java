@@ -25,8 +25,6 @@ import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Problem;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.parser.RubyParser;
-import org.jedit.ruby.structure.*;
-import org.jedit.ruby.structure.TypeAheadPopup;
 import org.jedit.ruby.RubyPlugin;
 
 /**

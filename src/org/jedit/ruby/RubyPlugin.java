@@ -1,5 +1,5 @@
 /*
- * RubyPlugin.java - Ruby plugin for jEdit
+ * RubyPlugin.java - Ruby editor plugin for jEdit
  *
  * Copyright 2005 Robert McKinnon
  *

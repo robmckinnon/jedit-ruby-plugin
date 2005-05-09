@@ -81,20 +81,15 @@ public class AutoIndentAndInsertEnd {
     private void innerPerformIndent(View view) {
         area = view.getTextArea();
         Buffer buffer = view.getBuffer();
-
-        if (!buffer.getMode().getName().equals("ruby")) {
-            area.insertEnterAndIndent();
-        } else {
-            buffer.writeLock();
-            buffer.beginCompoundEdit();
-            try {
-                doIndent();
-            } finally {
-                if (buffer.insideCompoundEdit()) {
-                    buffer.endCompoundEdit();
-                }
-                buffer.writeUnlock();
+        buffer.writeLock();
+        buffer.beginCompoundEdit();
+        try {
+            doIndent();
+        } finally {
+            if (buffer.insideCompoundEdit()) {
+                buffer.endCompoundEdit();
             }
+            buffer.writeUnlock();
         }
     }
 

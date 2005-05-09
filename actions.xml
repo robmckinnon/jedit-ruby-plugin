@@ -44,12 +44,12 @@
 	</ACTION>
 	<ACTION NAME="ruby.next-error">
 		<CODE>
-			org.jedit.ruby.RubyActions.nextError(view.getTextArea());
+			org.jedit.ruby.RubyActions.nextError(view);
  		</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.previous-error">
 		<CODE>
-			org.jedit.ruby.RubyActions.previousError(view.getTextArea());
+			org.jedit.ruby.RubyActions.previousError(view);
  		</CODE>
 	</ACTION>
 </ACTIONS>
