@@ -30,11 +30,12 @@
 	<property name="src.dir" value="src"/>
 	<property name="build.dir" value="build"/>
 	<property name="install.dir" value=".."/>
+	<property name="jedit.install.dir"  value="../.."/>
 	<property name="retroweaver.dir" value="../Retroweaver/lib"/>
 
 	<path id="project.class.path">
+		<pathelement location="${jedit.install.dir}/jedit.jar"/>
 		<pathelement location="${install.dir}/jruby.jar"/>
-		<pathelement location="${install.dir}/jedit.jar"/>
 		<pathelement location="${install.dir}/SideKick.jar"/>
 		<pathelement location="${install.dir}/ErrorList.jar"/>
 		<pathelement location="${install.dir}/ProjectViewer.jar"/>
