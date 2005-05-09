@@ -52,6 +52,10 @@ public class RubySideKickParser extends SideKickParser {
         return true;
     }
 
+    public boolean canHandleBackspace() {
+        return true;
+    }
+
     public static ErrorSource.Error[] getErrors() {
         ErrorSource.Error[] errors = errorSource.getAllErrors();
         if(errors != null) {

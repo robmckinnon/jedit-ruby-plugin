@@ -40,6 +40,8 @@ import java.util.List;
  */
 public class RubyCompletion extends SideKickCompletion {
 
+    private static final String NO_DOT_METHOD_STARTS = "=<>%*-+/|~&^";
+
     private List<Method> methods;
     private String partialMethod;
     private JWindow frame;
@@ -58,12 +60,24 @@ public class RubyCompletion extends SideKickCompletion {
         frame.setSize(400,400);
     }
 
+    /**
+     * Returns true if should continue completing.
+     */
     public boolean handleKeystroke(int selectedIndex, char keyChar) {
         boolean emptyPopup = selectedIndex == -1;
+        boolean backspace = keyChar == '\b';
         boolean space = keyChar == ' ';
         boolean stillTyping = !space && keyChar != '\t' && keyChar != '\n';
 
-        if (stillTyping || emptyPopup) {
+        if (backspace) {
+            String text = textArea.getLineText(textArea.getCaretLine());
+            if(text.length() > 0) {
+                int caretPosition = textArea.getCaretPosition();
+                textArea.selectLine();
+                textArea.setSelectedText(text.substring(0, text.length() - 1));
+                textArea.setCaretPosition(caretPosition - 1);
+            }
+        } else if (stillTyping || emptyPopup) {
             textArea.userInput(keyChar);
         } else {
             insert(selectedIndex);
@@ -114,8 +128,6 @@ public class RubyCompletion extends SideKickCompletion {
         frame = null;
     }
 
-    private static final String noDotStarts = "=<>%*-+/|~&^";
-
     private Completion getCompletion(Method method) {
         String name = method.getName();
 
@@ -125,7 +137,7 @@ public class RubyCompletion extends SideKickCompletion {
         } else if (name.startsWith("[")) {
             return new Completion(name, -1, false);
 
-        } else if (noDotStarts.indexOf(name.charAt(0)) != -1) {
+        } else if (NO_DOT_METHOD_STARTS.indexOf(name.charAt(0)) != -1) {
             return new Completion(name + " ", 0, false);
 
         } else {
