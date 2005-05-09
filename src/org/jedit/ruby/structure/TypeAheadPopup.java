@@ -29,7 +29,6 @@ import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ast.MemberVisitorAdapter;
 import org.jedit.ruby.*;
-import org.jedit.ruby.ri.*;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -82,6 +81,7 @@ public class TypeAheadPopup extends JWindow {
     private char narrowListMnemonic;
     private char showAllMnemonic;
     private int mismatchCharacters;
+    private FocusAdapter textAreaFocusListener;
 
     public TypeAheadPopup(View view, Member[] members, Member selectedMember, PopupState state) {
         this(view, members, members, null, selectedMember, null, state);
@@ -125,12 +125,13 @@ public class TypeAheadPopup extends JWindow {
     public void setVisible(boolean visible) {
         if (visible) {
             initContentPane();
-            view.getTextArea().addFocusListener(new FocusAdapter() {
+            textAreaFocusListener = new FocusAdapter() {
                 public void focusLost(FocusEvent e) {
                     handleFocusOnDispose = false;
                     dispose();
                 }
-            });
+            };
+            textArea.addFocusListener(textAreaFocusListener);
 
             putFocusOnPopup();
             pack();
@@ -317,11 +318,12 @@ public class TypeAheadPopup extends JWindow {
 
     public void dispose() {
         view.setKeyEventInterceptor(null);
+        textArea.removeFocusListener(textAreaFocusListener);
         super.dispose();
         if (handleFocusOnDispose) {
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    textArea.requestFocusInWindow();
+                    view.getTextArea().requestFocusInWindow();
                 }
             });
         }
