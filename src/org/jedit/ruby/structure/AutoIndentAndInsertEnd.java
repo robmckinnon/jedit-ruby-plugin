@@ -387,7 +387,7 @@ public class AutoIndentAndInsertEnd {
         return indent;
     }
 
-    private static abstract class RegularExpression extends RE {
+    public static abstract class RegularExpression extends RE {
         public RegularExpression() {
             try {
                 initialize(getPattern(), 0, RESearchMatcher.RE_SYNTAX_JEDIT, 0, 0);
