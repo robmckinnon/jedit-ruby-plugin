@@ -67,26 +67,35 @@ public class RubyCompletion extends SideKickCompletion {
         boolean emptyPopup = selectedIndex == -1;
         boolean backspace = keyChar == '\b';
         boolean space = keyChar == ' ';
-        boolean stillTyping = !space && keyChar != '\t' && keyChar != '\n';
+        boolean dot = keyChar == '.';
+        boolean continueCompleting = !space && !dot && keyChar != '\t' && keyChar != '\n';
 
         if (backspace) {
-            String text = textArea.getLineText(textArea.getCaretLine());
-            if(text.length() > 0) {
-                int caretPosition = textArea.getCaretPosition();
-                textArea.selectLine();
-                textArea.setSelectedText(text.substring(0, text.length() - 1));
-                textArea.setCaretPosition(caretPosition - 1);
-            }
-        } else if (stillTyping || emptyPopup) {
+            continueCompleting = handleBackspace();
+
+        } else if (continueCompleting || emptyPopup) {
             textArea.userInput(keyChar);
         } else {
             insert(selectedIndex);
-            if(space) {
+            if (space) {
                 textArea.userInput(' ');
+            } else if (dot) {
+                textArea.userInput('.');
             }
         }
 
-        return stillTyping;
+        return continueCompleting;
+    }
+
+    private boolean handleBackspace() {
+        String text = textArea.getLineText(textArea.getCaretLine());
+        if(text.length() > 0) {
+            int caretPosition = textArea.getCaretPosition();
+            textArea.selectLine();
+            textArea.setSelectedText(text.substring(0, text.length() - 1));
+            textArea.setCaretPosition(caretPosition - 1);
+        }
+        return CodeAnalyzer.isInsertionPoint(textArea);
     }
 
     public void insert(int index) {
@@ -122,6 +131,7 @@ public class RubyCompletion extends SideKickCompletion {
             }
         }
         buffer.insert(offset, completion.text);
+        CodeAnalyzer.setLastCompleted(completion.text);
         textArea.setCaretPosition(textArea.getCaretPosition() + completion.caretAdjustment);
         frame.setVisible(false);
         frame.dispose();
@@ -140,8 +150,11 @@ public class RubyCompletion extends SideKickCompletion {
         } else if (NO_DOT_METHOD_STARTS.indexOf(name.charAt(0)) != -1) {
             return new Completion(name + " ", 0, false);
 
-        } else {
+        } else if (method.hasParameters()) {
             return new Completion(name + "()", -1, true);
+
+        } else {
+            return new Completion(name, 0, true);
         }
     }
 

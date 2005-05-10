@@ -25,6 +25,7 @@ import gnu.regexp.REException;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -34,7 +35,10 @@ import java.util.ArrayList;
  */
 public class CodeAnalyzer {
 
-    private static final String demarkers = "~`!@#$%^&*-=_+|\\:;\"',.?/";
+    private static final RE COMPLETE_REG_EXP = new CompleteRegularExpression();
+    private static final String DEMARKERS = "~`!@#$%^&*-=_+|\\:;\"',.?/";
+
+    private static String LAST_COMPLETED;
 
     private Buffer buffer;
     private JEditTextArea textArea;
@@ -46,41 +50,49 @@ public class CodeAnalyzer {
     public CodeAnalyzer(JEditTextArea textArea, Buffer buffer) {
         this.textArea = textArea;
         this.buffer = buffer;
-        String line = getLineUpToCaret();
+        String line = getLineUpToCaret(textArea);
         RubyPlugin.log("line: "+line, getClass());
-        try {
-//            RE expression = new RE("((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)(\\w*)$");
-            RE expression = new RE("((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)(\\S*)$");
-            REMatch match = expression.getMatch(line);
-            if (match != null) {
-                name = match.toString(1);
-                RubyPlugin.log("name: "+name, getClass());
-                restOfLine = match.toString(1) + match.toString(2) + match.toString(3) + match.toString(4);
-                if(match.toString(5).length() > 0) {
-                    partialMethod = match.toString(5);
-                }
+        REMatch match = COMPLETE_REG_EXP.getMatch(line);
+
+        if (match != null) {
+            name = match.toString(1);
+            RubyPlugin.log("name: " + name, getClass());
+            restOfLine = match.toString(1) + match.toString(2) + match.toString(3) + match.toString(4);
+            if(match.toString(5).length() > 0) {
+                partialMethod = match.toString(5);
             }
-        } catch (REException e) {
-            e.printStackTrace();
         }
     }
 
-    public boolean isInsertionPoint() {
-        return name != null;
+    public static boolean isInsertionPoint(JEditTextArea textArea) {
+        String lineUpToCaret = getLineUpToCaret(textArea);
+        boolean match = COMPLETE_REG_EXP.isMatch(lineUpToCaret);
+        return match;
     }
 
-    private int getLineStartIndex() {
-        int lineIndex = textArea.getCaretLine();
-        int start = textArea.getLineStartOffset(lineIndex);
-        return start;
+    public static void setLastCompleted(String text) {
+        RubyPlugin.log("last completed: " + String.valueOf(text), CodeAnalyzer.class);
+        LAST_COMPLETED = text;
+    }
+
+    public boolean isInsertionPoint() {
+        RubyPlugin.log("insertion? " + String.valueOf(name) + " " + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
+        boolean insertionPoint = name != null;
+
+        if (partialMethod != null) {
+            insertionPoint = insertionPoint && !partialMethod.equals(LAST_COMPLETED);
+        }
+
+        return insertionPoint;
     }
 
     public String getName() {
         return name;
     }
 
-    String getLineUpToCaret() {
-        int start = getLineStartIndex();
+    static String getLineUpToCaret(JEditTextArea textArea) {
+        int lineIndex = textArea.getCaretLine();
+        int start = textArea.getLineStartOffset(lineIndex);
         int end = textArea.getCaretPosition();
         String line = textArea.getText(start, end - start);
         return line;
@@ -126,6 +138,15 @@ public class CodeAnalyzer {
 
         } else if (matches("/", "/", name)) {
             return "Regexp";
+
+        } else if ("true".equals(name) || "TRUE".equals(name)) {
+            return "TrueClass";
+
+        } else if ("false".equals(name) || "FALSE".equals(name)) {
+            return "FalseClass";
+
+        } else if ("nil".equals(name) || "NIL".equals(name)) {
+            return "NilClass";
 
         } else if (isFixNum(name)) {
             return "Fixnum";
@@ -184,8 +205,8 @@ public class CodeAnalyzer {
         boolean demarked = matches("{", "}", rest) || matches("(", ")", rest) || matches("[", "]", rest);
 
         if (!demarked) {
-            int index = demarkers.indexOf(rest.charAt(0));
-            demarked = index != -1 && rest.endsWith(""+demarkers.charAt(index));
+            int index = DEMARKERS.indexOf(rest.charAt(0));
+            demarked = index != -1 && rest.endsWith(""+DEMARKERS.charAt(index));
         }
         return demarked;
     }
@@ -279,4 +300,11 @@ public class CodeAnalyzer {
             methods.add(method);
         }
     }
+
+    private static class CompleteRegularExpression extends AutoIndentAndInsertEnd.RegularExpression {
+        protected String getPattern() {
+            return "((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)(\\S*)$";
+        }
+    }
+
 }

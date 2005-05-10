@@ -67,8 +67,9 @@ public class CodeCompletor {
         Set<Method> methods;
 
         if (analyzer.getName() != null) {
-            if (analyzer.getClassName() != null) {
-                methods = completeUsingClass(analyzer.getClassName());
+            String className = analyzer.getClassName();
+            if (className != null) {
+                methods = completeUsingClass(className);
             } else {
                 methods = completeUsingMethods(analyzer.getMethods());
             }
