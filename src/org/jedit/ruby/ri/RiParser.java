@@ -106,7 +106,11 @@ public class RiParser {
         ClassMember parent = new ClassMember(description.getName(), 0, 0);
         parent.setParentMemberName(description.getSuperclass());
         parent.setEndOffset(0);
-        parent.setNamespace(description.getNamespace());
+        String namespace = description.getNamespace();
+        if(namespace != null && namespace.trim().length() > 0) {
+            namespace += "::";
+        }
+        parent.setNamespace(namespace);
         parent.setDocumentationComment(description.getComment());
 
         addMethods(description.getInstanceMethods(), parent);

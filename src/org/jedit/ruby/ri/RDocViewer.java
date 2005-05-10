@@ -97,7 +97,9 @@ public class RDocViewer extends JPanel
     }
 
     public void focusOnDefaultComponent() {
-        searchField.requestFocus();
+        if (!searchField.hasFocus()) {
+            searchField.requestFocusInWindow();
+        }
     }
 
     public void valueChanged(ListSelectionEvent e) {
@@ -237,11 +239,7 @@ public class RDocViewer extends JPanel
         list.addListSelectionListener(this);
         list.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {
-                if(e.getOppositeComponent() == searchField) {
-                    documentationPane.requestFocusInWindow();
-                } else {
-                    searchField.requestFocusInWindow();
-                }
+                searchField.requestFocusInWindow();
             }
         });
         configureAppearence(list);

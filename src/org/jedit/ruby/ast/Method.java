@@ -27,16 +27,18 @@ public class Method extends Member {
     private String filePath;
     private String fileName;
     private String receiverName;
-    private boolean isClassMethod;
     private String parameters;
     private String blockParameters;
     private String fullDocumentation;
+    private boolean isClassMethod;
+    private boolean hasParameters;
 
     public Method(String name, String filePath, String fileName, int startOuterOffset, int startOffset, boolean classMethod) {
         super(name, startOuterOffset, startOffset);
         this.filePath = filePath;
         this.fileName = fileName;
         isClassMethod = classMethod;
+        hasParameters = true;
     }
 
     public void accept(MemberVisitor visitor) {
@@ -130,7 +132,24 @@ public class Method extends Member {
         return fullDocumentation;
     }
 
+    public boolean hasParameters() {
+        return hasParameters;
+    }
+
     public void setDocumentationParams(String parameters) {
+        if (parameters.indexOf("(") == -1) {
+            hasParameters = false;
+            
+        } else if (parameters.startsWith("(") && parameters.endsWith(")")) {
+            if(parameters.length() == 2) {
+                hasParameters = false;
+            } else {
+                String parameterList = parameters.substring(1, parameters.length() - 1).trim();
+                hasParameters = parameterList.length() > 0;
+            }
+           parameters = getName() + parameters;
+        }
+
         this.parameters = format(parameters);
     }
 

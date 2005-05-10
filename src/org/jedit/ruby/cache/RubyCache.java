@@ -73,6 +73,10 @@ public class RubyCache {
         }
     }
 
+    public synchronized ParentMember getParentMember(String parentMemberName) {
+        return nameToParents.getMember(parentMemberName);
+    }
+
     public synchronized List<Method> getMethods(String method) {
         return new ArrayList<Method>(nameToMethods.getMethods(method));
     }

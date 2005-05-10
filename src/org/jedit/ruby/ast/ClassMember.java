@@ -19,10 +19,14 @@
  */
 package org.jedit.ruby.ast;
 
+import org.jedit.ruby.cache.RubyCache;
+
 /**
  * @author robmckinnon at users.sourceforge.net
  */
 public class ClassMember extends ParentMember {
+
+    private String fullDocumentation;
 
     public ClassMember(String name, int startOuterOffset, int startOffset) {
         super(name, startOuterOffset, startOffset);
@@ -32,4 +36,29 @@ public class ClassMember extends ParentMember {
         visitor.handleClass(this);
     }
 
+    public String getDocumentation() {
+        if (fullDocumentation == null) {
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("<p>Class: " + getFullName());
+
+            String parentMemberName = getParentMemberName();
+            appendParentToDocumentation(parentMemberName, buffer);
+
+            buffer.append("</p><br>");
+            buffer.append(super.getDocumentation());
+            fullDocumentation = buffer.toString();
+        }
+
+        return fullDocumentation;
+    }
+
+    private void appendParentToDocumentation(String parentMemberName, StringBuffer buffer) {
+        if (parentMemberName != null && parentMemberName.trim().length() > 0) {
+            ParentMember parentMember = RubyCache.instance().getParentMember(parentMemberName);
+            if (parentMember != null && !parentMember.getFullName().equals("Object")) {
+                buffer.append(" &lt; " + parentMember.getFullName());
+                appendParentToDocumentation(parentMember.getParentMemberName(), buffer);
+            }
+        }
+    }
 }
