@@ -33,8 +33,8 @@ public class Method extends Member {
     private boolean isClassMethod;
     private boolean hasParameters;
 
-    public Method(String name, String filePath, String fileName, int startOuterOffset, int startOffset, boolean classMethod) {
-        super(name, startOuterOffset, startOffset);
+    public Method(String name, String params, String filePath, String fileName, int startOuterOffset, int startOffset, boolean classMethod) {
+        super(params == null ? name : name + params, startOuterOffset, startOffset);
         this.filePath = filePath;
         this.fileName = fileName;
         isClassMethod = classMethod;

@@ -281,7 +281,7 @@ public class CodeAnalyzer {
         try {
             List<String> methods = new ArrayList<String>();
 
-            addMatches(text, methods, "("+name+"\\.|#)(\\w+\\??)");
+            addMatches(text, methods, "("+name+"(\\.|#))(\\w+\\??)");
 //            addMatches(name, text, methods, "("+name+"\\.|#)(\\+\\?+)");
 
             return methods;
@@ -296,7 +296,7 @@ public class CodeAnalyzer {
         REMatch[] matches = expression.getAllMatches(text);
 
         for (REMatch match : matches) {
-            String method = match.toString(2);
+            String method = match.toString(3);
             methods.add(method);
         }
     }

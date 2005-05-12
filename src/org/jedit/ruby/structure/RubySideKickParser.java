@@ -24,6 +24,9 @@ import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
+import org.gjt.sp.jedit.TextUtilities;
+import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
+import org.gjt.sp.jedit.syntax.Token;
 import org.jruby.lexer.yacc.SourcePosition;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
@@ -94,15 +97,54 @@ public class RubySideKickParser extends SideKickParser {
     }
 
     public SideKickCompletion complete(EditPane editPane, int caret) {
-        RubyPlugin.log("completing", getClass());
-        CodeCompletor completor = new CodeCompletor(editPane.getView());
+        RubyCompletion completion = null;
+        Token syntaxType = getToken(editPane.getBuffer(), caret);
 
-        if (completor.isInsertionPoint()) {
-            return new RubyCompletion(editPane.getView(), completor.getPartialMethod(), completor.getMethods());
-        } else {
-            CodeAnalyzer.setLastCompleted(null);
-            return null;
+        if (!ignore(syntaxType)) {
+            RubyPlugin.log("completing", getClass());
+            CodeCompletor completor = new CodeCompletor(editPane.getView());
+
+            if (completor.isInsertionPoint()) {
+                completion = new RubyCompletion(editPane.getView(), completor.getPartialMethod(), completor.getMethods());
+            }
         }
+
+        if (completion == null) {
+            CodeAnalyzer.setLastCompleted(null);
+        }
+
+        return completion;
+    }
+
+    private boolean ignore(Token token) {
+        switch(token.id) {
+            case Token.COMMENT1:
+            case Token.COMMENT2:
+            case Token.COMMENT3:
+            case Token.COMMENT4:
+            case Token.LITERAL1:
+            case Token.LITERAL2:
+            case Token.LITERAL3:
+            case Token.LITERAL4:
+                RubyPlugin.log("ignoring: " + Token.TOKEN_TYPES[token.id], getClass());
+                return true;
+            default:
+                RubyPlugin.log("not ignoring: " + Token.TOKEN_TYPES[token.id], getClass());
+                return false;
+        }
+    }
+
+    private Token getToken(Buffer buffer, int caret) {
+        int line = buffer.getLineOfOffset(caret);
+        int offset = caret;
+        offset -= buffer.getLineStartOffset(line);
+        if(offset != 0)
+            offset--;
+
+        DefaultTokenHandler tokens = new DefaultTokenHandler();
+        buffer.markTokens(line,tokens);
+        Token token = TextUtilities.getTokenAtOffset(tokens.getTokens(),offset);
+        return token;
     }
 
     private void addWarning(String message, SourcePosition position, DefaultErrorSource errorSource) {

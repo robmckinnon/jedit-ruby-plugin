@@ -100,8 +100,24 @@ public class TestRubyParser extends TestCase {
 
     private static final String ONE_LINER = "def count; @contents.split.size; end";
 
+    private static final String PARAM_METHOD = "def red(blue, green)\n"
+    +"end";
+
+    private static final String PARAM_METHOD2 = "def red blue, green\n"
+    +"end";
+
     public void tearDown() {
         RubyCache.instance().clear();
+    }
+
+    public void testParseParamMethod() {
+        List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD, getUniquePath(), null);
+        assertEquals("Assert method name correct", "red(blue, green)", members.get(0).getName());
+    }
+
+    public void testParseParamMethod2() {
+        List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD2, getUniquePath(), null);
+        assertEquals("Assert method name correct", "red(blue, green)", members.get(0).getName());
     }
 
     public void testIterParse() {

@@ -161,7 +161,6 @@ class RubyNodeVisitor extends AbstractVisitor {
         method.setEndOffset(getEndOffset(node));
         Member parent = currentMember.getLast();
         parent.addChildMember(method);
-
     }
 
     public void visitDefsNode(DefsNode node) {

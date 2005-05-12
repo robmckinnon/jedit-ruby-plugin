@@ -117,7 +117,7 @@ public class RDocSeacher {
                         methodName = methodName.substring(index + adj);
                     }
 
-                    Method method = new Method(methodName, "none", "none", 0, 0, isClassMethod);
+                    Method method = new Method(methodName, null, "none", "none", 0, 0, isClassMethod);
                     method.setNamespace(namespace);
                     methods.add(method);
                 }

@@ -37,17 +37,19 @@ interface MemberMatcher {
 
     List<Match> getMatches(String text) throws REException;
 
-    Member createMember(String name, String filePath, int startOuterOffset, int startOffset);
+    Member createMember(String name, String filePath, int startOuterOffset, int startOffset, String params);
 
     static class Match {
         String value;
         int startOuterOffset;
         int startOffset;
+        String params;
 
-        public Match(String value, int startOuterOffset, int startOffset) {
-            this.value = value;
-            this.startOuterOffset = startOuterOffset;
+        public Match(String value, int startOuterOffset, int startOffset, String params) {
+            this.params = params;
             this.startOffset = startOffset;
+            this.startOuterOffset = startOuterOffset;
+            this.value = value;
         }
     }
 
@@ -57,7 +59,7 @@ interface MemberMatcher {
             return getMatchList("([ ]*)(module[ ]+)(\\w+[^;\\s]*)", text);
         }
 
-        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {
+        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset, String params) {
             return new Module(name, startOuterOffset, startOffset);
         }
     }
@@ -68,7 +70,7 @@ interface MemberMatcher {
             return getMatchList("([ ]*)(class[ ]+)(\\w+[^;\\s]*)", text);
         }
 
-        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {
+        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset, String params) {
             RubyPlugin.log("class: " + name, getClass());
             return new ClassMember(name, startOuterOffset, startOffset);
         }
@@ -77,12 +79,19 @@ interface MemberMatcher {
     static class MethodMatcher extends AbstractMatcher {
 
         public List<Match> getMatches(String text) throws REException {
-            return getMatchList("([ ]*)(def[ ]+)([^;\\s]*)", text);
+            String paramPattern =
+                    "(\\(.*\\))"+
+                    "|"+
+                    "(.*)";
+            return getMatchList("([ ]*)(def[ ]+)([^;\\(\\s]*)(" + paramPattern + ")?", text);
         }
 
-        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset) {
+        public Member createMember(String name, String filePath, int startOuterOffset, int startOffset, String params) {
             String fileName = (new File(filePath)).getName();
-            return new Method(name, filePath, fileName, startOuterOffset, startOffset, false);
+            if(params.startsWith(" ")) {
+                params = '('+params.trim()+')';
+            }
+            return new Method(name, params, filePath, fileName, startOuterOffset, startOffset, false);
         }
     }
 
@@ -103,7 +112,11 @@ interface MemberMatcher {
                     String value = reMatch.toString(3).trim();
                     int startOuterOffset = reMatch.getStartIndex(1);
                     int startIndex = reMatch.getStartIndex(3);
-                    Match match = new Match(value, startOuterOffset, startIndex);
+                    String params = reMatch.toString(4);
+                    if(params != null && params.indexOf(';') != -1) {
+                        params = params.substring(0, params.indexOf(';'));
+                    }
+                    Match match = new Match(value, startOuterOffset, startIndex, params);
                     matchList.add(match);
                     start = text.indexOf(reMatch.toString()) + reMatch.toString().length();
                 }

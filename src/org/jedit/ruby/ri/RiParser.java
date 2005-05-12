@@ -125,7 +125,7 @@ public class RiParser {
         for (MethodDescription methodDescription : methods) {
             String name = methodDescription.getName();
             name = name.startsWith(".") ? name.substring(1) : name;
-            Method method = new Method(name, "", "", 0, 0, methodDescription.isClassMethod());
+            Method method = new Method(name, null, "", "", 0, 0, methodDescription.isClassMethod());
             method.setNamespace(methodDescription.getNamespace());
             method.setDocumentationBlockParams(methodDescription.getBlockParameters());
             method.setDocumentationParams(methodDescription.getParameters());
