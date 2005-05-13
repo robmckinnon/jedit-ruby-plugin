@@ -57,6 +57,10 @@ public class LineCounter {
         }
     }
 
+    public int getLineCount() {
+        return endOffsets.size();
+    }
+
     public String getLine(int line) {
         if (line == 0) {
             return getLine(0, getEndOffset(0));
@@ -67,15 +71,6 @@ public class LineCounter {
         }
     }
 
-    private String getLine(int beginIndex, int endIndex) {
-        char endChar = text.charAt(endIndex);
-        if (isNewLineCharacter(endChar)) {
-            return text.substring(beginIndex, endIndex);
-        } else {
-            return text.substring(beginIndex, endIndex + 1);
-        }
-    }
-
     /**
      * Returns end offset for line.
      *
@@ -83,6 +78,15 @@ public class LineCounter {
      */
     public int getEndOffset(int line) {
         return endOffsets.get(line);
+    }
+
+    private String getLine(int beginIndex, int endIndex) {
+        char endChar = text.charAt(endIndex);
+        if (isNewLineCharacter(endChar)) {
+            return text.substring(beginIndex, endIndex);
+        } else {
+            return text.substring(beginIndex, endIndex + 1);
+        }
     }
 
     private int handleNewLine(int line, int index, char[] chars, char character) {
@@ -102,4 +106,5 @@ public class LineCounter {
     private boolean isNewLineCharacter(char character) {
         return character == '\n' || character == '\r';
     }
+
 }

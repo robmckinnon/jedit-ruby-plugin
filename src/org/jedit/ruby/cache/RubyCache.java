@@ -111,6 +111,12 @@ public class RubyCache {
         for (ParentMember member : allParents) {
             populateSuperclassMethods(member, member);
         }
+
+        List<Method> methods = getAllMethods();
+
+        for (Method method : methods) {
+            method.populateReturnTypes();
+        }
     }
 
     private void add(String path, RubyMembers members) {

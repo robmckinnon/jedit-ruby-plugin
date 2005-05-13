@@ -66,7 +66,13 @@ public class CodeCompletor {
     private List<Method> findMethods() {
         Set<Method> methods;
 
-        if (analyzer.getName() != null) {
+        if (CodeAnalyzer.hasLastReturnTypes()) {
+            methods = getMethodsOfParents(CodeAnalyzer.getLastReturnTypes());
+
+            if (getPartialMethod() != null) {
+                filterMethods(methods, getPartialMethod());
+            }
+        } else if (analyzer.getName() != null) {
             String className = analyzer.getClassName();
             if (className != null) {
                 methods = completeUsingClass(className);
@@ -128,6 +134,10 @@ public class CodeCompletor {
             }
         }
 
+        return getMethodsOfParents(members);
+    }
+
+    private Set<Method> getMethodsOfParents(Set<Member> members) {
         Set<Method> results = new HashSet<Method>();
 
         if (members != null) {

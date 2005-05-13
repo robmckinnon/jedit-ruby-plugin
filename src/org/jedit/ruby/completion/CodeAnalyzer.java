@@ -25,10 +25,13 @@ import gnu.regexp.REException;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.ast.ParentMember;
+import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -39,6 +42,7 @@ public class CodeAnalyzer {
     private static final String DEMARKERS = "~`!@#$%^&*-=_+|\\:;\"',.?/";
 
     private static String LAST_COMPLETED;
+    private static Set<Member> LAST_RETURN_TYPES;
 
     private Buffer buffer;
     private JEditTextArea textArea;
@@ -68,6 +72,19 @@ public class CodeAnalyzer {
         String lineUpToCaret = getLineUpToCaret(textArea);
         boolean match = COMPLETE_REG_EXP.isMatch(lineUpToCaret);
         return match;
+    }
+
+    public static void setLastReturnTypes(Set<Member> type) {
+        RubyPlugin.log("set last return type: " + String.valueOf(type), CodeAnalyzer.class);
+        LAST_RETURN_TYPES = type;
+    }
+
+    public static boolean hasLastReturnTypes() {
+        return LAST_RETURN_TYPES != null && LAST_RETURN_TYPES.size() > 0;
+    }
+
+    public static Set<Member> getLastReturnTypes() {
+        return LAST_RETURN_TYPES;
     }
 
     public static void setLastCompleted(String text) {

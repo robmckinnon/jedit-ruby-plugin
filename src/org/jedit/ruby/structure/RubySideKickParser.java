@@ -110,6 +110,7 @@ public class RubySideKickParser extends SideKickParser {
         }
 
         if (completion == null) {
+            CodeAnalyzer.setLastReturnTypes(null);
             CodeAnalyzer.setLastCompleted(null);
         }
 

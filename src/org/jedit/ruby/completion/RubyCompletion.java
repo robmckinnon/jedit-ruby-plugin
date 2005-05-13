@@ -23,6 +23,7 @@ import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.jedit.ruby.ast.Method;
+import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ri.RDocViewer;
 import org.jedit.ruby.RubyPlugin;
 import sidekick.SideKickCompletion;
@@ -34,6 +35,7 @@ import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Frame;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -76,14 +78,22 @@ public class RubyCompletion extends SideKickCompletion {
         } else if (continueCompleting || emptyPopup) {
             textArea.userInput(keyChar);
         } else {
-            insert(selectedIndex);
-            if (space) {
+            Method method = methods.get(selectedIndex);
+            Completion completion = insert(method);
+
+            if (space && !method.hasParameters()) {
                 textArea.userInput(' ');
-            } else if (dot) {
+            } else if (dot && !method.hasParameters() && completion.showDot) {
                 textArea.userInput('.');
+                continueCompleting = true;
+                Set<Member> returnTypes = method.getReturnTypes();
+                CodeAnalyzer.setLastReturnTypes(returnTypes);
             }
         }
 
+        if(!continueCompleting) {
+            CodeAnalyzer.setLastReturnTypes(null);
+        }
         return continueCompleting;
     }
 
@@ -107,7 +117,7 @@ public class RubyCompletion extends SideKickCompletion {
         return null;
     }
 
-    private void insert(Method method) {
+    private Completion insert(Method method) {
         Buffer buffer = view.getBuffer();
         RubyPlugin.log("method: " + method.getName(), getClass());
         int caretPosition = textArea.getCaretPosition();
@@ -136,6 +146,7 @@ public class RubyCompletion extends SideKickCompletion {
         frame.setVisible(false);
         frame.dispose();
         frame = null;
+        return completion;
     }
 
     private Completion getCompletion(Method method) {
