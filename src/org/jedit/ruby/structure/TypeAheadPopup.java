@@ -125,13 +125,13 @@ public class TypeAheadPopup extends JWindow {
     public void setVisible(boolean visible) {
         if (visible) {
             initContentPane();
+
             textAreaFocusListener = new FocusAdapter() {
                 public void focusLost(FocusEvent e) {
                     handleFocusOnDispose = false;
                     dispose();
                 }
             };
-            textArea.addFocusListener(textAreaFocusListener);
 
             putFocusOnPopup();
             pack();
@@ -151,6 +151,13 @@ public class TypeAheadPopup extends JWindow {
             addKeyListener(keyHandler);
             popupList.addKeyListener(keyHandler);
             view.setKeyEventInterceptor(keyHandler);
+
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    textArea.requestFocus(); // fix for focus problems under Windows
+                    textArea.addFocusListener(textAreaFocusListener);
+                }
+            });
         } else {
             super.setVisible(false);
         }
