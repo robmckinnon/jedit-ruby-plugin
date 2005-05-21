@@ -25,7 +25,6 @@ import org.gjt.sp.jedit.Macros;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
-import org.gjt.sp.jedit.textarea.Selection;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ast.RubyMembers;
@@ -51,100 +50,7 @@ import sidekick.SideKickActions;
 public class RubyActions {
 
     public static void progressiveSelection(View view) {
-        JEditTextArea textArea = view.getTextArea();
-
-        Selection[] selections = textArea.getSelection();
-        Selection selection = selections.length > 0 ? selections[0] : null;
-
-        textArea.selectNone();
-        if (selection != null) {
-            textArea.setCaretPosition(selection.getStart());
-        }
-
-        textArea.selectWord();
-
-        if(textArea.getSelection().length == 0) {
-            selectBeyondLine(view, textArea, selection);
-        }
-
-        if (needToSelectMore(textArea, selection)) {
-            textArea.selectLine();
-            if (needToSelectMore(textArea, selection)) {
-                selectBeyondLine(view, textArea, selection);
-            }
-        }
-    }
-
-    private static void selectBeyondLine(View view, JEditTextArea textArea, Selection selection) {
-        if (isRubyFile(view)) {
-            try {
-                Member member = null;
-                try {
-                    RubyMembers members = RubyParser.getMembers(view);
-                    member = members.getCurrentMember(textArea.getCaretPosition());
-                    selectBeyondLineRuby(textArea, selection, member);
-                } catch (Exception e) {
-                    selectBeyondLineNonRuby(textArea, selection);
-                }
-            } catch (Exception e) {
-                selectBeyondLineNonRuby(textArea, selection);
-            }
-        } else {
-            selectBeyondLineNonRuby(textArea, selection);
-        }
-    }
-
-    private static void selectBeyondLineRuby(JEditTextArea textArea, Selection selection, Member member) {
-        if (member == null) {
-            selectBeyondLineNonRuby(textArea, selection);
-        } else {
-            selectMemberOrParent(member, textArea, selection);
-        }
-    }
-
-    private static void selectBeyondLineNonRuby(JEditTextArea textArea, Selection selection) {
-        textArea.selectParagraph();
-
-        if (textArea.getSelection().length == 0 || needToSelectMore(textArea, selection)) {
-            textArea.selectAll();
-        }
-    }
-
-    private static void selectMemberOrParent(Member member, JEditTextArea textArea, Selection selection) {
-        selectMember(member, textArea);
-
-        if (needToSelectMore(textArea, selection)) {
-            if (member.hasParentMember()) {
-                member = member.getParentMember();
-                selectMemberOrParent(member, textArea, selection);
-            } else {
-                textArea.selectAll();
-            }
-        }
-    }
-
-    private static void selectMember(Member member, JEditTextArea textArea) {
-        int start = member.getStartOffset();
-        int line = textArea.getLineOfOffset(start);
-        start = textArea.getLineStartOffset(line);
-        int end = member.getEndOffset();
-        char character = textArea.getText(end, 1).charAt(0);
-        if (character != '\n' || character != '\r') {
-            end++;
-        }
-        Selection.Range range = new Selection.Range(start, end);
-        textArea.setSelection(range);
-    }
-
-    private static boolean needToSelectMore(JEditTextArea textArea, Selection originalSelection) {
-        if(originalSelection != null) {
-            Selection selection = textArea.getSelection()[0];
-            int start = originalSelection.getStart();
-            int end = originalSelection.getEnd();
-            return selection.getStart() >= start && selection.getEnd() <= end;
-        } else {
-            return false;
-        }
+        ProgressiveSelector.doProgressiveSelection(view);
     }
 
     public static void searchDocumentation(View view) {
