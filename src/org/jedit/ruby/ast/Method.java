@@ -152,8 +152,10 @@ public class Method extends Member {
                 String parameterList = parameters.substring(1, parameters.length() - 1).trim();
                 hasParameters = parameterList.length() > 0;
             }
-           parameters = getName() + parameters;
+            parameters = getShortName() + parameters;
 
+        } else if (parameters.indexOf(getShortName() + " ") != -1) {
+            hasParameters = false;
         }
 
         this.parameters = parameters;
