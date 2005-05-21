@@ -35,6 +35,7 @@ public class RubyTestSuite extends TestSuite {
         suite.addTestSuite(TestYamlParser.class);
         suite.addTestSuite(TestLineCounter.class);
         suite.addTestSuite(TestCodeAnalyzer.class);
+        suite.addTestSuite(TestAutoIndent.class);
         return suite;
     }
 }

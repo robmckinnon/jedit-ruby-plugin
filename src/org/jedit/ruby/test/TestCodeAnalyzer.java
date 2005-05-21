@@ -38,21 +38,32 @@ public class TestCodeAnalyzer extends TestCase {
 
 
     public void testFindMethod1() {
-        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(0));
     }
     public void testFindMethod2() {
-        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(1));
     }
     public void testFindMethod3() {
-        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(2));
     }
     public void testFindMethod4() {
-        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
+        List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to", methods.get(3));
     }
+
+    public void testClassName() {
+        boolean isClass = CodeAnalyzer.isClass("REXML::Element");
+        assertEquals("assert class name recognized", true, isClass);
+    }
+
+    public void testClassName2() {
+        boolean isClass = CodeAnalyzer.isClass("IO::puts");
+        assertEquals("assert class method recognized", false, isClass);
+    }
+
 //    public void testFindMethod5() {
 //        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
 //        assertEquals("assert found method", "[]", methods.get(4));
