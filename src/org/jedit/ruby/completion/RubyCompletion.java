@@ -161,6 +161,13 @@ public class RubyCompletion extends SideKickCompletion {
         } else if (NO_DOT_METHOD_STARTS.indexOf(name.charAt(0)) != -1) {
             return new Completion(name + " ", 0, false);
 
+        } else if (name.endsWith("=") && name.length() > 1) {
+            name = name.substring(0, name.length() - 1) + " = ";
+            return new Completion(name, 0, true);
+
+        } else if (name.endsWith("?") && name.length() > 1) {
+            return new Completion(name + " ", 0, true);
+
         } else if (method.hasParameters()) {
             return new Completion(name + "()", -1, true);
 
