@@ -25,7 +25,6 @@ import gnu.regexp.REException;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.RubyPlugin;
-import org.jedit.ruby.ast.ParentMember;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 
@@ -38,7 +37,6 @@ import java.util.Set;
  */
 public class CodeAnalyzer {
 
-    private static final RE COMPLETE_REG_EXP = new CompleteRegularExpression();
     private static final String DEMARKERS = "~`!@#$%^&*-=_+|\\:;\"',.?/";
 
     private static String LAST_COMPLETED;
@@ -49,19 +47,27 @@ public class CodeAnalyzer {
     private String textWithoutLine;
     private String partialMethod;
     private String restOfLine;
-    private String name;
+    private String methodCalledOnThis;
 
     public CodeAnalyzer(JEditTextArea textArea, Buffer buffer) {
         this.textArea = textArea;
         this.buffer = buffer;
         String line = getLineUpToCaret(textArea);
         RubyPlugin.log("line: "+line, getClass());
-        REMatch match = COMPLETE_REG_EXP.getMatch(line);
+        REMatch match = CompleteRegExp.instance.getMatch(line);
 
         if (match != null) {
-            name = match.toString(1);
-            RubyPlugin.log("name: " + name, getClass());
+            methodCalledOnThis = match.toString(1);
+            RubyPlugin.log("methodCalledOnThis: " + methodCalledOnThis, getClass());
             restOfLine = match.toString(1) + match.toString(2) + match.toString(3) + match.toString(4);
+
+            int parenthesisIndex = methodCalledOnThis.indexOf('(');
+
+            if (parenthesisIndex != -1) {
+                methodCalledOnThis = methodCalledOnThis.substring(parenthesisIndex + 1);
+                restOfLine = restOfLine.substring(parenthesisIndex + 1);
+            }
+
             if(match.toString(5).length() > 0) {
                 partialMethod = match.toString(5);
             }
@@ -70,7 +76,7 @@ public class CodeAnalyzer {
 
     public static boolean isInsertionPoint(JEditTextArea textArea) {
         String lineUpToCaret = getLineUpToCaret(textArea);
-        boolean match = COMPLETE_REG_EXP.isMatch(lineUpToCaret);
+        boolean match = CompleteRegExp.instance.isMatch(lineUpToCaret.trim());
         return match;
     }
 
@@ -93,8 +99,8 @@ public class CodeAnalyzer {
     }
 
     public boolean isInsertionPoint() {
-        RubyPlugin.log("insertion? " + String.valueOf(name) + " " + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
-        boolean insertionPoint = name != null;
+        RubyPlugin.log("insertion? " + String.valueOf(methodCalledOnThis) + " " + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
+        boolean insertionPoint = methodCalledOnThis != null;
 
         if (partialMethod != null) {
             insertionPoint = insertionPoint && !partialMethod.equals(LAST_COMPLETED);
@@ -103,8 +109,8 @@ public class CodeAnalyzer {
         return insertionPoint;
     }
 
-    public String getName() {
-        return name;
+    public String getMethodCalledOnThis() {
+        return methodCalledOnThis;
     }
 
     static String getLineUpToCaret(JEditTextArea textArea) {
@@ -116,28 +122,26 @@ public class CodeAnalyzer {
     }
 
     public boolean isClass() {
-        try {
-            RE expression = new RE("^[A-Z]\\w*");
-            boolean isClass = expression.isMatch(name);
-            RubyPlugin.log("isClass: " + isClass, getClass());
-            return isClass;
-        } catch (REException e) {
-            e.printStackTrace();
-            return false;
-        }
+        return isClass(methodCalledOnThis);
+    }
+
+    public static boolean isClass(String methodCalledOnThis) {
+        boolean isClass = ClassNameRegExp.instance.isMatch(methodCalledOnThis);
+        RubyPlugin.log("isClass: " + isClass, CodeAnalyzer.class);
+        return isClass;
     }
 
     String getClassName() {
         String className = null;
 
         if (isClass()) {
-            className = name;
+            className = methodCalledOnThis;
         } else {
             className = findClassName();
         }
 
-        if (className == null && name != null && name.length() > 0) {
-            className = determineClassName(name);
+        if (className == null && methodCalledOnThis != null && methodCalledOnThis.length() > 0) {
+            className = determineClassName(methodCalledOnThis);
         }
 
         return className;
@@ -185,6 +189,9 @@ public class CodeAnalyzer {
 
         } else if (name.startsWith("%") && isDemarked(name, 1)) {
             return "String";
+
+        } else if (SymbolRegExp.instance.isMatch(name)) {
+            return "Symbol";
 
         } else {
             return null;
@@ -269,7 +276,7 @@ public class CodeAnalyzer {
     }
 
     private String findAssignment(String text, String pattern) throws REException {
-        RE expression = new RE("(" + name + " *= *)" + pattern);
+        RE expression = new RE("(" + methodCalledOnThis + " *= *)" + pattern);
         REMatch[] matches = expression.getAllMatches(text);
         int count = matches.length;
         if(count > 0) {
@@ -287,19 +294,19 @@ public class CodeAnalyzer {
         return restOfLine;
     }
 
-    List<String> getMethods() {
-        return getMethods(getTextWithoutLine(), name);
+    List<String> getMethodsCalledOnVariable() {
+        return getMethodsCalledOnVariable(getTextWithoutLine(), methodCalledOnThis);
     }
 
     /**
      * Returns array of methods invoked on the variable
      */
-    public static List<String> getMethods(String text, String name) {
+    public static List<String> getMethodsCalledOnVariable(String text, String name) {
         try {
             List<String> methods = new ArrayList<String>();
 
             addMatches(text, methods, "("+name+"(\\.|#))(\\w+\\??)");
-//            addMatches(name, text, methods, "("+name+"\\.|#)(\\+\\?+)");
+//            addMatches(methodCalledOnThis, text, methods, "("+methodCalledOnThis+"\\.|#)(\\+\\?+)");
 
             return methods;
         } catch (REException e) {
@@ -318,10 +325,24 @@ public class CodeAnalyzer {
         }
     }
 
-    private static class CompleteRegularExpression extends AutoIndentAndInsertEnd.RegularExpression {
+    private static class CompleteRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+        private static final RE instance = new CompleteRegExp();
         protected String getPattern() {
             return "((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)(\\S*)$";
         }
     }
 
+    private static class SymbolRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+        private static final RE instance = new SymbolRegExp();
+        protected String getPattern() {
+            return ":\\w+";
+        }
+    }
+
+    public static class ClassNameRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+        private static final RE instance = new ClassNameRegExp();
+        protected String getPattern() {
+            return "^([A-Z]\\w*(::)?)+";
+        }
+    }
 }
