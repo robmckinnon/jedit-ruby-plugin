@@ -24,8 +24,6 @@ import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
-import org.gjt.sp.jedit.TextUtilities;
-import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.syntax.Token;
 import org.jruby.lexer.yacc.SourcePosition;
 import org.jedit.ruby.ast.Member;
@@ -98,7 +96,7 @@ public class RubySideKickParser extends SideKickParser {
 
     public SideKickCompletion complete(EditPane editPane, int caret) {
         RubyCompletion completion = null;
-        Token syntaxType = getToken(editPane.getBuffer(), caret);
+        Token syntaxType = RubyPlugin.getToken(editPane.getBuffer(), caret);
 
         if (!ignore(syntaxType)) {
             RubyPlugin.log("completing", getClass());
@@ -133,19 +131,6 @@ public class RubySideKickParser extends SideKickParser {
                 RubyPlugin.log("not ignoring: " + Token.TOKEN_TYPES[token.id], getClass());
                 return false;
         }
-    }
-
-    private Token getToken(Buffer buffer, int caret) {
-        int line = buffer.getLineOfOffset(caret);
-        int offset = caret;
-        offset -= buffer.getLineStartOffset(line);
-        if(offset != 0)
-            offset--;
-
-        DefaultTokenHandler tokens = new DefaultTokenHandler();
-        buffer.markTokens(line,tokens);
-        Token token = TextUtilities.getTokenAtOffset(tokens.getTokens(),offset);
-        return token;
     }
 
     private void addWarning(String message, SourcePosition position, DefaultErrorSource errorSource) {
