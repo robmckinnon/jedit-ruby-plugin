@@ -20,6 +20,8 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.jedit.syntax.Token;
+import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 import org.jedit.ruby.parser.JRubyParser;
@@ -240,5 +242,40 @@ public class RubyPlugin extends EditPlugin {
         }
         return ignore;
     }
-    
+
+    public static Token getToken(Buffer buffer, int caret) {
+        DefaultTokenHandler tokens = getTokens(buffer, caret);
+        return getToken(buffer, caret, tokens);
+    }
+
+    public static Token getToken(Buffer buffer, int caret, DefaultTokenHandler tokens) {
+        int offset = caret;
+        offset -= buffer.getLineStartOffset(buffer.getLineOfOffset(caret));
+        if(offset != 0)
+            offset--;
+        Token token = TextUtilities.getTokenAtOffset(tokens.getTokens(), offset);
+        return token;
+    }
+
+    public static DefaultTokenHandler getTokens(Buffer buffer, int caret) {
+        int line = buffer.getLineOfOffset(caret);
+        DefaultTokenHandler tokens = new DefaultTokenHandler();
+        buffer.markTokens(line,tokens);
+        return tokens;
+    }
+
+    public static Token getPreviousToken(DefaultTokenHandler tokens, Token tokenOfInterest) {
+        Token token = tokens.getTokens();
+        Token previous = null;
+
+        while (token != null && token.next != null) {
+            if (token.next == tokenOfInterest) {
+                previous = token;
+                break;
+            }
+            token = token.next;
+        }
+
+        return previous;
+    }
 }
