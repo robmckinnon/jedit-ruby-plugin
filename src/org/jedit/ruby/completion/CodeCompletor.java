@@ -33,8 +33,6 @@ import org.jedit.ruby.RubyPlugin;
  */
 public class CodeCompletor {
 
-    private static final CodeCompletionComparator COMPARATOR = new CodeCompletionComparator();
-
     private JEditTextArea textArea;
     private Buffer buffer;
     private CodeAnalyzer analyzer;
@@ -66,18 +64,19 @@ public class CodeCompletor {
     private List<Method> findMethods() {
         Set<Method> methods;
 
-        if (CodeAnalyzer.hasLastReturnTypes()) {
-            methods = getMethodsOfParents(CodeAnalyzer.getLastReturnTypes());
-
-            if (getPartialMethod() != null) {
-                filterMethods(methods, getPartialMethod());
-            }
-        } else if (analyzer.getName() != null) {
+//        if (CodeAnalyzer.hasLastReturnTypes()) {
+//            methods = getMethodsOfParents(CodeAnalyzer.getLastReturnTypes());
+//
+//            if (getPartialMethod() != null) {
+//                filterMethods(methods, getPartialMethod());
+//            }
+//        } else if (analyzer.getMethodCalledOnThis() != null) {
+        if (analyzer.getMethodCalledOnThis() != null) {
             String className = analyzer.getClassName();
             if (className != null) {
                 methods = completeUsingClass(className);
             } else {
-                methods = completeUsingMethods(analyzer.getMethods());
+                methods = completeUsingMethods(analyzer.getMethodsCalledOnVariable());
             }
 
             if (getPartialMethod() != null) {
@@ -89,8 +88,10 @@ public class CodeCompletor {
         }
 
         List<Method> methodList = new ArrayList<Method>(methods);
-        if (methods.size() > 0) {
-            Collections.sort(methodList, COMPARATOR);
+        int size = methods.size();
+        if (size > 0) {
+            CodeCompletionComparator.instance.setObjectMethodsLast(size > 8);
+            Collections.sort(methodList, CodeCompletionComparator.instance);
         }
         return methodList;
     }
@@ -166,13 +167,34 @@ public class CodeCompletor {
     }
 
     private static class CodeCompletionComparator implements Comparator<Method> {
+        private static final CodeCompletionComparator instance = new CodeCompletionComparator();
+        private boolean objectMethodsLast;
+
         public int compare(Method method, Method otherMethod) {
-            int compare = method.getName().compareTo(otherMethod.getName());
-            if(compare == 0) {
-                return method.getFullName().compareTo(otherMethod.getFullName());
+            boolean onObjectClass = onObjectClass(method);
+            boolean otherOnObjectClass = onObjectClass(otherMethod);
+
+            if (objectMethodsLast && onObjectClass && !otherOnObjectClass) {
+                return 1;
+            } else if (objectMethodsLast && !onObjectClass && otherOnObjectClass) {
+                return -1;
             } else {
-                return compare;
+                int compare = method.getName().compareTo(otherMethod.getName());
+
+                if (compare == 0) {
+                    return method.getFullName().compareTo(otherMethod.getFullName());
+                } else {
+                    return compare;
+                }
             }
+        }
+
+        private boolean onObjectClass(Method method) {
+            return method.getParentMember().getName().equals("Object");
+        }
+
+        public void setObjectMethodsLast(boolean objectMethodsLast) {
+            this.objectMethodsLast = objectMethodsLast;
         }
     }
 }
