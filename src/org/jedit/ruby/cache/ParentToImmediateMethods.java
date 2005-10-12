@@ -27,12 +27,12 @@ import java.util.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class ParentToImmediateMethods {
+final class ParentToImmediateMethods {
 
-    private Map<String, Set<Method>> fullNameToImmediateMethods = new HashMap<String, Set<Method>>();
-    private Map<String, Set<Method>> nameToImmediateMethods = new HashMap<String, Set<Method>>();
+    private final Map<String, Set<Method>> fullNameToImmediateMethods = new HashMap<String, Set<Method>>();
+    private final Map<String, Set<Method>> nameToImmediateMethods = new HashMap<String, Set<Method>>();
 
-    List<Method> getImmediateMethodList(String memberName) {
+    final List<Method> getImmediateMethodList(String memberName) {
         Set<Method> methodSet = getImmediateMethodSet(memberName);
         List<Method> methods = new ArrayList<Method>(methodSet);
 
@@ -43,7 +43,7 @@ class ParentToImmediateMethods {
         return methods;
     }
 
-    Set<Method> getImmediateMethodSet(String memberName) {
+    private Set<Method> getImmediateMethodSet(String memberName) {
         Set<Method> methodSet = fullNameToImmediateMethods.get(memberName);
         if (methodSet == null) {
             methodSet = nameToImmediateMethods.get(memberName);
@@ -58,14 +58,14 @@ class ParentToImmediateMethods {
      * Note: Have to add methods separately because there
      * may be some classes defined across more than one file.
      */
-    void add(ParentMember member) {
+    final void add(ParentMember member) {
         Set<Method> methods = member.getMethods();
         String fullName = member.getFullName();
         String name = member.getName();
         load(fullName, methods, name, fullNameToImmediateMethods, nameToImmediateMethods);
     }
 
-    private void load(String fullName, Set<Method> methods, String name, Map<String, Set<Method>> fullNameToMethods, Map<String, Set<Method>> nameToMethods) {
+    private static void load(String fullName, Set<Method> methods, String name, Map<String, Set<Method>> fullNameToMethods, Map<String, Set<Method>> nameToMethods) {
         if (fullNameToMethods.containsKey(fullName)) {
             fullNameToMethods.get(fullName).addAll(methods);
             nameToMethods.get(name).addAll(methods);
@@ -75,7 +75,7 @@ class ParentToImmediateMethods {
         }
     }
 
-    void clear() {
+    final void clear() {
         fullNameToImmediateMethods.clear();
         nameToImmediateMethods.clear();
     }

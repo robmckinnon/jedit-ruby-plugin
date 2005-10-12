@@ -22,14 +22,14 @@ package org.jedit.ruby.ri;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class ClassDescription extends ModuleDescription {
+public final class ClassDescription extends ModuleDescription {
     private String superclass;
 
-    public String getSuperclass() {
+    public final String getSuperclass() {
         return superclass;
     }
 
-    public void setSuperclass(String superclass) {
+    public final void setSuperclass(String superclass) {
         this.superclass = superclass;
     }
 }

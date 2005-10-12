@@ -27,24 +27,24 @@ import java.util.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class MethodToParents {
+final class MethodToParents {
 
-    private Map<String, Set<Member>> methodToParentMap = new HashMap<String, Set<Member>>();
+    private final Map<String, Set<Member>> methodToParentMap = new HashMap<String, Set<Member>>();
 
-    void add(Method method) {
+    final void add(Method method) {
         if (method.hasParentMember()) {
             Member parentMember = method.getParentMember();
             add(method, parentMember);
         }
     }
 
-    void add(Method method, Member parentMember) {
+    final void add(Method method, Member parentMember) {
         String methodName = method.getName();
         Set<Member> parentSet = getParentSet(methodName);
         parentSet.add(parentMember);
     }
 
-    List<Member> getParentList(String methodName) {
+    final List<Member> getParentList(String methodName) {
         Set<Member> memberSet = getParentSet(methodName);
         List<Member> members = new ArrayList<Member>(memberSet);
         if (members.size() > 1) {
@@ -53,15 +53,14 @@ class MethodToParents {
         return members;
     }
 
-    Set<Member> getParentSet(String methodName) {
+    final Set<Member> getParentSet(String methodName) {
         if (!methodToParentMap.containsKey(methodName)) {
             methodToParentMap.put(methodName, new HashSet<Member>());
         }
-        Set<Member> parentSet = methodToParentMap.get(methodName);
-        return parentSet;
+        return methodToParentMap.get(methodName);
     }
 
-    void clear() {
+    final void clear() {
         methodToParentMap.clear();
     }
 }

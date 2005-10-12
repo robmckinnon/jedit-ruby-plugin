@@ -27,11 +27,11 @@ import java.util.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class NameToMethods {
+final class NameToMethods {
 
-    private Map<String, Set<Method>> nameToMethodMap = new HashMap<String, Set<Method>>();
+    private final Map<String, Set<Method>> nameToMethodMap = new HashMap<String, Set<Method>>();
 
-    void add(Method method) {
+    final void add(Method method) {
         String methodName = method.getShortName();
         Set<Method> methodSet = getMethodSet(methodName);
 
@@ -44,7 +44,7 @@ class NameToMethods {
         }
     }
 
-    List<Method> getMethods(String methodName) {
+    final List<Method> getMethods(String methodName) {
         Set<Method> methodSet = getMethodSet(methodName);
         List<Method> members = new ArrayList<Method>(methodSet);
         if (members.size() > 1) {
@@ -53,14 +53,14 @@ class NameToMethods {
         return members;
     }
 
-    Set<Method> getMethodSet(String methodName) {
+    private Set<Method> getMethodSet(String methodName) {
         if (!nameToMethodMap.containsKey(methodName)) {
             nameToMethodMap.put(methodName, new HashSet<Method>());
         }
         return nameToMethodMap.get(methodName);
     }
 
-    void clear() {
+    final void clear() {
         nameToMethodMap.clear();
     }
 }

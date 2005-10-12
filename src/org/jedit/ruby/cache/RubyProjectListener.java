@@ -31,15 +31,15 @@ import org.jedit.ruby.RubyPlugin;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubyProjectListener implements ProjectListener {
+final class RubyProjectListener implements ProjectListener {
 
-    public void fileAdded(ProjectEvent event) {
+    public final void fileAdded(ProjectEvent event) {
         VPTFile file = event.getAddedFile();
         String path = file.getNodePath();
         addFile(path);
     }
 
-    public void filesAdded(ProjectEvent event) {
+    public final void filesAdded(ProjectEvent event) {
         List<VPTFile> files = new ArrayList<VPTFile>(event.getAddedFiles());
         for (VPTFile file : files) {
             String path = file.getNodePath();
@@ -52,19 +52,19 @@ public class RubyProjectListener implements ProjectListener {
 //        RubyProjectViewerListener.addFile(path);
     }
 
-    public void fileRemoved(ProjectEvent event) {
+    public final void fileRemoved(ProjectEvent event) {
         VPTFile file = event.getAddedFile();
         RubyPlugin.log("file removed: " + file.getNodePath(), getClass());
     }
 
-    public void filesRemoved(ProjectEvent event) {
+    public final void filesRemoved(ProjectEvent event) {
         List<VPTFile> files = new ArrayList<VPTFile>(event.getAddedFiles());
         for (VPTFile file : files) {
             RubyPlugin.log("file removed: " + file.getNodePath(), getClass());
         }
     }
 
-    public void propertiesChanged(ProjectEvent event) {
+    public final void propertiesChanged(ProjectEvent event) {
         RubyPlugin.log("properties changed: " + event.getProject().getName(), getClass());
     }
 }

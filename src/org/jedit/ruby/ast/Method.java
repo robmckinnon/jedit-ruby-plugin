@@ -28,11 +28,11 @@ import java.util.HashSet;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Method extends Member {
+public final class Method extends Member {
 
     private Set<Member> returnTypes;
-    private String filePath;
-    private String fileName;
+    private final String filePath;
+    private final String fileName;
     private String receiverName;
     private String parameters;
     private String blockParameters;
@@ -48,11 +48,11 @@ public class Method extends Member {
         hasParameters = true;
     }
 
-    public void accept(MemberVisitor visitor) {
+    public final void accept(MemberVisitor visitor) {
         visitor.handleMethod(this);
     }
 
-    public Set<Member> getReturnTypes() {
+    public final Set<Member> getReturnTypes() {
         return returnTypes;
     }
 
@@ -60,7 +60,7 @@ public class Method extends Member {
      * Returns member name including any
      * namespace or receiver prefix.
      */
-    public String getFullName() {
+    public final String getFullName() {
         if (getNamespace() == null) {
             if (receiverName == null) {
                 return getName();
@@ -72,7 +72,7 @@ public class Method extends Member {
         }
     }
 
-    public String getMethodDelimiter() {
+    private String getMethodDelimiter() {
         if(isClassMethod()) {
             return "::";
         } else {
@@ -80,31 +80,27 @@ public class Method extends Member {
         }
     }
 
-    public void setReceiver(String receiverName) {
+    public final void setReceiver(String receiverName) {
         this.receiverName = receiverName;
-        String name = getName();
-        if (name.startsWith(receiverName)) {
-            name = name.substring(name.indexOf('.') + 1);
-        }
     }
 
-    public void setClassMethod(boolean classMethod) {
+    public final void setClassMethod(boolean classMethod) {
         isClassMethod = classMethod;
     }
 
-    public boolean isClassMethod() {
+    public final boolean isClassMethod() {
         return isClassMethod;
     }
 
-    public String getFilePath() {
+    public final String getFilePath() {
         return filePath;
     }
 
-    public String getFileName() {
+    public final String getFileName() {
         return fileName;
     }
 
-    public int compareTo(Member member) {
+    public final int compareTo(Member member) {
         int comparison = super.compareTo(member);
         if(comparison == 0 && member instanceof Method) {
             org.jedit.ruby.ast.Method method = (Method)member;
@@ -113,11 +109,11 @@ public class Method extends Member {
         return comparison;
     }
 
-    public void setName(String name) {
+    public final void setName(String name) {
         super.setName(name);
     }
 
-    public String getDocumentation() {
+    public final String getDocumentation() {
         if (fullDocumentation == null) {
             StringBuffer buffer = new StringBuffer();
             String parameters = getDocumentationParameters();
@@ -126,7 +122,7 @@ public class Method extends Member {
             }
 
             if (parameters.length() != 0) {
-                buffer.append("<hr><pre class=\"param\">"+ parameters + "</pre><hr><br>");
+                buffer.append("<hr><pre class=\"param\">").append(parameters).append("</pre><hr><br>");
             }
             buffer.append(super.getDocumentation());
             fullDocumentation = buffer.toString();
@@ -135,11 +131,11 @@ public class Method extends Member {
         return fullDocumentation;
     }
 
-    public boolean hasParameters() {
+    public final boolean hasParameters() {
         return hasParameters;
     }
 
-    public void setDocumentationParams(String parameters) {
+    public final void setDocumentationParams(String parameters) {
         parameters = parameters.trim();
 
         if (parameters.indexOf("(") == -1) {
@@ -161,7 +157,7 @@ public class Method extends Member {
         this.parameters = parameters;
     }
 
-    public void populateReturnTypes() {
+    public final void populateReturnTypes() {
         if (parameters.indexOf("=>") != -1) {
             returnTypes = guessReturnTypes(parameters, "=>");
 
@@ -317,12 +313,12 @@ public class Method extends Member {
         types.add(getParentMember(parentMemberName));
     }
 
-    private ParentMember getParentMember(String parentMemberName) {
+    private static ParentMember getParentMember(String parentMemberName) {
         return RubyCache.instance().getParentMember(parentMemberName);
     }
 
     private static final class Result {
-        private String result;
+        private final String result;
 
         public Result(String result) {
             this.result = result.toLowerCase();
@@ -337,28 +333,26 @@ public class Method extends Member {
         }
 
         public boolean canDetermineType() {
-            boolean canDetermineType = !(has("obj")
+            return !(has("obj")
                     || has("class")
                     || has("klass")
                     || has("value")
                     || has("self")
                     || has("key")
                     || has("result"));
-
-            return canDetermineType;
         }
     }
 
 
-    public void setDocumentationBlockParams(String blockParameters) {
+    public final void setDocumentationBlockParams(String blockParameters) {
         this.blockParameters = blockParameters;
     }
 
-    public String getDocumentationBlockParameters() {
+    private String getDocumentationBlockParameters() {
         return blockParameters;
     }
 
-    public String getDocumentationParameters() {
+    private String getDocumentationParameters() {
         return parameters;
     }
 

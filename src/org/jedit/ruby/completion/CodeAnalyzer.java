@@ -35,15 +35,15 @@ import java.util.Set;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class CodeAnalyzer {
+public final class CodeAnalyzer {
 
     private static final String DEMARKERS = "~`!@#$%^&*-=_+|\\:;\"',.?/";
 
     private static String LAST_COMPLETED;
     private static Set<Member> LAST_RETURN_TYPES;
 
-    private Buffer buffer;
-    private JEditTextArea textArea;
+    private final Buffer buffer;
+    private final JEditTextArea textArea;
     private String textWithoutLine;
     private String partialMethod;
     private String restOfLine;
@@ -76,8 +76,7 @@ public class CodeAnalyzer {
 
     public static boolean isInsertionPoint(JEditTextArea textArea) {
         String lineUpToCaret = getLineUpToCaret(textArea);
-        boolean match = CompleteRegExp.instance.isMatch(lineUpToCaret.trim());
-        return match;
+        return CompleteRegExp.instance.isMatch(lineUpToCaret.trim());
     }
 
     public static void setLastReturnTypes(Set<Member> type) {
@@ -98,7 +97,7 @@ public class CodeAnalyzer {
         LAST_COMPLETED = text;
     }
 
-    public boolean isInsertionPoint() {
+    public final boolean isInsertionPoint() {
         RubyPlugin.log("insertion? " + String.valueOf(methodCalledOnThis) + " " + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
         boolean insertionPoint = methodCalledOnThis != null;
 
@@ -109,19 +108,18 @@ public class CodeAnalyzer {
         return insertionPoint;
     }
 
-    public String getMethodCalledOnThis() {
+    public final String getMethodCalledOnThis() {
         return methodCalledOnThis;
     }
 
-    static String getLineUpToCaret(JEditTextArea textArea) {
+    private static String getLineUpToCaret(JEditTextArea textArea) {
         int lineIndex = textArea.getCaretLine();
         int start = textArea.getLineStartOffset(lineIndex);
         int end = textArea.getCaretPosition();
-        String line = textArea.getText(start, end - start);
-        return line;
+        return textArea.getText(start, end - start);
     }
 
-    public boolean isClass() {
+    public final boolean isClass() {
         return isClass(methodCalledOnThis);
     }
 
@@ -131,8 +129,8 @@ public class CodeAnalyzer {
         return isClass;
     }
 
-    String getClassName() {
-        String className = null;
+    final String getClassName() {
+        String className;
 
         if (isClass()) {
             className = methodCalledOnThis;
@@ -198,7 +196,7 @@ public class CodeAnalyzer {
         }
     }
 
-    private boolean isFixNum(String name) {
+    private static boolean isFixNum(String name) {
         try {
             Long.parseLong(name);
             return true;
@@ -207,7 +205,7 @@ public class CodeAnalyzer {
         }
     }
 
-    private boolean isFloat(String name) {
+    private static boolean isFloat(String name) {
         try {
             Double.parseDouble(name);
             return true;
@@ -235,11 +233,11 @@ public class CodeAnalyzer {
         return demarked;
     }
 
-    private boolean matches(String prefix, String suffix, String name) {
+    private static boolean matches(String prefix, String suffix, String name) {
         return name.startsWith(prefix) && name.endsWith(suffix);
     }
 
-    String getTextWithoutLine() {
+    private String getTextWithoutLine() {
         if(textWithoutLine == null) {
             int caretPosition = textArea.getCaretPosition();
             int line = textArea.getLineOfOffset(caretPosition);
@@ -256,7 +254,7 @@ public class CodeAnalyzer {
         return textWithoutLine;
     }
 
-    String findClassName() {
+    private String findClassName() {
         String text = getTextWithoutLine();
         try {
             String className = findAssignment(text, "([A-Z]\\w+(::\\w+)?)((\\.|::)new)");
@@ -286,15 +284,15 @@ public class CodeAnalyzer {
         }
     }
 
-    public String getPartialMethod() {
+    public final String getPartialMethod() {
         return partialMethod;
     }
 
-    public String getRestOfLine() {
+    public final String getRestOfLine() {
         return restOfLine;
     }
 
-    List<String> getMethodsCalledOnVariable() {
+    final List<String> getMethodsCalledOnVariable() {
         return getMethodsCalledOnVariable(getTextWithoutLine(), methodCalledOnThis);
     }
 
@@ -325,23 +323,23 @@ public class CodeAnalyzer {
         }
     }
 
-    private static class CompleteRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+    private static final class CompleteRegExp extends AutoIndentAndInsertEnd.RegularExpression {
         private static final RE instance = new CompleteRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)(\\S*)$";
         }
     }
 
-    private static class SymbolRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+    private static final class SymbolRegExp extends AutoIndentAndInsertEnd.RegularExpression {
         private static final RE instance = new SymbolRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return ":\\w+";
         }
     }
 
-    public static class ClassNameRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+    public static final class ClassNameRegExp extends AutoIndentAndInsertEnd.RegularExpression {
         private static final RE instance = new ClassNameRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "^([A-Z]\\w*(::)?)+";
         }
     }

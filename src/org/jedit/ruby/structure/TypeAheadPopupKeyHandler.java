@@ -29,17 +29,17 @@ import java.awt.event.KeyEvent;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class TypeAheadPopupKeyHandler extends KeyAdapter {
+final class TypeAheadPopupKeyHandler extends KeyAdapter {
 
-    private TypeAheadPopup typeAheadPopup;
-    private String validCharacters;
+    private final TypeAheadPopup typeAheadPopup;
+    private final String validCharacters;
 
     public TypeAheadPopupKeyHandler(TypeAheadPopup typeAheadPopup) {
         this.typeAheadPopup = typeAheadPopup;
         validCharacters = "_(),.[]";
     }
 
-    public void keyPressed(KeyEvent event) {
+    public final void keyPressed(KeyEvent event) {
         switch (event.getKeyCode()) {
             case KeyEvent.VK_ESCAPE:
                 handleEscapePressed(event);
@@ -94,7 +94,7 @@ class TypeAheadPopupKeyHandler extends KeyAdapter {
         }
     }
 
-    public void keyTyped(KeyEvent event) {
+    public final void keyTyped(KeyEvent event) {
         char character = event.getKeyChar();
         int keyCode = event.getKeyCode();
         int keyChar = event.getKeyChar();
@@ -103,7 +103,7 @@ class TypeAheadPopupKeyHandler extends KeyAdapter {
             handleSelection(event, true);
 
         } else {
-            if (event != null && !RubyPlugin.ignoreKeyTyped(keyCode, character, event)) {
+            if (!RubyPlugin.ignoreKeyTyped(keyCode, character, event)) {
                 handleCharacterTyped(character, event);
             }
         }

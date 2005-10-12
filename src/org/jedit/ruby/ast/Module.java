@@ -22,12 +22,12 @@ package org.jedit.ruby.ast;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Module extends ParentMember {
+public final class Module extends ParentMember {
     public Module(String name, int startOuterOffset, int startOffset) {
         super(name, startOuterOffset, startOffset);
     }
 
-    public void accept(MemberVisitor visitor) {
+    public final void accept(MemberVisitor visitor) {
         visitor.handleModule(this);
     }
 }

@@ -25,35 +25,35 @@ import org.jedit.ruby.RubyPlugin;
  * @author robmckinnon at users.sourceforge.net
  */
 public abstract class Problem extends Member {
-    private int line;
+    private final int line;
 
     /**
      * @param message warning message
      * @param line line number starting at 0
      */
-    public Problem(String message, int line) {
+    Problem(String message, int line) {
         super(message, 0, 0);
         this.line = line;
     }
 
-    public String getName() {
+    public final String getName() {
         return " " + (line + 1) + ": " + super.getName();
     }
 
-    public String getFullName() {
+    public final String getFullName() {
         return getName();
     }
 
-    public String getShortName() {
+    public final String getShortName() {
         return super.getName();
     }
 
-    public int getStartOffset() {
+    public final int getStartOffset() {
         return RubyPlugin.getNonSpaceStartOffset(line);
     }
 
     /** don't like using jEdit View here */
-    public int getEndOffset() {
+    public final int getEndOffset() {
         return RubyPlugin.getEndOffset(line);
     }
 

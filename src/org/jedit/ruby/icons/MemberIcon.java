@@ -29,7 +29,7 @@ import org.jedit.ruby.ast.Error;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MemberIcon extends MemberVisitorAdapter {
+public final class MemberIcon extends MemberVisitorAdapter {
 
     private Icon icon;
 
@@ -37,31 +37,31 @@ public class MemberIcon extends MemberVisitorAdapter {
         member.accept(this);
     }
 
-    public Icon getIcon() {
+    public final Icon getIcon() {
         return icon;
     }
 
-    public void handleModule(Module module) {
+    public final void handleModule(Module module) {
         icon = loadIcon("module");
     }
 
-    public void handleClass(org.jedit.ruby.ast.ClassMember classMember) {
+    public final void handleClass(org.jedit.ruby.ast.ClassMember classMember) {
         icon = loadIcon("class");
     }
 
-    public void handleMethod(Method method) {
+    public final void handleMethod(Method method) {
         icon = loadIcon("method");
     }
 
-    public void handleWarning(Warning warning) {
+    public final void handleWarning(Warning warning) {
         icon = ErrorList.WARNING_ICON;
     }
 
-    public void handleError(Error warning) {
+    public final void handleError(Error warning) {
         icon = ErrorList.ERROR_ICON;
     }
 
-    private Icon loadIcon(String name) {
+    private static Icon loadIcon(String name) {
        return new ImageIcon(MemberIcon.class.getResource(name + ".png"));
     }
 }

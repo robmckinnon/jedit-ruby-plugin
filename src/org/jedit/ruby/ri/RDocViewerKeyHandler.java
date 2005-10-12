@@ -27,20 +27,20 @@ import java.awt.event.KeyEvent;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class RDocViewerKeyHandler extends KeyAdapter {
+final class RDocViewerKeyHandler extends KeyAdapter {
 
-    private RDocViewer viewer;
+    private final RDocViewer viewer;
     private boolean lastWasBackspace;
 
     public RDocViewerKeyHandler(RDocViewer viewer) {
         this.viewer = viewer;
     }
 
-    public boolean lastWasBackspace() {
+    public final boolean lastWasBackspace() {
         return lastWasBackspace;
     }
 
-    public void keyPressed(KeyEvent event) {
+    public final void keyPressed(KeyEvent event) {
         lastWasBackspace = false;
 
         switch (event.getKeyCode()) {
@@ -106,14 +106,14 @@ class RDocViewerKeyHandler extends KeyAdapter {
     private void handleOtherKeys(KeyEvent event) {
         if (event.isAltDown() || event.isMetaDown()) {
             char keyChar = event.getKeyChar();
-            boolean handled = viewer.handleAltPressedWith(keyChar);
+            boolean handled = false;
             if (handled) {
                 event.consume();
             }
         }
     }
 
-    public void keyTyped(KeyEvent event) {
+    public final void keyTyped(KeyEvent event) {
         char character = event.getKeyChar();
         int keyCode = event.getKeyCode();
         int keyChar = event.getKeyChar();
@@ -121,7 +121,7 @@ class RDocViewerKeyHandler extends KeyAdapter {
                         keyChar == KeyEvent.VK_TAB || keyChar == KeyEvent.VK_ENTER;
         
         if (!tabOrEnter) {
-            if (event != null && !RubyPlugin.ignoreKeyTyped(keyCode, character, event)) {
+            if (!RubyPlugin.ignoreKeyTyped(keyCode, character, event)) {
                 handleCharacterTyped(character, event);
             }
         }

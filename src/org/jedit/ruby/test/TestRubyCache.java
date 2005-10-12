@@ -30,7 +30,7 @@ import junit.framework.TestCase;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class TestRubyCache extends TestCase {
+public final class TestRubyCache extends TestCase {
 
     private void addClassesToCache() {
         RubyCache.instance().add(TestRubyParser.CLASS, "CLASS");
@@ -41,7 +41,7 @@ public class TestRubyCache extends TestCase {
         RubyCache.instance().add(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
     }
 
-    public void testGetMethods() {
+    public final void testGetMethods() {
         addClassesToCache();
         List<Method> methods = RubyCache.instance().getMethods("red");
 
@@ -49,19 +49,19 @@ public class TestRubyCache extends TestCase {
         assertEquals("Assert file name correct", "red", methods.get(0).getName());
     }
 
-    public void testGetClassByMethod() {
+    public final void testGetClassByMethod() {
         addClassesToCache();
         assertFindByMethodCorrect("red", 0, "Green", 1);
         assertFindByMethodCorrect("[]", 0, "Green", 1);
     }
 
-    public void testGetMethodByClass() {
+    public final void testGetMethodByClass() {
         addClassesToCache();
         assertFindByClassCorrect("Green", 0, "[]", 2, "ARR_CLASS");
         assertFindByClassCorrect("Green", 1, "red", 2, "CLASS");
     }
 
-    public void testGetClassByCombo() {
+    public final void testGetClassByCombo() {
         addClassesToCache();
         addModuleToCache();
         assertFindByMethodCorrect("red", 0, "Blue", 2);
@@ -69,7 +69,7 @@ public class TestRubyCache extends TestCase {
         assertFindByMethodCorrect("[]", 0, "Green", 1);
     }
 
-    public void testGetMethodByCombo() {
+    public final void testGetMethodByCombo() {
         addClassesToCache();
         addModuleToCache();
         assertFindByClassCorrect("Green", 0, "[]", 2, "ARR_CLASS");

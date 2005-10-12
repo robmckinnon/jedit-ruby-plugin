@@ -36,20 +36,16 @@ import java.awt.event.KeyEvent;
 /**
  * @author robmckinnon at users,sourceforge,net
  */
-public class RubyPlugin extends EditPlugin {
+public final class RubyPlugin extends EditPlugin {
 
-    private static boolean debug = System.getProperty("user.home").equals("/home/a");
-    private static final String RUBY_DIR = "ruby";
+    private static final boolean debug = System.getProperty("user.home").equals("/home/b");
 
-    public void stop() {
-        super.stop();
-    }
-
-    public void start() {
+    public final void start() {
         super.start();
         JRubyParser.setExpectedLabel(jEdit.getProperty("ruby.syntax-error.expected.label"));
         JRubyParser.setFoundLabel(jEdit.getProperty("ruby.syntax-error.found.label"));
         JRubyParser.setNothingLabel(jEdit.getProperty("ruby.syntax-error.nothing.label"));
+
         RiParser.parseRdoc();
     }
 
@@ -168,14 +164,6 @@ public class RubyPlugin extends EditPlugin {
         return buffer.toString();
     }
 
-    public static File getStoragePath(String fileName) {
-        File storageDirectory = new File(jEdit.getSettingsDirectory() + File.separatorChar + RUBY_DIR);
-        if (!storageDirectory.exists()) {
-            storageDirectory.mkdir();
-        }
-        return new File(storageDirectory.getPath() + File.separatorChar + fileName);
-    }
-
     public static Point getCaretPopupLocation(View view) {
         JEditTextArea textArea = view.getTextArea();
         textArea.scrollToCaret(false);
@@ -188,8 +176,7 @@ public class RubyPlugin extends EditPlugin {
     public static Point getCenteredPopupLocation(View view) {
         JEditTextArea textArea = view.getTextArea();
         textArea.scrollToCaret(false);
-        Point location = new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
-        return location;
+        return new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
     }
 
     public static boolean isRubyFile(Buffer buffer) {
@@ -230,7 +217,7 @@ public class RubyPlugin extends EditPlugin {
             case KeyEvent.VK_END:
             case KeyEvent.VK_LEFT:
             case KeyEvent.VK_RIGHT:
-                ignore = true;
+                ignore = true; break;
             default:
                 // for some reason have to match backspace and tab using keyChar
                 ignore = keyChar == KeyEvent.VK_BACK_SPACE
@@ -253,8 +240,7 @@ public class RubyPlugin extends EditPlugin {
         offset -= buffer.getLineStartOffset(buffer.getLineOfOffset(caret));
         if(offset != 0)
             offset--;
-        Token token = TextUtilities.getTokenAtOffset(tokens.getTokens(), offset);
-        return token;
+        return TextUtilities.getTokenAtOffset(tokens.getTokens(), offset);
     }
 
     public static DefaultTokenHandler getTokens(Buffer buffer, int caret) {
@@ -278,4 +264,5 @@ public class RubyPlugin extends EditPlugin {
 
         return previous;
     }
+
 }

@@ -32,43 +32,43 @@ public class ModuleDescription extends Description {
     private List<MethodDescription> classMethods;
     private List<MethodDescription> instanceMethods;
     
-    public List<Attribute> getAttributes() {
+    public final List<Attribute> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(List<Attribute> attributes) {
+    public final void setAttributes(List<Attribute> attributes) {
         this.attributes = attributes;
     }
 
-    public List<Constant> getConstants() {
+    public final List<Constant> getConstants() {
         return constants;
     }
 
-    public void setConstants(List<Constant> constants) {
+    public final void setConstants(List<Constant> constants) {
         this.constants = constants;
     }
 
-    public List<IncludedModule> getIncludes() {
+    public final List<IncludedModule> getIncludes() {
         return includes;
     }
 
-    public void setIncludes(List<IncludedModule> includes) {
+    public final void setIncludes(List<IncludedModule> includes) {
         this.includes = includes;
     }
 
-    public List<MethodDescription> getClassMethods() {
+    public final List<MethodDescription> getClassMethods() {
         return classMethods;
     }
 
-    public void setClassMethods(List<MethodDescription> classMethods) {
+    public final void setClassMethods(List<MethodDescription> classMethods) {
         this.classMethods = classMethods;
     }
 
-    public List<MethodDescription> getInstanceMethods() {
+    public final List<MethodDescription> getInstanceMethods() {
         return instanceMethods;
     }
 
-    public void setInstanceMethods(List<MethodDescription> instanceMethods) {
+    public final void setInstanceMethods(List<MethodDescription> instanceMethods) {
         this.instanceMethods = instanceMethods;
     }
 }

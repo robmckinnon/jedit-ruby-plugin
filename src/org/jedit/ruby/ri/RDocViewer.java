@@ -41,20 +41,20 @@ import java.util.List;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RDocViewer extends JPanel
+public final class RDocViewer extends JPanel
         implements DefaultFocusComponent, ListSelectionListener, DocumentListener {
 
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
 
     private static final Map<RDocViewer, RDocViewer> viewers = new WeakHashMap<RDocViewer, RDocViewer>();
 
-    private View view;
-    private JTextField searchField;
-    private JList resultList;
-    private JTextPane documentationPane;
+    private final View view;
+    private final JTextField searchField;
+    private final JList resultList;
+    private final JTextPane documentationPane;
     private int mismatchCharacters;
-    private RDocViewerKeyHandler keyHandler;
-    private JScrollPane documentationScrollPane;
+    private final RDocViewerKeyHandler keyHandler;
+    private final JScrollPane documentationScrollPane;
 
     public RDocViewer(View view, String position) {
         super(new BorderLayout());
@@ -96,19 +96,19 @@ public class RDocViewer extends JPanel
         );
     }
 
-    public void focusOnDefaultComponent() {
+    public final void focusOnDefaultComponent() {
         if (!searchField.hasFocus()) {
             searchField.requestFocusInWindow();
         }
     }
 
-    public void valueChanged(ListSelectionEvent e) {
+    public final void valueChanged(ListSelectionEvent e) {
         if (!e.getValueIsAdjusting()) {
             handleSelection();
         }
     }
 
-    void handleSelection() {
+    private void handleSelection() {
         Member member = (Member)resultList.getSelectedValue();
         if (member != null) {
             String documentation = member.getDocumentation();
@@ -131,15 +131,15 @@ public class RDocViewer extends JPanel
         return textField;
     }
 
-    public void insertUpdate(DocumentEvent e) {
+    public final void insertUpdate(DocumentEvent e) {
         handleSearchTermEntered();
     }
 
-    public void removeUpdate(DocumentEvent e) {
+    public final void removeUpdate(DocumentEvent e) {
         handleSearchTermEntered();
     }
 
-    public void changedUpdate(DocumentEvent e) {
+    public final void changedUpdate(DocumentEvent e) {
         handleSearchTermEntered();
     }
 
@@ -219,7 +219,7 @@ public class RDocViewer extends JPanel
         }
     }
 
-    private boolean isMatch(String memberName, String text, boolean matchLength) {
+    private static boolean isMatch(String memberName, String text, boolean matchLength) {
         boolean matched = false;
 
         if (memberName.toLowerCase().startsWith(text)) {
@@ -262,7 +262,7 @@ public class RDocViewer extends JPanel
         component.setForeground(jEdit.getColorProperty("view.fgColor"));
     }
 
-    private JScrollPane wrapInScrollPane(JComponent component) {
+    private static JScrollPane wrapInScrollPane(JComponent component) {
         return new JScrollPane(component, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
     }
 
@@ -289,25 +289,17 @@ public class RDocViewer extends JPanel
         }
     }
 
-    public int getVisibleRowCount() {
-        return 8;
-    }
-
-    public boolean handleAltPressedWith(char keyChar) {
-        return false;
-    }
-
-    public void handleBackSpacePressed() {
+    public final void handleBackSpacePressed() {
         if (mismatchCharacters > 0) {
             mismatchCharacters--;
         }
     }
 
-    public int getListSize() {
+    public final int getListSize() {
         return resultList.getModel().getSize();
     }
 
-    public void incrementSelection(int increment) {
+    public final void incrementSelection(int increment) {
         int index = resultList.getSelectionModel().getLeadSelectionIndex();
         int size = resultList.getModel().getSize();
 
@@ -323,11 +315,11 @@ public class RDocViewer extends JPanel
         resultList.setSelectedValue(item, true);
     }
 
-    public void handleEscapePressed() {
+    public final void handleEscapePressed() {
         view.getTextArea().requestFocus();
     }
 
-    public boolean consumeKeyEvent(char typed) {
+    public final boolean consumeKeyEvent(char typed) {
         String selectedChars = searchField.getSelectedText();
 
         if (mismatchCharacters == MAX_MISMATCHED_CHARACTERS) {
@@ -352,19 +344,19 @@ public class RDocViewer extends JPanel
         return documentationPane.getVisibleRect().height;
     }
 
-    public void pageDown() {
+    public final void pageDown() {
         moveScrollBar(getBlockIncrement());
     }
 
-    public void pageUp() {
+    public final void pageUp() {
         moveScrollBar(-1 * getBlockIncrement());
     }
 
-    public void home() {
+    public final void home() {
         moveScrollBar(Integer.MIN_VALUE);
     }
 
-    public void end() {
+    public final void end() {
         moveScrollBar(Integer.MAX_VALUE);
     }
 

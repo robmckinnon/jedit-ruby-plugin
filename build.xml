@@ -109,7 +109,7 @@
 	</target>
 
 	<target name="convert_rdoc" depends="parse_rdoc">
-		<java classname="org.jedit.ruby.ri.RiParser" classpath="/home/a/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
+		<java classname="org.jedit.ruby.ri.RiParser" classpath="/home/b/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
 	</target>
 
 	<target name="retroweave" depends="compile" if="retroweaver.present">
@@ -137,6 +137,8 @@
 				<include name="**/*.props"/>
 				<include name="**/*.html"/>
 				<include name="**/*.dat"/>
+				<include name="**/rdoc_to_java.rb"/>
+				<include name="**/cdesc.erb"/>
 			</fileset>
 		</jar>
 	</target>
@@ -146,7 +148,7 @@
 	</target>
 
 	<target name="dist15" depends="check-for-retroweaver, compile, jar">
-		<copy file="${install.dir}/${jar.name}" todir="/home/a/.jedit/jars"/>
+		<copy file="${install.dir}/${jar.name}" todir="/home/b/.jedit/jars"/>
 	</target>
 
 	<!-- Generate docs with xsltproc tool from www.xmlsoft.org -->

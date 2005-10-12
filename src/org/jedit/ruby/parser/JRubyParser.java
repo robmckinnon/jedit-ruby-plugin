@@ -20,7 +20,7 @@ import java.io.Reader;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class JRubyParser {
+public final class JRubyParser {
 
     private static final JRubyParser instance = new JRubyParser();
 
@@ -46,16 +46,16 @@ public class JRubyParser {
         JRubyParser.nothing = nothing;
     }
 
-    static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath) {
-        return instance.parse(text, listeners, moduleMembers, classMembers, methodMembers, filePath);
+    static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath, LineCounter lineCounter) {
+        return instance.parse(text, listeners, moduleMembers, classMembers, methodMembers, filePath, lineCounter);
     }
 
-    private List<Member> parse(String text, List<RubyParser.WarningListener> listeners, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, String filePath) {
+    private List<Member> parse(String text, List<RubyParser.WarningListener> listeners, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, String filePath, LineCounter lineCounter) {
         this.warnings = new Warnings(listeners);
 
         Reader content = new StringReader(text);
         List<Member> members;
-        RubyNodeVisitor visitor = new RubyNodeVisitor(text, moduleMembers, classMembers, methodMembers, listeners);
+        RubyNodeVisitor visitor = new RubyNodeVisitor(lineCounter, moduleMembers, classMembers, methodMembers, listeners);
 
         try {
             Node node = parse(filePath, content, new RubyParserConfiguration());
@@ -67,7 +67,8 @@ public class JRubyParser {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.error(e.getPosition(), e.getMessage());
             }
-            RubyPlugin.log(e.getPosition().getLine() + ": " + e.getMessage(), getClass());
+            String message = e.getPosition().getLine() + ": " + e.getMessage();
+            RubyPlugin.log(message, getClass());
             members = null;
         }
 
@@ -107,22 +108,22 @@ public class JRubyParser {
             String[] expectedValues = errorState.expected();
             String found = errorState.found();
             if (found != null) {
-                buffer.append(JRubyParser.found + " " + reformatValue(found) + "; ");
+                buffer.append(JRubyParser.found).append(" ").append(reformatValue(found)).append("; ");
             }
-            buffer.append(expected + " ");
+            buffer.append(expected).append(" ");
             if (expectedValues.length == 0) {
                 buffer.append(nothing);
             } else {
                 for (String value : expectedValues) {
                     value = reformatValue(value);
-                    buffer.append(value + ", ");
+                    buffer.append(value).append(", ");
                 }
             }
         }
         return buffer.toString();
     }
 
-    private String reformatValue(String value) {
+    private static String reformatValue(String value) {
         if (value.startsWith("k")) {
             value = "'" + value.substring(1).toLowerCase() + "'";
         } else if (value.startsWith("t")) {
@@ -131,32 +132,32 @@ public class JRubyParser {
         return value;
     }
 
-    private static class Warnings extends NullWarnings {
-        private List<RubyParser.WarningListener> listeners;
+    private static final class Warnings extends NullWarnings {
+        private final List<RubyParser.WarningListener> listeners;
 
         public Warnings(List<RubyParser.WarningListener> listeners) {
             this.listeners = listeners;
         }
 
-        public void warn(SourcePosition position, String message) {
+        public final void warn(SourcePosition position, String message) {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.warn(position, message);
             }
         }
 
-        public void warn(String message) {
+        public final void warn(String message) {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.warn(message);
             }
         }
 
-        public void warning(SourcePosition position, String message) {
+        public final void warning(SourcePosition position, String message) {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.warning(position, message);
             }
         }
 
-        public void warning(String message) {
+        public final void warning(String message) {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.warning(message);
             }

@@ -30,9 +30,9 @@ import java.net.URL;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class TestYamlParser extends TestCase {
+public final class TestYamlParser extends TestCase {
 
-    public void testClassParsing() {
+    public final void testClassParsing() {
         assertTrue(true);
     }
 

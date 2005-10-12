@@ -24,7 +24,7 @@ import org.jedit.ruby.cache.RubyCache;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class ClassMember extends ParentMember {
+public final class ClassMember extends ParentMember {
 
     private String fullDocumentation;
 
@@ -32,14 +32,14 @@ public class ClassMember extends ParentMember {
         super(name, startOuterOffset, startOffset);
     }
 
-    public void accept(MemberVisitor visitor) {
+    public final void accept(MemberVisitor visitor) {
         visitor.handleClass(this);
     }
 
-    public String getDocumentation() {
+    public final String getDocumentation() {
         if (fullDocumentation == null) {
             StringBuffer buffer = new StringBuffer();
-            buffer.append("<p>Class: " + getFullName());
+            buffer.append("<p>Class: ").append(getFullName());
 
             String parentMemberName = getParentMemberName();
             appendParentToDocumentation(parentMemberName, buffer);
@@ -56,7 +56,7 @@ public class ClassMember extends ParentMember {
         if (parentMemberName != null && parentMemberName.trim().length() > 0) {
             ParentMember parentMember = RubyCache.instance().getParentMember(parentMemberName);
             if (parentMember != null && !parentMember.getFullName().equals("Object")) {
-                buffer.append(" &lt; " + parentMember.getFullName());
+                buffer.append(" &lt; ").append(parentMember.getFullName());
                 appendParentToDocumentation(parentMember.getParentMemberName(), buffer);
             }
         }

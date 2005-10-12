@@ -25,10 +25,10 @@ import java.util.ArrayList;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class LineCounter {
+public final class LineCounter {
 
-    private List<Integer> endOffsets;
-    private String text;
+    private final List<Integer> endOffsets;
+    private final String text;
 
     public LineCounter(String text) {
         this.text = text;
@@ -57,11 +57,31 @@ public class LineCounter {
         }
     }
 
-    public int getLineCount() {
+    public final int getLineCount() {
         return endOffsets.size();
     }
 
-    public String getLine(int line) {
+    /**
+     * @return line starting at 0
+     */
+    public int getLineAtOffset(int startOffset) {
+        int line = 0;
+
+        for (int offset : endOffsets) {
+            if (startOffset > offset) {
+                line++;
+            } else {
+                return line;
+            }
+        }
+
+        return line;
+    }
+
+    /**
+     * @param line starting at 0
+     */
+    public final String getLine(int line) {
         if (line == 0) {
             return getLine(0, getEndOffset(0));
         } else {
@@ -76,7 +96,7 @@ public class LineCounter {
      *
      * @param line starting at 0.
      */
-    public int getEndOffset(int line) {
+    public final int getEndOffset(int line) {
         return endOffsets.get(line);
     }
 
@@ -103,7 +123,7 @@ public class LineCounter {
         return index;
     }
 
-    private boolean isNewLineCharacter(char character) {
+    private static boolean isNewLineCharacter(char character) {
         return character == '\n' || character == '\r';
     }
 

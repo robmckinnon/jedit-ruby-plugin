@@ -27,21 +27,21 @@ import java.util.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class NameToParents {
+final class NameToParents {
 
-    private Map<String, ParentMember> fullNameToMember = new HashMap<String, ParentMember>();
-    private Map<String, ParentMember> nameToMember = new HashMap<String, ParentMember>();
+    private final Map<String, ParentMember> fullNameToMember = new HashMap<String, ParentMember>();
+    private final Map<String, ParentMember> nameToMember = new HashMap<String, ParentMember>();
     private List<Member> allMembers;
     private ParentToImmediateMethods parentToImmediateMethods;
 
-    void add(ParentMember member) {
+    final void add(ParentMember member) {
         String fullName = member.getFullName();
         String name = member.getName();
         fullNameToMember.put(fullName, member);
         nameToMember.put(name, member);
     }
 
-    ParentMember getMember(String name) {
+    final ParentMember getMember(String name) {
         if (fullNameToMember.containsKey(name)) {
             return fullNameToMember.get(name);
         } else if(nameToMember.containsKey(name)) {
@@ -51,12 +51,12 @@ class NameToParents {
         }
     }
 
-    void clear() {
+    final void clear() {
         fullNameToMember.clear();
         nameToMember.clear();
     }
 
-    List<Member> getAllMembers() {
+    final List<Member> getAllMembers() {
         if (allMembers == null) {
             allMembers = new ArrayList<Member>();
 
@@ -69,21 +69,21 @@ class NameToParents {
         return allMembers;
     }
 
-    List<String> getAllParentNames() {
+    final List<String> getAllParentNames() {
         List<String> names = new ArrayList<String>(fullNameToMember.keySet());
         Collections.sort(names);
         return names;
     }
 
-    Collection<ParentMember> getAllParents() {
+    final Collection<ParentMember> getAllParents() {
         return fullNameToMember.values();
     }
 
-    void reset() {
+    final void reset() {
         allMembers = null;
     }
 
-    public void setParentToImmediateMethods(ParentToImmediateMethods parentToImmediateMethods) {
+    public final void setParentToImmediateMethods(ParentToImmediateMethods parentToImmediateMethods) {
         this.parentToImmediateMethods = parentToImmediateMethods;
     }
 }

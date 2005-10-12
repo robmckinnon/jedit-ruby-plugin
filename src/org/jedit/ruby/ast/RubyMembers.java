@@ -25,9 +25,9 @@ import java.util.List;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubyMembers {
+public final class RubyMembers {
 
-    private Member[] members;
+    private final Member[] members;
     private List<Member> memberList;
     private List<Problem> problems;
 
@@ -40,15 +40,15 @@ public class RubyMembers {
         }
     }
 
-    public void setProblems(List<Problem> problems) {
+    public final void setProblems(List<Problem> problems) {
         this.problems = problems;
     }
 
-    public boolean containsErrors() {
+    public final boolean containsErrors() {
         return members == null;
     }
 
-    public Problem[] getProblems() {
+    public final Problem[] getProblems() {
         return problems.toArray(new Problem[0]);
     }
 
@@ -65,11 +65,11 @@ public class RubyMembers {
      *
      * @throws RuntimeException if {@link #containsErrors()} returns true
      */
-    public int size() {
+    public final int size() {
         return members.length;
     }
 
-    public Member getNextMember(int caretPosition) {
+    public final Member getNextMember(int caretPosition) {
         int index = getCurrentMemberIndex(caretPosition);
         if (index == -1) {
             if(memberList.size() > 0) {
@@ -84,7 +84,7 @@ public class RubyMembers {
         }
     }
 
-    public Member getPreviousMember(int caretPosition) {
+    public final Member getPreviousMember(int caretPosition) {
         int index = getCurrentMemberIndex(caretPosition);
         if (index > 0) {
             return memberList.get(index - 1);
@@ -93,7 +93,7 @@ public class RubyMembers {
         }
     }
 
-    public Member getMemberAt(int caretPosition) {
+    public final Member getMemberAt(int caretPosition) {
         int index = getMemberIndexAt(caretPosition);
         if (index == -1) {
             return null;
@@ -102,7 +102,7 @@ public class RubyMembers {
         }
     }
 
-    public Member getCurrentMember(int caretPosition) {
+    public final Member getCurrentMember(int caretPosition) {
         int index = getCurrentMemberIndex(caretPosition);
         if (index == -1) {
             return null;
@@ -150,11 +150,11 @@ public class RubyMembers {
         return memberIndex;
     }
 
-    public Member[] getMembers() {
+    public final Member[] getMembers() {
         return members;
     }
 
-    public Member[] combineMembersAndProblems(int offsetLimit) {
+    public final Member[] combineMembersAndProblems(int offsetLimit) {
         if (members != null && problems != null) {
             List<Member> accesibleMembers = new ArrayList<Member>();
 
@@ -178,11 +178,11 @@ public class RubyMembers {
         }
     }
 
-    public Member get(int index) {
+    public final Member get(int index) {
         return members[index];
     }
 
-    public List<Member> getClasses() {
+    public final List<Member> getClasses() {
         final List<Member> classes = new ArrayList<Member>();
         visitMembers(new MemberVisitorAdapter() {
             public void handleClass(org.jedit.ruby.ast.ClassMember classMember) {
@@ -192,7 +192,7 @@ public class RubyMembers {
         return classes;
     }
 
-    public void visitMembers(MemberVisitor visitor) {
+    public final void visitMembers(MemberVisitor visitor) {
         for(Member member : memberList) {
             member.accept(visitor);
         }

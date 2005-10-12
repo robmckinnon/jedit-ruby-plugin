@@ -31,33 +31,29 @@ import org.jedit.ruby.RubyPlugin;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class CodeCompletor {
+public final class CodeCompletor {
 
-    private JEditTextArea textArea;
-    private Buffer buffer;
-    private CodeAnalyzer analyzer;
-    private List<Method> methods;
+    private final CodeAnalyzer analyzer;
+    private final List<Method> methods;
 
     public CodeCompletor(View view) {
-        textArea = view.getTextArea();
-        buffer = view.getBuffer();
-        analyzer = new CodeAnalyzer(textArea, buffer);
+        analyzer = new CodeAnalyzer(view.getTextArea(), view.getBuffer());
         methods = findMethods();
     }
 
-    public List<Method> getMethods() {
+    public final List<Method> getMethods() {
         return methods;
     }
 
-    public String getRestOfLine() {
+    public final String getRestOfLine() {
         return analyzer.getRestOfLine();
     }
 
-    public String getPartialMethod() {
+    public final String getPartialMethod() {
         return analyzer.getPartialMethod();
     }
 
-    public boolean isInsertionPoint() {
+    public final boolean isInsertionPoint() {
         return analyzer.isInsertionPoint();
     }
 
@@ -96,7 +92,7 @@ public class CodeCompletor {
         return methodList;
     }
 
-    private void filterMethods(Set<Method> methods, String partialMethod) {
+    private static void filterMethods(Set<Method> methods, String partialMethod) {
         for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
             Method method = iterator.next();
 
@@ -138,7 +134,7 @@ public class CodeCompletor {
         return getMethodsOfParents(members);
     }
 
-    private Set<Method> getMethodsOfParents(Set<Member> members) {
+    private static Set<Method> getMethodsOfParents(Set<Member> members) {
         Set<Method> results = new HashSet<Method>();
 
         if (members != null) {
@@ -152,7 +148,7 @@ public class CodeCompletor {
         return results;
     }
 
-    Set<Member> intersection(Set<Member> list, Set<Member> otherList) {
+    private static Set<Member> intersection(Set<Member> list, Set<Member> otherList) {
         Set<Member> intersection = new HashSet<Member>();
 
         if (!list.isEmpty()) {
@@ -166,11 +162,11 @@ public class CodeCompletor {
         return intersection;
     }
 
-    private static class CodeCompletionComparator implements Comparator<Method> {
+    private static final class CodeCompletionComparator implements Comparator<Method> {
         private static final CodeCompletionComparator instance = new CodeCompletionComparator();
         private boolean objectMethodsLast;
 
-        public int compare(Method method, Method otherMethod) {
+        public final int compare(Method method, Method otherMethod) {
             boolean onObjectClass = onObjectClass(method);
             boolean otherOnObjectClass = onObjectClass(otherMethod);
 
@@ -193,7 +189,7 @@ public class CodeCompletor {
             return method.getParentMember().getName().equals("Object");
         }
 
-        public void setObjectMethodsLast(boolean objectMethodsLast) {
+        public final void setObjectMethodsLast(boolean objectMethodsLast) {
             this.objectMethodsLast = objectMethodsLast;
         }
     }

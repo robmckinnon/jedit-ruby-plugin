@@ -40,14 +40,13 @@ import java.util.Set;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubyCompletion extends SideKickCompletion {
+public final class RubyCompletion extends SideKickCompletion {
 
     private static final String NO_DOT_METHOD_STARTS = "=<>%*-+/|~&^";
 
-    private List<Method> methods;
-    private String partialMethod;
+    private final List<Method> methods;
+    private final String partialMethod;
     private JWindow frame;
-    private JTextPane textPane;
 
     public RubyCompletion(View view, String partialMethod, List<Method> methods) {
         super(view, partialMethod == null ? "." : "." + partialMethod, methods);
@@ -55,9 +54,9 @@ public class RubyCompletion extends SideKickCompletion {
         this.partialMethod = partialMethod;
         frame = new JWindow((Frame)null);
         frame.setFocusable(false);
-        textPane = new JTextPane();
+        JTextPane textPane = new JTextPane();
         textPane.setEditorKit(new HTMLEditorKit());
-		JScrollPane scroller = new JScrollPane(textPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        JScrollPane scroller = new JScrollPane(textPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         frame.getContentPane().add(scroller, BorderLayout.CENTER);
         frame.setSize(400,400);
     }
@@ -65,7 +64,7 @@ public class RubyCompletion extends SideKickCompletion {
     /**
      * Returns true if should continue completing.
      */
-    public boolean handleKeystroke(int selectedIndex, char keyChar) {
+    public final boolean handleKeystroke(int selectedIndex, char keyChar) {
         boolean emptyPopup = selectedIndex == -1;
         boolean backspace = keyChar == '\b';
         boolean space = keyChar == ' ';
@@ -108,11 +107,11 @@ public class RubyCompletion extends SideKickCompletion {
         return CodeAnalyzer.isInsertionPoint(textArea);
     }
 
-    public void insert(int index) {
+    public final void insert(int index) {
         insert(methods.get(index));
     }
 
-    public String getCompletionDescription(int index) {
+    public final String getCompletionDescription(int index) {
         RDocViewer.setMethod(methods.get(index));
         return null;
     }
@@ -149,7 +148,7 @@ public class RubyCompletion extends SideKickCompletion {
         return completion;
     }
 
-    private Completion getCompletion(Method method) {
+    private static Completion getCompletion(Method method) {
         String name = method.getName();
 
         if (name.equals("each")) {
@@ -177,9 +176,9 @@ public class RubyCompletion extends SideKickCompletion {
     }
 
     private static final class Completion {
-        String text;
-        int caretAdjustment;
-        boolean showDot;
+        final String text;
+        final int caretAdjustment;
+        final boolean showDot;
 
         public Completion(String text, int caretPositionAdjustment, boolean showDot) {
             this.caretAdjustment = caretPositionAdjustment;

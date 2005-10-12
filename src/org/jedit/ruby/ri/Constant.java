@@ -22,23 +22,23 @@ package org.jedit.ruby.ri;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Constant extends NamedThing {
+public final class Constant extends NamedThing {
     private String comment;
     private String value;
 
-    public String getComment() {
+    public final String getComment() {
         return comment;
     }
 
-    public void setComment(String comment) {
+    public final void setComment(String comment) {
         this.comment = comment;
     }
 
-    public String getValue() {
+    public final String getValue() {
         return value;
     }
 
-    public void setValue(String value) {
+    public final void setValue(String value) {
         this.value = value;
     }
 }

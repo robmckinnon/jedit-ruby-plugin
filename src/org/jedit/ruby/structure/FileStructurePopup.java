@@ -33,16 +33,16 @@ import org.jedit.ruby.RubyPlugin;
  *
  * @author robmckinnon at users,sourceforge,net
  */
-public class FileStructurePopup {
+public final class FileStructurePopup {
 
-    private View view;
+    private final View view;
     private long start;
 
     public FileStructurePopup(View view) {
         this.view = view;
     }
 
-    public void show() {
+    public final void show() {
         if (RubyPlugin.isRubyFile(view.getBuffer())) {
             try {
                 log("showing file structure popup");
@@ -97,7 +97,7 @@ public class FileStructurePopup {
         }
     }
 
-    private long now() {
+    private static long now() {
         return System.currentTimeMillis();
     }
 

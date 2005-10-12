@@ -25,41 +25,45 @@ import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class TestAutoIndent extends TestCase {
+public final class TestAutoIndent extends TestCase {
 
-    public void testEndTrue() {
+    public final void testEndTrue() {
         assertTrue(hasEnd("end"));
     }
 
-    public void testEndTrue2() {
+    public final void testEndTrue2() {
         assertTrue(hasEnd(" end "));
     }
 
-    public void testEndTrue3() {
+    public final void testEndTrue3() {
         assertTrue(hasEnd(" end #red"));
     }
 
-    public void testEndTrue4() {
+    public final void testEndTrue4() {
         assertTrue(hasEnd(" end if true"));
     }
 
-    public void testEndFalse() {
+    public final void testEndTrue5() {
+        assertTrue(hasEnd("  def quack a, b, d;    c blue;  puts 'quack';  end"));
+    }
+
+    public final void testEndFalse() {
         assertFalse(hasEnd("#end"));
     }
 
-    public void testEndFalse2() {
+    public final void testEndFalse2() {
         assertFalse(hasEnd(" #end"));
     }
 
-    public void testEndFalse3() {
+    public final void testEndFalse3() {
         assertFalse(hasEnd("# end"));
     }
 
-    public void testEndFalse4() {
+    public final void testEndFalse4() {
         assertFalse(hasEnd(" # end"));
     }
 
-    public void testEndFalse5() {
+    public final void testEndFalse5() {
         assertFalse(hasEnd("  def tag_end name"));
     }
 

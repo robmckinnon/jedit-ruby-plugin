@@ -1,3 +1,22 @@
+/*
+ * TestRubyParser.java -
+ *
+ * Copyright 2005 Robert McKinnon
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
@@ -15,30 +34,33 @@ import java.util.ArrayList;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class TestRubyParser extends TestCase {
+public final class TestRubyParser extends TestCase {
 
-    public static final String ERROR_CODE = "fmodule Red class Head\n" +
+    private static final String ERROR_CODE = "fmodule Red class Head\n" +
             "  end\n" +
             "end";
 
-    public static final String ARR_DEF = "def []\n" +
+    private static final String ARR_DEF = "def []\n" +
             "end\n";
 
-    public static final String DEF = "def red\n" +
+    private static final String DEF = "def red\n" +
             "end\n";
 
-    public static final String EMPTY_CLASS = "class Green\n" +
+    private static final String EMPTY_CLASS = "class Green\n" +
+            "end\n";
+
+    private static final String MODULE_CLASS = "class Red::Green\n" +
             "end\n";
 
     public static final String CLASS = "class Green\n" +
             DEF +
             "end\n";
 
-    public static final String NESTED_CLASS = "class Greener\n" +
+    private static final String NESTED_CLASS = "class Greener\n" +
             EMPTY_CLASS +
             "end\n";
 
-    public static final String WIN_CLASS = "class Green\r\n" +
+    private static final String WIN_CLASS = "class Green\r\n" +
             DEF +
             "end\r\n";
 
@@ -46,39 +68,39 @@ public class TestRubyParser extends TestCase {
             ARR_DEF +
             "end\n";
 
-    public static final String CLASS_AND_DEF = "class Green\n" +
+    private static final String CLASS_AND_DEF = "class Green\n" +
             "end\n" +
             DEF;
 
-    public static final String EMPTY_MODULE = "module Blue\n" +
+    private static final String EMPTY_MODULE = "module Blue\n" +
             "end\n";
 
-    public static final String DOUBLE_MODULE = "module Blue ; module Purple\n" +
+    private static final String DOUBLE_MODULE = "module Blue ; module Purple\n" +
             "end\n" +
             "end\n";
 
-    public static final String TRIPLE_MODULE = "module Blue ; module Purple; module Mauve\n" +
+    private static final String TRIPLE_MODULE = "module Blue ; module Purple; module Mauve\n" +
             "end\n" +
             "end end\n";
 
-    public static final String QUAD_MODULE = "module Blue ; module Purple; module Mauve;module Pink\n" +
+    private static final String QUAD_MODULE = "module Blue ; module Purple; module Mauve;module Pink\n" +
             "end\n" +
             "end end end\n";
 
-    public static final String MODULE_METHOD = "module Blue\n" +
+    private static final String MODULE_METHOD = "module Blue\n" +
             "  def Blue.deep\n" +
             "  end\n" +
             "end\n";
 
-    public static final String EMPTY_CLASS_IN_MODULE = "module Blue\n" +
+    private static final String EMPTY_CLASS_IN_MODULE = "module Blue\n" +
             EMPTY_CLASS +
             "end\n";
 
-    public static final String CLASS_IN_MODULE = "module Blue\n" +
+    private static final String CLASS_IN_MODULE = "module Blue\n" +
             CLASS +
             "end\n";
 
-    public static final String ARR_CLASS_IN_MODULE = "module Blue\n" +
+    private static final String ARR_CLASS_IN_MODULE = "module Blue\n" +
             ARR_CLASS +
             "end\n";
 
@@ -88,17 +110,37 @@ public class TestRubyParser extends TestCase {
 
     private static final String PATH = "this/path/";
 
-    public static final String DUCK = "class Duck\n" +
+    private static final String DUCK = "class Duck\n" +
             "  def quack\n" +
             "      \n" +
             "  end\n" +
             "end";
 
-    public static final String ITER = "b.each do |i|\n" +
+    private static final String ITER = "b.each do |i|\n" +
             " \n" +
             "end";
 
+    private static final String EVAL_IN_METHOD = "      def method_missing(method, *args, &block)\n" +
+            "          remote = eval %{\n" +
+            "            result = lambda { |block, *args| #{method}(*args, &block) }\n" +
+            "            def result.call_with_block(*args, &block)\n" +
+            "              call(block, *args)\n" +
+            "            end\n" +
+            "          }\n" +
+            "      end\n" +
+            "      def find_me\n" +
+            "      end\n";
+
     private static final String ONE_LINER = "def count; @contents.split.size; end";
+
+    private static final String ANOTHER_ONE_LINER = "  def bark() puts 'bark' end";
+
+    private static final String SINGLE_LINE_CLASS = "  \nclass Red; " + ONE_LINER + "; end";
+
+    private static final String SINGLE_LINE_MODULE = "module Ship; class Green; def blue; end; end; end";
+
+    private static final String TWO_SINGLE_LINE_MODULES = "\nmodule Ships; class Greens; def blues; end; end; end\n\n"+
+            SINGLE_LINE_MODULE + "\n";
 
     private static final String PARAM_METHOD = "def red(blue, green)\n"
     +"end";
@@ -106,21 +148,70 @@ public class TestRubyParser extends TestCase {
     private static final String PARAM_METHOD2 = "def red blue, green\n"
     +"end";
 
-    public void tearDown() {
+    private static final String PARAM_METHOD3 = "def red(r)\n"
+    +"end";
+
+    private static final String PARAM_METHOD4 = "def red r # jam hot\n"
+    +"end";
+
+    private static final String PARAM_METHOD5 = "  def waddle  a,\\\n" +
+            "    b, \\\n" +
+            "    c # blue\n" +
+            "    puts \"waddling\"\n" +
+            "  end";
+
+    private static final String PARAM_METHOD6 = "  def waddle  a,\\\n" +
+            "    b; \\\n" +
+            "    c # blue\n" +
+            "    puts \"waddling\"\n" +
+            "  end";
+
+
+    public final void tearDown() {
         RubyCache.instance().clear();
     }
 
-    public void testParseParamMethod() {
+    private void assertNameCorrect(String expected, List<Member> members) {
+        assertEquals("Assert method name correct", expected, members.get(0).getName());
+    }
+
+    public final void testParseParamMethod() {
         List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD, getUniquePath(), null);
-        assertEquals("Assert method name correct", "red(blue, green)", members.get(0).getName());
+        assertNameCorrect("red(blue, green)", members);
     }
 
-    public void testParseParamMethod2() {
+    public final void testParseParamMethod2() {
         List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD2, getUniquePath(), null);
-        assertEquals("Assert method name correct", "red(blue, green)", members.get(0).getName());
+        assertNameCorrect("red(blue, green)", members);
     }
 
-    public void testIterParse() {
+    public final void testParseParamMethod3() {
+        List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD3, getUniquePath(), null);
+        assertNameCorrect("red(r)", members);
+    }
+
+    public final void testParseParamMethod4() {
+        List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD4, getUniquePath(), null);
+        assertNameCorrect("red(r)", members);
+    }
+
+    public final void testParseParamMethod5() {
+        List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD5, getUniquePath(), null);
+        assertNameCorrect("waddle(a,b,c)", members);
+    }
+
+    public final void testParseParamMethod6() {
+        List<Member> members = RubyParser.getMembersAsList(PARAM_METHOD6, getUniquePath(), null);
+        assertNameCorrect("waddle(a,b)", members);
+    }
+
+    public final void testEvalInMethod() {
+        List<Member> members = RubyParser.getMembersAsList(EVAL_IN_METHOD, getUniquePath(), null);
+        assertCorrect(0, "method_missing(method, *args, &block)", null, 10, members);
+        assertCorrect(1, "find_me", null, 282, members);
+    }
+
+    public final void testIterParse() {
         try {
             RubyParser.getMembers(ITER, getUniquePath());
         } catch (Exception e) {
@@ -128,7 +219,7 @@ public class TestRubyParser extends TestCase {
         }
     }
 
-    public void testOneLiner() {
+    public final void testOneLiner() {
         LineCounter lineCounter = new LineCounter(ONE_LINER);
         String line = lineCounter.getLine(0);
         assertTrue("assert line end correct", line.endsWith("end"));
@@ -136,7 +227,44 @@ public class TestRubyParser extends TestCase {
         assertCorrect(0, "count", null, 4, membersAsList);
     }
 
-    public void testEndOffsets() {
+    public final void testSingleLineClass() {
+        String uniquePath = getUniquePath();
+        List<Member> membersAsList = RubyParser.getMembersAsList(SINGLE_LINE_CLASS, uniquePath, null);
+        assertCorrect(0, "Red", null, 9, membersAsList);
+        assertChildrenCorrect(membersAsList, "count", 18, "Red");
+    }
+
+    public final void testTwoSingleLineModules() {
+        String uniquePath = getUniquePath();
+        List<Member> membersAsList = RubyParser.getMembersAsList(TWO_SINGLE_LINE_MODULES, uniquePath, null);
+        assertCorrect(0, "Ships", null, 8, membersAsList);
+        assertChildrenCorrect(membersAsList, "Ships::Greens", 21, "Ships");
+        assertChildrenCorrect(getChildMembers(membersAsList), "blues", 33, "Ships");
+
+        assertCorrect(1, "Ship", null, 62, membersAsList);
+        Member member = membersAsList.get(1).getChildMembersAsList().get(0);
+        assertEquals("Assert position correct.", 74, member.getStartOffset());
+        member = member.getChildMembersAsList().get(0);
+        assertEquals("Assert position correct.", 85, member.getStartOffset());
+    }
+
+    public final void testSingleLineModule() {
+        String uniquePath = getUniquePath();
+        List<Member> membersAsList = RubyParser.getMembersAsList(SINGLE_LINE_MODULE, uniquePath, null);
+        assertCorrect(0, "Ship", null, 7, membersAsList);
+        assertChildrenCorrect(membersAsList, "Ship::Green", 19, "Ship");
+        assertChildrenCorrect(getChildMembers(membersAsList), "blue", 30, "Ship");
+    }
+
+    public final void testOneLiner2() {
+        LineCounter lineCounter = new LineCounter(ANOTHER_ONE_LINER);
+        String line = lineCounter.getLine(0);
+        assertTrue("assert line end correct", line.endsWith("end"));
+        List<Member> membersAsList = RubyParser.getMembersAsList(ANOTHER_ONE_LINER, getUniquePath(), null);
+        assertCorrect(0, "bark", null, 6, membersAsList);
+    }
+
+    public final void testEndOffsets() {
         RubyMembers members = RubyParser.getMembers(DUCK, getUniquePath());
         Member member = members.getCurrentMember(6);
         assertEquals("Member correct.", "Duck", member.getName());
@@ -149,61 +277,61 @@ public class TestRubyParser extends TestCase {
         assertEquals("Class offset correct.", 35, member.getEndOffset());
     }
 
-    public void testErrors() {
+    public final void testErrors() {
         RubyMembers members = RubyParser.getMembers(ERROR_CODE, getUniquePath());
         assertTrue("Assert errors exist", members.containsErrors());
         assertEquals("Assert error count correct", 3, members.getProblems().length);
     }
 
-    static String getUniquePath() {
+    private static String getUniquePath() {
         return PATH + System.currentTimeMillis();
     }
 
-    public void testParentOfDef() {
+    public final void testParentOfDef() {
         List<Member> members = RubyParser.getMembersAsList(CLASS, getUniquePath(), null);
         Member method = members.get(0).getChildMembers()[0];
         assertTrue("Assert has parent", method.hasParentMember());
         assertEquals("Assert parent correct", "Green", method.getParentMember().getFullName());
     }
 
-    public void testParseModuleMethod() {
+    public final void testParseModuleMethod() {
         List<Member> members = RubyParser.getMembersAsList(MODULE_METHOD, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "Blue::deep", 18, "Blue");
     }
 
-    public void testBigFile() {
+    public final void testBigFile() {
         List<Member> members = RubyParser.getMembersAsList(bigFile, getUniquePath(), new TestListener());
         members.toString();
     }
 
-    public void testEmptyClassInModuleSize() {
+    public final void testEmptyClassInModuleSize() {
         assertSizeCorrect(1, EMPTY_CLASS_IN_MODULE);
     }
 
-    public void testEmptyClassInModule() {
+    public final void testEmptyClassInModule() {
         List<Member> members = RubyParser.getMembersAsList(EMPTY_CLASS_IN_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "Blue::Green", 18, "Blue");
     }
 
-    public void testPreviousMemberBeforeModuleMember() {
+    public final void testPreviousMemberBeforeModuleMember() {
         assertPreviousMemberCorrect(EMPTY_CLASS_IN_MODULE, 6, "Blue");
     }
 
-    public void testPreviousMemberAfterModuleMember() {
+    public final void testPreviousMemberAfterModuleMember() {
         assertPreviousMemberCorrect(EMPTY_CLASS_IN_MODULE, 8, "Blue");
     }
 
-    public void testPreviousMemberAfterClassMember() {
+    public final void testPreviousMemberAfterClassMember() {
         assertPreviousMemberCorrect(EMPTY_CLASS_IN_MODULE, 19, "Blue::Green");
     }
 
-    public void testPreviousMemberAtMember() {
+    public final void testPreviousMemberAtMember() {
         assertPreviousMemberCorrect(EMPTY_CLASS_IN_MODULE, 7, "Blue");
     }
 
-    public void testPreviousMemberInModuleClass() {
+    public final void testPreviousMemberInModuleClass() {
         assertPreviousMemberCorrect(bigFile, 2832, "with_http");
     }
 
@@ -213,50 +341,50 @@ public class TestRubyParser extends TestCase {
         return members;
     }
 
-    public void testClassInModuleSize() {
+    public final void testClassInModuleSize() {
         assertSizeCorrect(1, CLASS_IN_MODULE);
     }
 
-    public void testParseClassInModule() {
+    public final void testParseClassInModule() {
         List<Member> members = RubyParser.getMembersAsList(CLASS_IN_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         members = assertChildrenCorrect(members, "Blue::Green", 18, "Blue");
         assertChildrenCorrect(members, "red", 28, "Blue");
     }
 
-    public void testParseArrClassInModule() {
+    public final void testParseArrClassInModule() {
         List<Member> members = RubyParser.getMembersAsList(ARR_CLASS_IN_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         members = assertChildrenCorrect(members, "Blue::Green", 18, "Blue");
         assertChildrenCorrect(members, "[]", 28, "Blue");
     }
 
-    public void testDefInModuleSize() {
+    public final void testDefInModuleSize() {
         assertSizeCorrect(1, DEF_IN_MODULE);
     }
 
-    public void testParseDefInModule() {
+    public final void testParseDefInModule() {
         List<Member> members = RubyParser.getMembersAsList(DEF_IN_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "red", 16, "Blue");
     }
 
-    public void testParseClassInClass() {
+    public final void testParseClassInClass() {
         List<Member> members = RubyParser.getMembersAsList(NESTED_CLASS, getUniquePath(), null);
         assertCorrect(0, "Greener", null, 6, members);
         assertChildrenCorrect(members, "Greener::Green", 20, "Greener");
     }
 
-    public void testParseDefSize() {
+    public final void testParseDefSize() {
         assertSizeCorrect(1, DEF);
     }
 
-    public void testParseDef() {
+    public final void testParseDef() {
         List<Member> members = RubyParser.getMembersAsList(DEF, getUniquePath(), null);
         assertCorrect(0, "red", null, 4, members);
     }
 
-    public void testNextDef() {
+    public final void testNextDef() {
         RubyMembers members = RubyParser.getMembers("\n" + DEF + "\n", getUniquePath());
         Member nextMember = members.getNextMember(0);
         List<Member> list = new ArrayList<Member>();
@@ -264,51 +392,57 @@ public class TestRubyParser extends TestCase {
         assertCorrect(0, "red", null, 5, list);
     }
 
-    public void testParseArrDefSize() {
+    public final void testParseArrDefSize() {
         assertSizeCorrect(1, ARR_DEF);
     }
 
-    public void testParseArrDef() {
+    public final void testParseArrDef() {
         List<Member> members = RubyParser.getMembersAsList(ARR_DEF, getUniquePath(), null);
         assertCorrect(0, "[]", null, 4, members);
     }
 
-    public void testParseEmptyClassSize() {
+    public final void testParseEmptyClassSize() {
         assertSizeCorrect(1, EMPTY_CLASS);
     }
 
-    public void testParseEmptyClass() {
+    public final void testParseEmptyClass() {
         List<Member> members = RubyParser.getMembersAsList(EMPTY_CLASS, getUniquePath(), null);
         assertCorrect(0, "Green", null, 6, members);
     }
 
-    public void testParseEmptyModuleSize() {
+    public final void testParseModuleClass() {
+        List<Member> members = RubyParser.getMembersAsList(MODULE_CLASS, getUniquePath(), null);
+        assertCorrect(0, "Green", null, 6, members);
+//        assertChildrenCorrect(members, "Green", 11, "Red");
+    }
+
+    public final void testParseEmptyModuleSize() {
         assertSizeCorrect(1, EMPTY_MODULE);
     }
 
-    public void testParseDoubleModuleSize() {
+    public final void testParseDoubleModuleSize() {
         assertSizeCorrect(1, DOUBLE_MODULE);
     }
 
-    public void testParseEmptyModule() {
+    public final void testParseEmptyModule() {
         List<Member> members = RubyParser.getMembersAsList(EMPTY_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
     }
 
-    public void testParseDoubleModule() {
+    public final void testParseDoubleModule() {
         List<Member> members = RubyParser.getMembersAsList(DOUBLE_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "Blue::Purple", 21, "Blue");
     }
 
-    public void testParseTripleModule() {
+    public final void testParseTripleModule() {
         List<Member> members = RubyParser.getMembersAsList(TRIPLE_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "Blue::Purple", 21, "Blue");
         assertChildrenCorrect(getChildMembers(members), "Blue::Purple::Mauve", 36, "Blue");
     }
 
-    public void testParseQuadModule() {
+    public final void testParseQuadModule() {
         List<Member> members = RubyParser.getMembersAsList(QUAD_MODULE, getUniquePath(), null);
         assertCorrect(0, "Blue", null, 7, members);
         assertChildrenCorrect(members, "Blue::Purple", 21, "Blue");
@@ -316,43 +450,43 @@ public class TestRubyParser extends TestCase {
         assertChildrenCorrect(getChildMembers(getChildMembers(members)), "Blue::Purple::Mauve::Pink", 49, "Blue");
     }
 
-    public void testParseClassSize() {
+    public final void testParseClassSize() {
         assertSizeCorrect(1, CLASS);
     }
 
-    public void testParseClass() {
+    public final void testParseClass() {
         List<Member> members = RubyParser.getMembersAsList(CLASS, getUniquePath(), null);
         assertCorrect(0, "Green", null, 6, members);
         assertChildrenCorrect(members, "red", 16, "Green");
     }
 
-    public void testParseWinClass() {
+    public final void testParseWinClass() {
         List<Member> members = RubyParser.getMembersAsList(WIN_CLASS, getUniquePath(), null);
         assertCorrect(0, "Green", null, 6, members);
         assertChildrenCorrect(members, "red", 17, "Green");
     }
 
-    public void testParseArrClass() {
+    public final void testParseArrClass() {
         List<Member> members = RubyParser.getMembersAsList(ARR_CLASS, getUniquePath(), null);
         assertCorrect(0, "Green", null, 6, members);
         assertChildrenCorrect(members, "[]", 16, "Green");
     }
 
-    public void testParseClassAndDefSize() {
+    public final void testParseClassAndDefSize() {
         assertSizeCorrect(2, CLASS_AND_DEF);
     }
 
-    public void testParseClassAndDef() {
+    public final void testParseClassAndDef() {
         List<Member> members = RubyParser.getMembersAsList(CLASS_AND_DEF, getUniquePath(), null);
         assertCorrect(0, "Green", null, 6, members);
         assertCorrect(1, "red", null, 20, members);
     }
 
-    public void testClassMethodSize() {
+    public final void testClassMethodSize() {
         assertSizeCorrect(2, classMethodFile);
     }
 
-    public void testClassMethodCall() {
+    public final void testClassMethodCall() {
         List<Member> members = RubyParser.getMembersAsList(classMethodFile, getUniquePath(), null);
         assertCorrect(0, "One", null, 6, members);
         assertChildrenCorrect(members, "to_yaml(opts)", 15, "One");
@@ -366,32 +500,31 @@ public class TestRubyParser extends TestCase {
 
     private List<Member> getChildMembers(List<Member> members) {
         assertTrue("assert has child members", members.get(0).hasChildMembers());
-        List<Member> childMembers = members.get(0).getChildMembersAsList();
-        return childMembers;
+        return members.get(0).getChildMembersAsList();
     }
 
-    private static class TestListener implements RubyParser.WarningListener {
-        public void warn(SourcePosition position, String message) {
+    private static final class TestListener implements RubyParser.WarningListener {
+        public final void warn(SourcePosition position, String message) {
             RubyPlugin.log(message, getClass());
         }
 
-        public void warn(String message) {
+        public final void warn(String message) {
             RubyPlugin.log(message, getClass());
         }
 
-        public void warning(SourcePosition position, String message) {
+        public final void warning(SourcePosition position, String message) {
             RubyPlugin.log(message, getClass());
         }
 
-        public void warning(String message) {
+        public final void warning(String message) {
             RubyPlugin.log(message, getClass());
         }
 
-        public void error(SourcePosition position, String message) {
+        public final void error(SourcePosition position, String message) {
             RubyPlugin.log(message, getClass());
         }
 
-        public void clear() {
+        public final void clear() {
         }
     }
 
@@ -425,7 +558,7 @@ public class TestRubyParser extends TestCase {
         }
     }
 
-    public void testGlobalIf() {
+    public final void testGlobalIf() {
         List<Member> members = RubyParser.getMembersAsList(globalIfFile, getUniquePath(), null);
         assertCorrect(0, "File", null, 6, members);
         assertChildrenCorrect(members, "File::open", 31, "File");

@@ -34,7 +34,7 @@ import org.jedit.ruby.ast.RubyMembers;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class ProgressiveSelector {
+public final class ProgressiveSelector {
 
     public static void doProgressiveSelection(View view) {
         JEditTextArea textArea = view.getTextArea();
@@ -180,10 +180,9 @@ public class ProgressiveSelector {
     private static void selectBeyondLine(View view, JEditTextArea textArea, Selection selection) {
         if (RubyPlugin.isRubyFile(view.getBuffer())) {
             try {
-                Member member = null;
                 try {
                     RubyMembers members = RubyParser.getMembers(view);
-                    member = members.getMemberAt(textArea.getCaretPosition());
+                    Member member = members.getMemberAt(textArea.getCaretPosition());
                     selectBeyondLineRuby(textArea, selection, member);
                 } catch (Exception e) {
                     selectBeyondLineNonRuby(textArea, selection);
@@ -214,9 +213,7 @@ public class ProgressiveSelector {
         int memberStartLine = textArea.getLineOfOffset(member.getStartOffset());
         int memberEndLine = textArea.getLineOfOffset(member.getEndOffset());
 
-        boolean insideMember = caretLine > memberStartLine
-                && caretLine < memberEndLine;
-        return insideMember;
+        return memberStartLine < caretLine && caretLine < memberEndLine;
     }
 
     private static void selectParagraphInMember(JEditTextArea textArea, Member member, Selection selection) {
@@ -292,7 +289,7 @@ public class ProgressiveSelector {
         start = textArea.getLineStartOffset(line);
         int end = member.getEndOffset();
         char character = textArea.getText(end, 1).charAt(0);
-        if (character != '\n' || character != '\r') {
+        if (character != '\n' && character != '\r') {
             end++;
         }
         setSelection(start, end, textArea);
@@ -322,7 +319,7 @@ public class ProgressiveSelector {
      * Selects the word at the caret position.
      * @since jEdit 2.7pre2
      */
-    public static void selectWord(JEditTextArea textArea) {
+    private static void selectWord(JEditTextArea textArea) {
         int line = textArea.getCaretLine();
         int lineStart = textArea.getLineStartOffset(line);
         int offset = textArea.getCaretPosition() - lineStart;
@@ -417,7 +414,7 @@ public class ProgressiveSelector {
     /**
      * Selects all text in the buffer.
      */
-    public static void selectAll(JEditTextArea textArea) {
+    private static void selectAll(JEditTextArea textArea) {
         textArea.setSelection(new Selection.Range(0, textArea.getBufferLength()));
     }
 

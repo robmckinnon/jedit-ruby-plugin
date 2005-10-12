@@ -25,7 +25,7 @@ import java.awt.LayoutManager;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class NonTraversablePanel extends JPanel {
+final class NonTraversablePanel extends JPanel {
     public NonTraversablePanel(LayoutManager layout) {
         super(layout);
     }
@@ -34,14 +34,14 @@ class NonTraversablePanel extends JPanel {
      * Returns false to indicate this component can't
      * be traversed by pressing the Tab key.
      */
-    public boolean isManagingFocus() {
+    public final boolean isManagingFocus() {
         return false;
     }
 
     /**
      * Makes the tab key work in Java 1.4.
      */
-    public boolean getFocusTraversalKeysEnabled() {
+    public final boolean getFocusTraversalKeysEnabled() {
         return false;
     }
 }

@@ -31,7 +31,7 @@ public abstract class ParentMember extends Member {
         super(name, startOuterOffset, startOffset);
     }
 
-    public Set<Method> getMethods() {
+    public final Set<Method> getMethods() {
         final Set<Method> methods = new HashSet<Method>();
 
         visitChildren(new MemberVisitorAdapter() {

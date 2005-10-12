@@ -24,7 +24,7 @@ import java.util.Collection;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class YamlParser {
+final class YamlParser {
 
     public static Collection parse(String objectclass) {
         return null;

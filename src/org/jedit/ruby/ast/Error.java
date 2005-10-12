@@ -22,7 +22,7 @@ package org.jedit.ruby.ast;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Error extends Problem {
+public final class Error extends Problem {
     /**
      * @param message error message
      * @param line line number starting at 0
@@ -31,7 +31,7 @@ public class Error extends Problem {
         super(message, line);
     }
 
-    public void accept(MemberVisitor visitor) {
+    public final void accept(MemberVisitor visitor) {
         visitor.handleError(this);
     }
 }

@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MethodDescription extends Description {
+public final class MethodDescription extends Description {
 
     private List<String> aliases;
     private String blockParameters;
@@ -35,67 +35,67 @@ public class MethodDescription extends Description {
     private boolean isClassMethod;
     private boolean isSingleton;
 
-    public List getAliases() {
+    public final List getAliases() {
         return aliases;
     }
 
-    public void setAliases(List<String> aliases) {
+    public final void setAliases(List<String> aliases) {
         this.aliases = aliases;
     }
 
-    public String getBlockParameters() {
+    public final String getBlockParameters() {
         return blockParameters;
     }
 
-    public void setBlockParameters(String blockParameters) {
+    public final void setBlockParameters(String blockParameters) {
         this.blockParameters = blockParameters;
     }
 
-    public String getParameters() {
+    public final String getParameters() {
         return parameters;
     }
 
-    public void setParameters(String parameters) {
+    public final void setParameters(String parameters) {
         this.parameters = parameters;
     }
 
-    public String getVisibility() {
+    public final String getVisibility() {
         return visibility;
     }
 
-    public void setVisibility(String visibility) {
+    public final void setVisibility(String visibility) {
         this.visibility = visibility;
     }
 
-    public String getAliasFor() {
+    public final String getAliasFor() {
         return aliasFor;
     }
 
-    public void setAliasFor(String aliasFor) {
+    public final void setAliasFor(String aliasFor) {
         this.aliasFor = aliasFor;
     }
 
-    public boolean getIsClassMethod() {
+    public final boolean getIsClassMethod() {
         return isClassMethod;
     }
 
-    public boolean isClassMethod() {
+    public final boolean isClassMethod() {
         return isClassMethod;
     }
 
-    public void setIsClassMethod(boolean classMethod) {
+    public final void setIsClassMethod(boolean classMethod) {
         isClassMethod = classMethod;
     }
 
-    public boolean getIsSingleton() {
+    public final boolean getIsSingleton() {
         return isSingleton;
     }
 
-    public boolean isSingleton() {
+    public final boolean isSingleton() {
         return isSingleton;
     }
 
-    public void setIsSingleton(boolean singleton) {
+    public final void setIsSingleton(boolean singleton) {
         isSingleton = singleton;
     }
 }

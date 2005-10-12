@@ -27,11 +27,11 @@ import java.io.Serializable;
 public class NamedThing implements Serializable {
     private String name;
 
-    public void setName(String name) {
+    public final void setName(String name) {
         this.name = name;
     }
 
-    public String getName() {
+    public final String getName() {
         return name;
     }
 }

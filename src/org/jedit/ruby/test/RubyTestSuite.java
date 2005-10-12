@@ -25,7 +25,7 @@ import junit.framework.Test;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubyTestSuite extends TestSuite {
+public final class RubyTestSuite extends TestSuite {
 
     public static Test suite() {
         TestSuite suite = new TestSuite("ruby");

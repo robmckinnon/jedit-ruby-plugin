@@ -25,7 +25,7 @@ import org.jedit.ruby.parser.LineCounter;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class TestLineCounter extends TestCase {
+public final class TestLineCounter extends TestCase {
 
     private static final String TEXT = "1 \n" +
                     "  2 \n" +
@@ -35,40 +35,52 @@ public class TestLineCounter extends TestCase {
                     "  2 \n" +
                     "3 ";
 
-    public void testEnhancedForLoop() {
+    public final void testEnhancedForLoop() {
         StringBuffer buffer = new StringBuffer();
         for (String i : getJunk(buffer)) {
-            i.toLowerCase();
         }
         assertEquals("Enhance loop values called once", "*", buffer.toString());
     }
 
-    public String[] getJunk(StringBuffer buffer) {
+    private String[] getJunk(StringBuffer buffer) {
         buffer.append("*");
         return new String[] {"red", "blue", "green"};
     }
-    public void testOffsets() {
+
+    public final void testOffsets() {
         LineCounter lineCounter = new LineCounter(TEXT);
         checkOffset(0, 2, '\n', lineCounter, TEXT);
         checkOffset(1, 7, '\n', lineCounter, TEXT);
         checkOffset(2, 10, '\n', lineCounter, TEXT);
     }
 
-    public void testOffsets2() {
+    public final void testLineAtOffset() {
+        LineCounter lineCounter = new LineCounter(TEXT);
+        assertLineAtOffsetCorrect(1, 0, lineCounter);
+        assertLineAtOffsetCorrect(3, 1, lineCounter);
+        assertLineAtOffsetCorrect(9, 2, lineCounter);
+    }
+
+    private void assertLineAtOffsetCorrect(int offset, int expectedLine, LineCounter lineCounter) {
+        int line = lineCounter.getLineAtOffset(offset);
+        assertEquals("assert line at offset " + offset + " is correct: ", expectedLine, line);
+    }
+
+    public final void testOffsets2() {
         LineCounter lineCounter = new LineCounter(TEXT2);
         checkOffset(0, 2, '\n', lineCounter, TEXT2);
         checkOffset(1, 7, '\n', lineCounter, TEXT2);
         checkOffset(2, 9, ' ', lineCounter, TEXT2);
     }
 
-    public void testLines() {
+    public final void testLines() {
         LineCounter lineCounter = new LineCounter(TEXT);
         checkLine(0, "1 ", lineCounter);
         checkLine(1, "  2 ", lineCounter);
         checkLine(2, "3 ", lineCounter);
     }
 
-    public void testLines2() {
+    public final void testLines2() {
         LineCounter lineCounter = new LineCounter(TEXT2);
         checkLine(0, "1 ", lineCounter);
         checkLine(1, "  2 ", lineCounter);

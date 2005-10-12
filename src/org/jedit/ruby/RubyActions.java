@@ -36,6 +36,7 @@ import org.jedit.ruby.structure.FileStructurePopup;
 import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 import org.jedit.ruby.cache.*;
 import org.jedit.ruby.ri.*;
+import org.jedit.ruby.utils.CommandUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,7 +48,7 @@ import sidekick.SideKickActions;
 /**
  * @author robmckinnon at users,sourceforge,net
  */
-public class RubyActions {
+public final class RubyActions {
 
     public static void progressiveSelection(View view) {
         ProgressiveSelector.doProgressiveSelection(view);
@@ -55,7 +56,9 @@ public class RubyActions {
 
     public static void searchDocumentation(View view) {
         try {
-            RDocSeacher.doSearch(view);
+            if (CommandUtils.isRubyInstalled()) {
+                RDocSeacher.doSearch(view);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {

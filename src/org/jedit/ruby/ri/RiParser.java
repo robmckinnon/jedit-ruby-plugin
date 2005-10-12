@@ -21,10 +21,10 @@ package org.jedit.ruby.ri;
 
 import org.jedit.ruby.ast.*;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.CommandUtils;
 import org.jedit.ruby.cache.RubyCache;
 import org.gjt.sp.jedit.jEdit;
 
-import java.beans.XMLEncoder;
 import java.beans.XMLDecoder;
 import java.io.*;
 import java.util.ArrayList;
@@ -35,9 +35,10 @@ import java.util.jar.JarInputStream;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RiParser {
+public final class RiParser {
 
     public static void parseRdoc() {
+        copyOverRubyCode();
         log("parsing RDoc from jar");
         List<JarEntry> entries = getEntries();
         for (JarEntry entry : entries) {
@@ -46,9 +47,34 @@ public class RiParser {
         RubyCache.instance().populateSuperclassMethods();
     }
 
-    public static void loadClassDesciption(JarEntry entry) {
+    private static void copyOverRubyCode() {
+        try {
+            copyOverFile("rdoc_to_java.rb");
+            copyOverFile("cdesc.erb");
+        } catch (Exception e) {
+            e.printStackTrace();
+            RubyPlugin.error(e, RiParser.class);
+        }
+    }
+
+    private static void copyOverFile(String name) throws IOException, InterruptedException {
+        InputStream inputStream = RubyPlugin.class.getClassLoader().getResourceAsStream("ri/" + name);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        File file = CommandUtils.getStoragePath(name);
+        FileWriter writer = new FileWriter(file);
+        String line;
+        while((line = reader.readLine()) != null) {
+            writer.write(line + '\n');
+        }
+        reader.close();
+        writer.close();
+        if(!CommandUtils.isWindows()) {
+            CommandUtils.getOutput("chmod +x " + file.getPath(), false);
+        }
+    }
+
+    private static void loadClassDesciption(JarEntry entry) {
         String name = entry.getName();
-        log(name);
         InputStream inputStream = RubyPlugin.class.getClassLoader().getResourceAsStream(name);
         ObjectInputStream input = null;
         try {
@@ -68,7 +94,7 @@ public class RiParser {
         }
     }
 
-    public static List<JarEntry> getEntries() {
+    private static List<JarEntry> getEntries() {
         List<JarEntry> entries = new ArrayList<JarEntry>();
         try {
             File file = getJarFile();
@@ -88,7 +114,7 @@ public class RiParser {
         return entries;
     }
 
-    public static File getJarFile() {
+    private static File getJarFile() {
         File file = getJarFile(jEdit.getSettingsDirectory());
         if(!file.exists()) {
             file = getJarFile(jEdit.getJEditHome());
@@ -96,13 +122,12 @@ public class RiParser {
         return file;
     }
 
-    public static File getJarFile(String directory) {
+    private static File getJarFile(String directory) {
         File dir = new File(directory, "jars");
-        File file = new File(dir, "RubyPlugin.jar");
-        return file;
+        return new File(dir, "RubyPlugin.jar");
     }
 
-    public static void cache(ClassDescription description) {
+    private static void cache(ClassDescription description) {
         ClassMember parent = new ClassMember(description.getName(), 0, 0);
         parent.setParentMemberName(description.getSuperclass());
         parent.setEndOffset(0);
@@ -121,7 +146,7 @@ public class RiParser {
         RubyCache.instance().add(rubyMembers, "1.8/system");
     }
 
-    public static void addMethods(List<MethodDescription> methods, ClassMember parent) {
+    private static void addMethods(List<MethodDescription> methods, ClassMember parent) {
         for (MethodDescription methodDescription : methods) {
             String name = methodDescription.getName();
             name = name.startsWith(".") ? name.substring(1) : name;
@@ -139,11 +164,6 @@ public class RiParser {
 
     private static void log(String message) {
         RubyPlugin.log(message, RiParser.class);
-    }
-
-    public static void main(String[] args) {
-        RiParser parser = new RiParser();
-        parser.convertXmlToBinary();
     }
 
     private void convertXmlToBinary() {
@@ -165,12 +185,12 @@ public class RiParser {
         }
     }
 
-    private void encode(ClassDescription result, File file) {
+    private static void encode(ClassDescription result, File file) {
         String name = file.getName();
         int end = name.indexOf(".xml");
         name = name.substring(0, end) + ".dat";
         System.out.println(name);
-        file = new File("/home/a/apps/versions/jedit/plugins/RubyPlugin/ri/java", name);
+        file = new File("/home/b/apps/versions/jedit/4.2/plugins/RubyPlugin/ri/java", name);
 
         try {
             ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream(file));
@@ -181,19 +201,19 @@ public class RiParser {
         }
     }
 
-    private void toXml(ClassDescription description) {
-        try {
-            XMLEncoder e = new XMLEncoder(new BufferedOutputStream(new FileOutputStream("/home/a/tmp/Test.xml")));
-            e.writeObject(description);
-            e.close();
-            FileOutputStream fos = new FileOutputStream("/home/a/tmp/Test.txt");
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(description);
-            oos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    private void toXml(ClassDescription description) {
+//        try {
+//            XMLEncoder e = new XMLEncoder(new BufferedOutputStream(new FileOutputStream("/home/a/tmp/Test.xml")));
+//            e.writeObject(description);
+//            e.close();
+//            FileOutputStream fos = new FileOutputStream("/home/a/tmp/Test.txt");
+//            ObjectOutputStream oos = new ObjectOutputStream(fos);
+//            oos.writeObject(description);
+//            oos.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private List<File> findClassDescriptions(File directory) {
         List<File> list = new ArrayList<File>();
@@ -210,17 +230,17 @@ public class RiParser {
         return list;
     }
 
-    private static final String classes = "RI, RI::AliasName, RI::AnsiFormatter, RI::Attribute,\n" +
-            "     RI::AttributeFormatter, RI::AttributeFormatter::AttrChar,\n" +
-            "     RI::AttributeFormatter::AttributeString, RI::ClassDescription,\n" +
-            "     RI::ClassEntry, RI::Constant, RI::Description, RI::HtmlFormatter,\n" +
-            "     RI::IncludedModule, RI::MethodDescription, RI::MethodEntry,\n" +
-            "     RI::MethodDescription, RI::ModuleDescription, RI::NamedThing,\n" +
-            "     RI::Options, RI::Options::OptionList, RI::OverstrikeFormatter,\n" +
-            "     RI::Paths, RI::RiCache, RI::RiReader, RI::RiWriter,\n" +
-            "     RI::SimpleFormatter, RI::TextFormatter, RI::TopLevelEntry,";
+//    private static final String classes = "RI, RI::AliasName, RI::AnsiFormatter, RI::Attribute,\n" +
+//            "     RI::AttributeFormatter, RI::AttributeFormatter::AttrChar,\n" +
+//            "     RI::AttributeFormatter::AttributeString, RI::ClassDescription,\n" +
+//            "     RI::ClassEntry, RI::Constant, RI::Description, RI::HtmlFormatter,\n" +
+//            "     RI::IncludedModule, RI::MethodDescription, RI::MethodEntry,\n" +
+//            "     RI::MethodDescription, RI::ModuleDescription, RI::NamedThing,\n" +
+//            "     RI::Options, RI::Options::OptionList, RI::OverstrikeFormatter,\n" +
+//            "     RI::Paths, RI::RiCache, RI::RiReader, RI::RiWriter,\n" +
+//            "     RI::SimpleFormatter, RI::TextFormatter, RI::TopLevelEntry,";
 
-    public static RubyMembers parse(String objectclass) {
+    public static RubyMembers parse() {
         ClassDescription description = new ClassDescription();
         description.setAttributes(new ArrayList<Attribute>());
         List<MethodDescription> methods = new ArrayList<MethodDescription>();
@@ -274,120 +294,126 @@ public class RiParser {
         return null;
     }
 
-    private static final String objectClass = "--- !ruby/object:RI::ClassDescription \n" +
-            "attributes: []\n" +
-            "class_methods: \n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: new\n" +
-            "comment: \n" +
-            "  - !ruby/struct:SM::Flow::P \n" +
-            "    body: \"<tt>Object</tt> is the parent class of all classes in Ruby. Its methods are\n" +
-            "      therefore available to all objects unless explicitly overridden.\"\n" +
-            "  - !ruby/struct:SM::Flow::P \n" +
-            "    body: \"<tt>Object</tt> mixes in the <tt>Kernel</tt> module, making the built-in kernel\n" +
-            "      functions globally accessible. Although the instance methods of <tt>Object</tt>\n" +
-            "      are defined by the <tt>Kernel</tt> module, we have chosen to document them here\n" +
-            "      for clarity.\"\n" +
-            "  - !ruby/struct:SM::Flow::P \n" +
-            "    body: \"In the descriptions of Object's methods, the parameter <em>symbol</em> refers to\n" +
-            "      a symbol, which is either a quoted string or a <tt>Symbol</tt> (such as\n" +
-            "      <tt>:name</tt>).\"\n" +
-            "constants: []\n" +
-            "full_name: Object\n" +
-            "includes: \n" +
-            "  - !ruby/object:RI::IncludedModule \n" +
-            "    name: Kernel\n" +
-            "instance_methods: \n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"==\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"===\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"=~\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"__id__\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"__send__\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: class\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: clone\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: display\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: dup\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"eql?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"equal?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: extend\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: freeze\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"frozen?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: hash\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: id\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: initialize_copy\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: inspect\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: instance_eval\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"instance_of?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: instance_variable_get\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: instance_variable_set\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: instance_variables\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"is_a?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"kind_of?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: method\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: methods\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"nil?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: object_id\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: private_methods\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: protected_methods\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: public_methods\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: remove_instance_variable\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"respond_to?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: send\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: singleton_method_added\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: singleton_method_removed\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: singleton_method_undefined\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: singleton_methods\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: taint\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: \"tainted?\"\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: to_a\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: to_s\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: type\n" +
-            "  - !ruby/object:RI::MethodDescription \n" +
-            "    name: untaint\n" +
-            "name: Object\n" +
-            "superclass: ";
+//    private static final String objectClass = "--- !ruby/object:RI::ClassDescription \n" +
+//            "attributes: []\n" +
+//            "class_methods: \n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: new\n" +
+//            "comment: \n" +
+//            "  - !ruby/struct:SM::Flow::P \n" +
+//            "    body: \"<tt>Object</tt> is the parent class of all classes in Ruby. Its methods are\n" +
+//            "      therefore available to all objects unless explicitly overridden.\"\n" +
+//            "  - !ruby/struct:SM::Flow::P \n" +
+//            "    body: \"<tt>Object</tt> mixes in the <tt>Kernel</tt> module, making the built-in kernel\n" +
+//            "      functions globally accessible. Although the instance methods of <tt>Object</tt>\n" +
+//            "      are defined by the <tt>Kernel</tt> module, we have chosen to document them here\n" +
+//            "      for clarity.\"\n" +
+//            "  - !ruby/struct:SM::Flow::P \n" +
+//            "    body: \"In the descriptions of Object's methods, the parameter <em>symbol</em> refers to\n" +
+//            "      a symbol, which is either a quoted string or a <tt>Symbol</tt> (such as\n" +
+//            "      <tt>:name</tt>).\"\n" +
+//            "constants: []\n" +
+//            "full_name: Object\n" +
+//            "includes: \n" +
+//            "  - !ruby/object:RI::IncludedModule \n" +
+//            "    name: Kernel\n" +
+//            "instance_methods: \n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"==\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"===\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"=~\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"__id__\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"__send__\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: class\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: clone\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: display\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: dup\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"eql?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"equal?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: extend\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: freeze\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"frozen?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: hash\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: id\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: initialize_copy\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: inspect\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: instance_eval\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"instance_of?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: instance_variable_get\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: instance_variable_set\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: instance_variables\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"is_a?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"kind_of?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: method\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: methods\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"nil?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: object_id\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: private_methods\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: protected_methods\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: public_methods\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: remove_instance_variable\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"respond_to?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: send\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: singleton_method_added\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: singleton_method_removed\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: singleton_method_undefined\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: singleton_methods\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: taint\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: \"tainted?\"\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: to_a\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: to_s\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: type\n" +
+//            "  - !ruby/object:RI::MethodDescription \n" +
+//            "    name: untaint\n" +
+//            "name: Object\n" +
+//            "superclass: ";
+
+    public static void main(String[] args) {
+        RiParser parser = new RiParser();
+        parser.convertXmlToBinary();
+    }
+
 }

@@ -27,13 +27,13 @@ import java.awt.Graphics;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class TopLineBorder extends LineBorder {
+final class TopLineBorder extends LineBorder {
 
     public TopLineBorder(Color color) {
         super(color);
     }
 
-    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+    public final void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
         Color oldColor = g.getColor();
         int i;
         g.setColor(lineColor);

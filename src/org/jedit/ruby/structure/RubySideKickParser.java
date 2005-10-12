@@ -41,7 +41,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubySideKickParser extends SideKickParser {
+public final class RubySideKickParser extends SideKickParser {
 
     private static DefaultErrorSource errorSource;
     private static final ErrorSource.Error[] EMPTY_ERROR_LIST = new ErrorSource.Error[0];
@@ -50,11 +50,11 @@ public class RubySideKickParser extends SideKickParser {
         super("ruby");
     }
 
-    public boolean supportsCompletion() {
+    public final boolean supportsCompletion() {
         return true;
     }
 
-    public boolean canHandleBackspace() {
+    public final boolean canHandleBackspace() {
         return true;
     }
 
@@ -67,7 +67,7 @@ public class RubySideKickParser extends SideKickParser {
         }
     }
 
-    public SideKickParsedData parse(final Buffer buffer, final DefaultErrorSource errorSource) {
+    public final SideKickParsedData parse(final Buffer buffer, final DefaultErrorSource errorSource) {
         String text = buffer.getText(0, buffer.getLength());
         RubySideKickParser.errorSource = errorSource;
 
@@ -88,13 +88,13 @@ public class RubySideKickParser extends SideKickParser {
         return data;
     }
 
-    public static class RubyParsedData extends SideKickParsedData {
+    public static final class RubyParsedData extends SideKickParsedData {
         public RubyParsedData(String fileName) {
             super(fileName);
         }
     }
 
-    public SideKickCompletion complete(EditPane editPane, int caret) {
+    public final SideKickCompletion complete(EditPane editPane, int caret) {
         RubyCompletion completion = null;
         Token syntaxType = RubyPlugin.getToken(editPane.getBuffer(), caret);
 
@@ -128,7 +128,8 @@ public class RubySideKickParser extends SideKickParser {
                 RubyPlugin.log("ignoring: " + Token.TOKEN_TYPES[token.id], getClass());
                 return true;
             default:
-                RubyPlugin.log("not ignoring: " + Token.TOKEN_TYPES[token.id], getClass());
+                String tokenType = token.id < Token.TOKEN_TYPES.length ? Token.TOKEN_TYPES[token.id] : String.valueOf(token.id);
+                RubyPlugin.log("not ignoring: " + tokenType, getClass());
                 return false;
         }
     }
@@ -143,6 +144,7 @@ public class RubySideKickParser extends SideKickParser {
 
     private void addToErrorList(int type, SourcePosition position, DefaultErrorSource errorSource, String message) {
         int line = position == null ? 0 : position.getLine() - 1;
+        String file = position == null ? null : position.getFile();
 
         int startOffset = RubyPlugin.getStartOffset(line);
         int nonSpaceStartOffset = RubyPlugin.getNonSpaceStartOffset(line);
@@ -152,15 +154,15 @@ public class RubySideKickParser extends SideKickParser {
         int endOffsetInLine = endOffset - startOffset;
 
         RubyPlugin.log("start " + startOffsetInLine + ", end " + endOffsetInLine, getClass());
-        errorSource.addError(type, position.getFile(), line, startOffsetInLine, endOffsetInLine, message);
+        errorSource.addError(type, file, line, startOffsetInLine, endOffsetInLine, message);
     }
 
     private void addNodes(DefaultMutableTreeNode parentNode, Member[] members, Buffer buffer) {
         if(members != null) {
             for(Member member : members) {
                 MemberNode node = new org.jedit.ruby.structure.MemberNode(member);
-                node.start = buffer.createPosition(member.getStartOffset());
-                node.end = buffer.createPosition(member.getEndOffset());
+                node.start = buffer.createPosition(Math.min(buffer.getLength(), member.getStartOffset()));
+                node.end = buffer.createPosition(Math.min(buffer.getLength(), member.getEndOffset()));
                 DefaultMutableTreeNode treeNode = node.createTreeNode();
                 if (member.hasChildMembers()) {
                     Member[] childMembers = member.getChildMembers();
@@ -171,7 +173,7 @@ public class RubySideKickParser extends SideKickParser {
         }
     }
 
-    private class RubySideKickWarningListener implements RubyParser.WarningListener {
+    private final class RubySideKickWarningListener implements RubyParser.WarningListener {
 
         private final DefaultErrorSource errorSource;
 
@@ -179,27 +181,27 @@ public class RubySideKickParser extends SideKickParser {
             this.errorSource = errorSource;
         }
 
-        public void warn(SourcePosition position, String message) {
+        public final void warn(SourcePosition position, String message) {
             addWarning(message, position, errorSource);
         }
 
-        public void warn(String message) {
+        public final void warn(String message) {
             addWarning(message, null, errorSource);
         }
 
-        public void warning(SourcePosition position, String message) {
+        public final void warning(SourcePosition position, String message) {
             addWarning(message, position, errorSource);
         }
 
-        public void warning(String message) {
+        public final void warning(String message) {
             addWarning(message, null, errorSource);
         }
 
-        public void error(SourcePosition position, String message) {
+        public final void error(SourcePosition position, String message) {
             addError(message, position, errorSource);
         }
 
-        public void clear() {
+        public final void clear() {
         }
     }
 }

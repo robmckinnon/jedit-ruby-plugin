@@ -29,7 +29,7 @@ import junit.framework.TestCase;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class TestRDocSeacher extends TestCase {
+public final class TestRDocSeacher extends TestCase {
 
     private static final String RESULT = "More than one method matched your request. You can refine\n" +
             "your search by asking for information on one of:\n" +
@@ -44,7 +44,7 @@ public class TestRDocSeacher extends TestCase {
             "     String#to_sym, Regexp#to_s, Benchmark::Tms#to_s,\n" +
             "     Process::Status#to_s, Enumerable#to_set";
 
-    public void testParseMultipleMatches() {
+    public final void testParseMultipleMatches() {
         List<Member> methods = org.jedit.ruby.ri.RDocSeacher.parseMultipleResults(RESULT);
         assertEquals("Assert first method correct: ", "Array#to_s", methods.get(0).getFullName());
         assertEquals("Assert first method correct: ", "Vector#to_s", methods.get(35).getFullName());

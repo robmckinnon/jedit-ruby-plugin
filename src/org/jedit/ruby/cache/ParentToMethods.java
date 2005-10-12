@@ -27,18 +27,18 @@ import java.util.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class ParentToMethods {
+final class ParentToMethods {
 
-    private Map<String, Set<Method>> fullNameToMethods = new HashMap<String, Set<Method>>();
-    private Map<String, Set<Method>> nameToMethods = new HashMap<String, Set<Method>>();
+    private final Map<String, Set<Method>> fullNameToMethods = new HashMap<String, Set<Method>>();
+    private final Map<String, Set<Method>> nameToMethods = new HashMap<String, Set<Method>>();
     private NameToParents nameToParents;
     private List<Method> allMethods;
 
-    void setNameToParents(NameToParents nameToParents) {
+    final void setNameToParents(NameToParents nameToParents) {
         this.nameToParents = nameToParents;
     }
 
-    List<Method> getMethodList(String memberName) {
+    final List<Method> getMethodList(String memberName) {
         Set<Method> methodSet = getMethodSet(memberName);
         List<Method> methods = new ArrayList<Method>(methodSet);
 
@@ -49,7 +49,7 @@ class ParentToMethods {
         return methods;
     }
 
-    Set<Method> getMethodSet(String memberName) {
+    final Set<Method> getMethodSet(String memberName) {
         Set<Method> methodSet = fullNameToMethods.get(memberName);
         if (methodSet == null) {
             methodSet = nameToMethods.get(memberName);
@@ -64,19 +64,19 @@ class ParentToMethods {
      * Note: Have to add methods separately because there
      * may be some classes defined across more than one file.
      */
-    void add(ParentMember member) {
+    final void add(ParentMember member) {
         Set<Method> methods = member.getMethods();
         add(member, methods);
     }
 
-    void add(ParentMember member, Set<Method> methods) {
+    final void add(ParentMember member, Set<Method> methods) {
         String fullName = member.getFullName();
         String name = member.getName();
 
         load(fullName, methods, name, fullNameToMethods, nameToMethods);
     }
 
-    private void load(String fullName, Set<Method> methods, String name, Map<String, Set<Method>> fullNameToMethods, Map<String, Set<Method>> nameToMethods) {
+    private static void load(String fullName, Set<Method> methods, String name, Map<String, Set<Method>> fullNameToMethods, Map<String, Set<Method>> nameToMethods) {
         if (fullNameToMethods.containsKey(fullName)) {
             fullNameToMethods.get(fullName).addAll(methods);
             nameToMethods.get(name).addAll(methods);
@@ -86,12 +86,12 @@ class ParentToMethods {
         }
     }
 
-    void clear() {
+    final void clear() {
         fullNameToMethods.clear();
         nameToMethods.clear();
     }
 
-    List<Method> getAllMethods() {
+    final List<Method> getAllMethods() {
         if(allMethods == null) {
             allMethods = new ArrayList<Method>();
 
@@ -103,7 +103,7 @@ class ParentToMethods {
         return allMethods;
     }
 
-    void reset() {
+    final void reset() {
         allMethods = null;
     }
 }

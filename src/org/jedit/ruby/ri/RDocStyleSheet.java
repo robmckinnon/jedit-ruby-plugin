@@ -32,9 +32,9 @@ import java.util.Set;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RDocStyleSheet extends StyleSheet {
+final class RDocStyleSheet extends StyleSheet {
 
-    private View view;
+    private final View view;
 
     public RDocStyleSheet(View view) {
         this.view = view;
@@ -91,9 +91,8 @@ public class RDocStyleSheet extends StyleSheet {
         return r;
     }
 
-    private int getViewFontSize() {
-        int size = jEdit.getFontProperty("view.font").getSize();
-        return size;
+    private static int getViewFontSize() {
+        return jEdit.getFontProperty("view.font").getSize();
     }
 
     private String getColor(byte styleId) {
@@ -114,7 +113,7 @@ public class RDocStyleSheet extends StyleSheet {
         return buffer.toString();
     }
 
-    private String getHex(int part) {
+    private static String getHex(int part) {
         String hex = Integer.toHexString(part);
         int length = hex.length();
         if (length == 0) {
@@ -126,10 +125,10 @@ public class RDocStyleSheet extends StyleSheet {
         }
     }
 
-    private static class Rule {
+    private static final class Rule {
 
-        private String name;
-        private Map<String, String> attributes;
+        private final String name;
+        private final Map<String, String> attributes;
 
         public Rule(String name, Map<String, String> attributes) {
             this.name = name;
@@ -140,20 +139,20 @@ public class RDocStyleSheet extends StyleSheet {
             this(name, new HashMap<String, String>());
         }
 
-        public void add(String attribute, int value) {
+        public final void add(String attribute, int value) {
             attributes.put(attribute, "" + value);
         }
 
-        public void add(String attribute, String value) {
+        public final void add(String attribute, String value) {
             attributes.put(attribute, value);
         }
 
-        public String toString() {
+        public final String toString() {
             StringBuffer buffer = new StringBuffer(name + " {\n");
             Set<String> keys = attributes.keySet();
             for (String attribute : keys) {
                 String value = attributes.get(attribute);
-                buffer.append("    " + attribute + ": " + value + ";\n");
+                buffer.append("    ").append(attribute).append(": ").append(value).append(";\n");
             }
             buffer.append("}");
             return buffer.toString();

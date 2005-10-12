@@ -43,7 +43,7 @@ import java.util.List;
  *
  * @author robmckinnon at users,sourceforge,net
  */
-public class TypeAheadPopup extends JWindow {
+public final class TypeAheadPopup extends JWindow {
 
     public static final PopupState FILE_STRUCTURE_POPUP = new FileStructureState();
     public static final PopupState SEARCH_POPUP = new SearchState();
@@ -61,21 +61,21 @@ public class TypeAheadPopup extends JWindow {
     private static final Border TOP_LINE_BORDER = new TopLineBorder(Color.GRAY);
 
     private Member toParentMember;
-    private Member[] members;
+    private final Member[] members;
     private Member[] displayMembers;
-    private Member[] originalMembers;
-    private LinkedList<Member[]> parentsList;
-    private View view;
-    private JEditTextArea textArea;
+    private final Member[] originalMembers;
+    private final LinkedList<Member[]> parentsList;
+    private final View view;
+    private final JEditTextArea textArea;
     private TypeAheadPopupListCellRenderer cellRenderer;
-    private JList popupList;
+    private final JList popupList;
     private String searchText;
-    private String searchPrefix;
+    private final String searchPrefix;
     private JLabel searchLabel;
-    private Point position;
+    private final Point position;
     private JCheckBox showAllCheckBox;
     private JCheckBox narrowListCheckBox;
-    private PopupState state;
+    private final PopupState state;
     private boolean handleFocusOnDispose;
     private boolean narrowListOnTyping;
     private char narrowListMnemonic;
@@ -122,7 +122,7 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
-    public void setVisible(boolean visible) {
+    public final void setVisible(boolean visible) {
         if (visible) {
             initContentPane();
 
@@ -286,8 +286,7 @@ public class TypeAheadPopup extends JWindow {
     private Member[] initDisplayMembers(Member[] members, LinkedList<Member[]> parentsList) {
         if (!state.showAllMembers()) {
             if (parentsList.size() > 0) {
-                Member parentMember = members[0].getParentMember();
-                toParentMember = parentMember;
+                toParentMember = members[0].getParentMember();
                 Member[] memberArray = new Member[members.length + 1];
                 memberArray[0] = toParentMember;
                 int index = 1;
@@ -323,7 +322,7 @@ public class TypeAheadPopup extends JWindow {
         list.setCellRenderer(cellRenderer);
     }
 
-    public void dispose() {
+    public final void dispose() {
         view.setKeyEventInterceptor(null);
         textArea.removeFocusListener(textAreaFocusListener);
         super.dispose();
@@ -348,7 +347,7 @@ public class TypeAheadPopup extends JWindow {
         textArea.setCaretPosition(offset);
     }
 
-    void updateMatchedMembers(char typed) {
+    final void updateMatchedMembers(char typed) {
         if (typed == ESCAPE_KEY) {
             mismatchCharacters = 0;
         } else if (typed == BACKSPACE_KEY && mismatchCharacters > 0) {
@@ -438,12 +437,12 @@ public class TypeAheadPopup extends JWindow {
         return visibleMembers;
     }
 
-    void handleSelection(boolean showMenu) {
+    final void handleSelection(boolean showMenu) {
         Member member = (Member)popupList.getSelectedValue();
         state.handleSelection(member, showMenu, this, view);
     }
 
-    boolean handleAltPressedWith(char keyChar) {
+    final boolean handleAltPressedWith(char keyChar) {
         boolean handled = false;
 
         if (keyChar == narrowListMnemonic) {
@@ -459,13 +458,13 @@ public class TypeAheadPopup extends JWindow {
         return handled;
     }
 
-    void handleBackSpacePressed() {
+    final void handleBackSpacePressed() {
         if (searchText.length() != 0) {
             updateMatchedMembers(BACKSPACE_KEY);
         }
     }
 
-    void handleEscapePressed() {
+    final void handleEscapePressed() {
         if (searchText.length() > 0) {
             updateMatchedMembers(ESCAPE_KEY);
         } else {
@@ -473,11 +472,11 @@ public class TypeAheadPopup extends JWindow {
         }
     }
 
-    int getListSize() {
+    final int getListSize() {
         return popupList.getModel().getSize();
     }
 
-    void incrementSelection(int increment) {
+    final void incrementSelection(int increment) {
         int selected = popupList.getSelectedIndex();
         selected += increment;
 
@@ -503,8 +502,8 @@ public class TypeAheadPopup extends JWindow {
         boolean displayShowAllCheckBox();
     }
 
-    private static class FileStructureState implements PopupState {
-        public void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view) {
+    private static final class FileStructureState implements PopupState {
+        public final void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view) {
             if (member == popup.toParentMember && showMenu) {
                 popup.handleFocusOnDispose = false;
                 popup.dispose();
@@ -524,18 +523,18 @@ public class TypeAheadPopup extends JWindow {
             }
         }
 
-        public boolean showAllMembers() {
+        public final boolean showAllMembers() {
             return jEdit.getBooleanProperty(SHOW_ALL, false);
         }
 
-        public boolean displayShowAllCheckBox() {
+        public final boolean displayShowAllCheckBox() {
             return true;
         }
     }
 
-    private static class FindDeclarationState implements PopupState {
+    private static final class FindDeclarationState implements PopupState {
 
-        public void handleSelection(Member member, boolean showMenu, final TypeAheadPopup popup, final View view) {
+        public final void handleSelection(Member member, boolean showMenu, final TypeAheadPopup popup, final View view) {
             member.accept(new MemberVisitorAdapter() {
                 public void handleMethod(Method method) {
                     String path = method.getFilePath();
@@ -545,26 +544,26 @@ public class TypeAheadPopup extends JWindow {
             });
         }
 
-        public boolean showAllMembers() {
+        public final boolean showAllMembers() {
             return false;
         }
 
-        public boolean displayShowAllCheckBox() {
+        public final boolean displayShowAllCheckBox() {
             return false;
         }
     }
 
-    private static class SearchState implements PopupState {
-        public void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view) {
+    private static final class SearchState implements PopupState {
+        public final void handleSelection(Member member, boolean showMenu, TypeAheadPopup popup, View view) {
             popup.dispose();
             org.jedit.ruby.ri.RDocSeacher.doSearch(view, member.getFullName());
         }
 
-        public boolean showAllMembers() {
+        public final boolean showAllMembers() {
             return false;
         }
 
-        public boolean displayShowAllCheckBox() {
+        public final boolean displayShowAllCheckBox() {
             return false;
         }
     }

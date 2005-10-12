@@ -36,25 +36,27 @@ import java.util.Iterator;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class RubyNodeVisitor extends AbstractVisitor {
+final class RubyNodeVisitor extends AbstractVisitor {
 
-    private List<String> namespaceNames;
-    private LinkedList<Member> currentMember;
+    private final List<String> namespaceNames;
+    private final LinkedList<Member> currentMember;
     private int moduleIndex;
     private int classIndex;
     private int methodIndex;
 
-    private List<Member> modules;
-    private List<Member> classes;
-    private List<Member> methods;
-    private List<RubyParser.WarningListener> problemListeners;
-    private LineCounter lineCounter;
+    private final List<Member> modules;
+    private final List<Member> classes;
+    private final List<Member> methods;
+    private final List<RubyParser.WarningListener> problemListeners;
+    private final LineCounter lineCounter;
+    private final NameVisitor nameVisitor;
 
-    public RubyNodeVisitor(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
-        lineCounter = new LineCounter(text);
+    public RubyNodeVisitor(LineCounter lineCounts, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
+        lineCounter = lineCounts;
         namespaceNames = new ArrayList<String>();
         currentMember = new LinkedList<Member>();
         currentMember.add(new Root(RubyPlugin.getEndOfFileOffset()));
+        nameVisitor = new NameVisitor();
         problemListeners = listeners;
         modules = moduleMembers;
         classes = classMembers;
@@ -64,11 +66,11 @@ class RubyNodeVisitor extends AbstractVisitor {
         methodIndex = 0;
     }
 
-    public List<Member> getMembers() {
+    public final List<Member> getMembers() {
         return currentMember.getFirst().getChildMembersAsList();
     }
 
-    protected void visitNode(Node node) {
+    protected final void visitNode(Node node) {
         if (printNode(node)) {
             String name = node.getClass().getName();
             int index = name.lastIndexOf('.');
@@ -81,7 +83,7 @@ class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    private boolean printNode(Node node) {
+    private static boolean printNode(Node node) {
         return !(node instanceof NewlineNode);
     }
 
@@ -96,24 +98,31 @@ class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    public void visitBlockNode(BlockNode node) {
+    public final void visitBlockNode(BlockNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         visitNodeIterator(node.iterator());
     }
 
-    public void visitNewlineNode(NewlineNode node) {
+    public final void visitNewlineNode(NewlineNode node) {
         visitNode(node);
         node.getNextNode().accept(this);
     }
 
-    public void visitModuleNode(ModuleNode node) {
+    public final void visitModuleNode(ModuleNode node) {
         System.out.print("[");
         visitNode(node);
-        String moduleName = node.getName();
+        node.getCPath().accept(nameVisitor);
+        String moduleName = nameVisitor.name;
         System.out.print(": " + moduleName);
 
-        Member module = getMember("module", moduleIndex, modules, node.getName(), node.getPosition());
+        Member module;
+        try {
+            module = getMember("module", moduleIndex, modules, moduleName, node.getPosition());
+        } catch (IndexAdjustmentException e) {
+            moduleIndex = e.getIndex();
+            module = getMemberNoCheckedException("module", moduleIndex, modules, moduleName, node.getPosition());
+        }
         moduleIndex++;
         module.setEndOffset(getEndOffset(node));
         populateNamespace(module);
@@ -130,12 +139,19 @@ class RubyNodeVisitor extends AbstractVisitor {
         RubyPlugin.log("]", getClass());
     }
 
-    public void visitClassNode(ClassNode node) {
+    public final void visitClassNode(ClassNode node) {
         visitNode(node);
-        String className = node.getClassName();
+        node.getCPath().accept(nameVisitor);
+        String className = nameVisitor.name;
         System.out.print(": " + className);
 
-        Member clas = getMember("class", classIndex, classes, node.getClassName(), node.getPosition());
+        Member clas;
+        try {
+            clas = getMember("class", classIndex, classes, className, node.getPosition());
+        } catch (IndexAdjustmentException e) {
+            classIndex = e.getIndex();
+            clas = getMemberNoCheckedException("class", classIndex, classes, className, node.getPosition());
+        }
         classIndex++;
         clas.setEndOffset(getEndOffset(node));
         populateNamespace(clas);
@@ -151,19 +167,25 @@ class RubyNodeVisitor extends AbstractVisitor {
         currentMember.removeLast();
     }
 
-    public void visitDefnNode(DefnNode node) {
+    public final void visitDefnNode(DefnNode node) {
         visitNode(node);
         String methodName = node.getName();
         System.out.print(": " + methodName);
 
-        Member method = getMember("method", methodIndex, methods, node.getName(), node.getPosition());
+        Member method;
+        try {
+            method = getMember("method", methodIndex, methods, node.getName(), node.getPosition());
+        } catch (IndexAdjustmentException e) {
+            methodIndex = e.getIndex();
+            method = getMemberNoCheckedException("method", methodIndex, methods, node.getName(), node.getPosition());
+        }
         methodIndex++;
         method.setEndOffset(getEndOffset(node));
         Member parent = currentMember.getLast();
         parent.addChildMember(method);
     }
 
-    public void visitDefsNode(DefsNode node) {
+    public final void visitDefsNode(DefsNode node) {
         visitNode(node);
 
         Method method = (Method)methods.get(methodIndex++);
@@ -200,24 +222,49 @@ class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    private Member getMember(String memberType, int index, List<Member> members, String memberName, SourcePosition position) {
-        Member member = null;
+    private Member getMemberNoCheckedException(String memberType, int index, List<Member> members, String memberName, SourcePosition position) {
+        try {
+            return getMember(memberType, index, members, memberName, position);
+        } catch (IndexAdjustmentException e) {
+            return throwCantFindException(memberType, memberName, position);
+        }
+    }
+
+    private Member getMember(String memberType, int index, List<Member> members, String memberName, SourcePosition position) throws IndexAdjustmentException {
+        Member member;
         try {
             member = members.get(index);
-            if(!memberName.equals(member.getShortName())) {
+            if (!memberName.equals(member.getShortName())) {
+                index++;
+                while(index < members.size()) {
+                    member = members.get(index);
+                    if (memberName.equals(member.getShortName())) {
+                        throw new IndexAdjustmentException(index);
+                    } else {
+                        index++;
+                    }
+                }
                 throw new Exception();
             }
         } catch (Exception e) {
-            String message = "parser can't find " + memberType + " " + memberName;
-            for (RubyParser.WarningListener listener : problemListeners) {
-                listener.error(position, message);
+            if (e instanceof IndexAdjustmentException) {
+                throw (IndexAdjustmentException)e;
+            } else {
+                return throwCantFindException(memberType, memberName, position);
             }
-            throw new SyntaxException(position, message);
         }
         return member;
     }
 
-    public void visitScopeNode(ScopeNode node) {
+    private Member throwCantFindException(String memberType, String memberName, SourcePosition position) {
+        String message = "parser can't find " + memberType + " " + memberName;
+        for (RubyParser.WarningListener listener : problemListeners) {
+            listener.error(position, message);
+        }
+        throw new SyntaxException(position, message);
+    }
+
+    public final void visitScopeNode(ScopeNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         if (node.getBodyNode() != null) {
@@ -225,14 +272,14 @@ class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    public void visitIfNode(IfNode node) {
+    public final void visitIfNode(IfNode node) {
         visitNode(node);
         if (node.getThenBody() != null) {
             node.getThenBody().accept(this);
         }
     }
 
-    public void visitIterNode(IterNode node) {
+    public final void visitIterNode(IterNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         if (node.getBodyNode() != null) {
@@ -240,17 +287,17 @@ class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    public void visitFCallNode(FCallNode node) {
+    public final void visitFCallNode(FCallNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
     }
 
-    public void visitClassVarDeclNode(ClassVarDeclNode node) {
+    public final void visitClassVarDeclNode(ClassVarDeclNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
     }
 
-    public void visitClassVarAsgnNode(ClassVarAsgnNode node) {
+    public final void visitClassVarAsgnNode(ClassVarAsgnNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
     }
@@ -268,5 +315,27 @@ class RubyNodeVisitor extends AbstractVisitor {
         }
         return line;
     }
-    
+
+    private static final class IndexAdjustmentException extends Exception {
+        private final int index;
+
+        public IndexAdjustmentException(int index) {
+            this.index = index;
+        }
+
+        public final int getIndex() {
+            return index;
+        }
+    }
+
+    private static final class NameVisitor extends AbstractVisitor {
+        private String name;
+
+        protected final void visitNode(Node node) {
+        }
+
+        public final void visitColon2Node(Colon2Node node) {
+            this.name = node.getName();
+        }
+    }
 }

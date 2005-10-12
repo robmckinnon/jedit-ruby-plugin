@@ -42,7 +42,7 @@ import java.io.File;
  *
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubyParser {
+public final class RubyParser {
 
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
 
@@ -53,11 +53,11 @@ public class RubyParser {
     private final MemberMatcher classMatcher;
     private final MemberMatcher methodMatcher;
 
-    private Map<File, Long> fileToLastModified;
-    private Map<File, String> fileToOldText;
-    private Map<File, Member[]> fileToMembers;
-    private Map<File, RubyMembers> fileToLastGoodMembers;
-    private Map<File, List<Problem>> fileToProblems;
+    private final Map<File, Long> fileToLastModified;
+    private final Map<File, String> fileToOldText;
+    private final Map<File, Member[]> fileToMembers;
+    private final Map<File, RubyMembers> fileToLastGoodMembers;
+    private final Map<File, List<Problem>> fileToProblems;
 
     private RubyParser() {
         logListener = new LogWarningListener();
@@ -141,11 +141,15 @@ public class RubyParser {
         List<Member> members = null;
 
         try {
-            List<Member> modules = createMembers(text, filePath, moduleMatcher);
-            List<Member> classes = createMembers(text, filePath, classMatcher);
-            List<Member> methods = createMembers(text, filePath, methodMatcher);
+            LineCounter lineCounter = new LineCounter(text);
+            List<Member> modules = createMembers(text, filePath, lineCounter, moduleMatcher);
+            List<Member> classes = createMembers(text, filePath, lineCounter, classMatcher);
+            // replace class x; .... end
 
-            members = JRubyParser.getMembers(text, modules, classes, methods, getListeners(listener), filePath);
+            List<Member> methods = createMembers(text, filePath, lineCounter, methodMatcher);
+            List<WarningListener> listeners = getListeners(listener);
+
+            members = JRubyParser.getMembers(text, modules, classes, methods, listeners, filePath, lineCounter);
         } catch (REException e) {
             e.printStackTrace();
         }
@@ -163,8 +167,8 @@ public class RubyParser {
         return listeners;
     }
 
-    private List<Member> createMembers(String text, String filePath, MemberMatcher matcher) throws REException {
-        List<MemberMatcher.Match> matches = matcher.getMatches(text);
+    private static List<Member> createMembers(String text, String filePath, LineCounter lineCounter, MemberMatcher matcher) throws REException {
+        List<MemberMatcher.Match> matches = matcher.getMatches(text, lineCounter);
         List<Member> members = new ArrayList<Member>();
 
         for(MemberMatcher.Match match : matches) {
@@ -172,7 +176,7 @@ public class RubyParser {
             int startOffset = match.startOffset;
             int startOuterOffset = match.startOuterOffset;
             String params = match.params;
-            members.add(matcher.createMember(name, filePath, startOuterOffset, startOffset, params));
+            members.add(matcher.createMember(name, filePath, startOuterOffset, startOffset, params, text));
         }
 
         return members;
@@ -197,40 +201,40 @@ public class RubyParser {
         void clear();
     }
 
-    private static class LogWarningListener implements WarningListener {
+    private static final class LogWarningListener implements WarningListener {
 
-        private List<Problem> problems = new ArrayList<Problem>();
+        private final List<Problem> problems = new ArrayList<Problem>();
 
-        public List<Problem> getProblems() {
+        public final List<Problem> getProblems() {
             return problems;
         }
 
-        public void warn(SourcePosition position, String message) {
+        public final void warn(SourcePosition position, String message) {
             problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
 
-        public void warn(String message) {
+        public final void warn(String message) {
             problems.add(new Warning(message, 0));
             RubyPlugin.log("warn:  " + message, getClass());
         }
 
-        public void warning(SourcePosition position, String message) {
+        public final void warning(SourcePosition position, String message) {
             problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
 
-        public void warning(String message) {
+        public final void warning(String message) {
             RubyPlugin.log("warn:  " + message, getClass());
             problems.add(new Warning(message, 0));
         }
 
-        public void error(SourcePosition position, String message) {
+        public final void error(SourcePosition position, String message) {
             RubyPlugin.log("error: " + position.getFile() + " " + position.getLine() + " " + message, getClass());
             problems.add(new Error(message, getLine(position)));
         }
 
-        public void clear() {
+        public final void clear() {
             problems.clear();
         }
 

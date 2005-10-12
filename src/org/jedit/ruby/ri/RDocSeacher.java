@@ -27,6 +27,7 @@ import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.structure.*;
 import org.jedit.ruby.structure.TypeAheadPopup;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.CommandUtils;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -35,19 +36,19 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Allows user to search Ruby documentation using ri - Ruby interactive reference.
- * - Brings up dialog for user to enter search term.
- * - Macro runs ri on term, and reports ri results in another dialog.
- * - Remembers last term searched, and places it in search entry field.
- * - If user has text selected, then that is placed in search entry field instead.
+ * Allows user to search Ruby documentation using ri - Ruby interactive reference.<ul><li>
+ *   Brings up dialog for user to enter search term.</li><li>
+ *   Macro runs ri on term, and reports ri results in another dialog.</li><li>
+ *   Remembers last term searched, and places it in search entry field.</li><li>
+ *   If user has text selected, then that is placed in search entry field instead.</li></ul>
  *
  * @author robmckinnon at users.sourceforge.net
  */
-public class RDocSeacher {
+public final class RDocSeacher {
 
     private static final RDocSeacher instance = new RDocSeacher();
 
-    private Map<String, String> termToResult;
+    private final Map<String, String> termToResult;
 
     /**
      * singleton private constructor
@@ -75,7 +76,7 @@ public class RDocSeacher {
     /**
      * Performs Ruby documentation search.
      */
-    public void performSearch(View view) throws IOException, InterruptedException {
+    private void performSearch(View view) throws IOException, InterruptedException {
         String term = getSearchTerm(view, view.getTextArea().getSelectedText());
         if (term != null) {
             jEdit.setProperty("ruby-ri-search-term", term);
@@ -129,72 +130,6 @@ public class RDocSeacher {
     }
 
     /**
-     * Runs supplied system command and returns process object.
-     */
-    private Process run(String command) throws IOException, InterruptedException {
-        final Process process = Runtime.getRuntime().exec(command);
-
-        java.util.Timer timer = new java.util.Timer();
-        TimerTask task = new TimerTask() {
-            public void run() {
-                synchronized (process) {
-                    // kills blocked subprocess
-                    process.destroy();
-                }
-            }
-
-        };
-        timer.schedule(task, 1500);
-
-        process.waitFor();
-
-        synchronized (process) {
-            task.cancel();
-        }
-
-        return process;
-    }
-
-    /**
-     * Returns string output of execution of the supplied system command.
-     */
-    private String getOutput(String command, boolean retryOnFail) throws IOException, InterruptedException {
-        Process process = run(command);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        StringBuffer buffer = new StringBuffer();
-
-        if (reader.ready()) {
-            buffer.append(reader.readLine());
-            while (reader.ready()) {
-                buffer.append('\n' + reader.readLine());
-            }
-        }
-        reader.close();
-
-        reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-        if (reader.ready()) {
-            buffer.append(reader.readLine());
-            while (reader.ready()) {
-                buffer.append('\n' + reader.readLine());
-            }
-        }
-        reader.close();
-
-        if (buffer.length() == 0) {
-            if (retryOnFail) {
-                return getOutput(command, false);
-            } else {
-                return null;
-            }
-        } else {
-            String result = buffer.toString();
-            termToResult.put(command, result);
-            return result;
-        }
-    }
-
-    /**
      * Runs ri on supplied string search term and returns result string.
      */
     private String ri(String searchTerm) throws IOException, InterruptedException {
@@ -206,71 +141,48 @@ public class RDocSeacher {
             return termToResult.get(searchTerm);
 
         } else {
-            boolean windows = System.getProperty("os.name").toLowerCase().indexOf("windows") != -1;
             String result;
-            if (windows) {
-                result = getOutput("ri.bat -T " + '"' + searchTerm + '"', true);
+            if (CommandUtils.isWindows()) {
+                result = CommandUtils.getOutput("ri.bat -T " + '"' + searchTerm + '"', true);
             } else {
-                result = getOutput("ri -T " + searchTerm, true);
+                result = CommandUtils.getOutput("ri -T " + searchTerm, true);
             }
 
-            if (result == null) {
-                result = rri(windows, searchTerm);
+            if (result.length() == 0) {
+                result = rri(searchTerm);
             }
 
             if (result == null) {
                 result = jEdit.getProperty("ruby.search-documentation.error");
+            } else {
+                termToResult.put(searchTerm, result);
             }
 
             return result;
         }
     }
 
-    private String rri(boolean windows, String searchTerm) throws IOException, InterruptedException {
-        File commandFile = windows ? RubyPlugin.getStoragePath("rri.bat") : RubyPlugin.getStoragePath("rri.sh");
-        File resultFile = RubyPlugin.getStoragePath("ri_result.txt");
-
-        if (!commandFile.exists()) {
-            createCommandFile(windows, resultFile, commandFile);
-        }
-
-        String result = null;
-
-        if (windows) {
-            getOutput('"' + commandFile.getPath() + '"' + ' ' + '"' + searchTerm + '"', false);
-        } else {
-            try {
-                getOutput(commandFile.getPath() + ' ' + searchTerm, false);
-            } catch (IOException e) {
-                if (e.getMessage().indexOf("rri.sh: cannot execute") != -1) {
-                    result = jEdit.getProperty("ruby.search-documentation.permission", new String[] {commandFile.getPath()});
-                } else {
-                    throw e;
-                }
-            }
-        }
-
-        if(result == null) {
-            result = RubyPlugin.readFile(resultFile);
-        }
-
-        return result;
+    private String rri(String searchTerm) throws IOException, InterruptedException {
+        File resultFile = CommandUtils.getStoragePath("ri_result.txt");
+        String command = getRriCommand(resultFile, searchTerm);
+        CommandUtils.getOutput(command, false);
+        return RubyPlugin.readFile(resultFile);
     }
 
-    private void createCommandFile(boolean windows, File resultFile, File commandFile) throws IOException {
-        String rri;
-        if (windows) {
-            rri = "exec ri.bat -T %1 > " + '"' + resultFile + '"' + '\n';
+    private static String getRriCommand(File resultFile, String searchTerm) throws IOException, InterruptedException {
+        if (CommandUtils.isWindows()) {
+            String text = "exec ri.bat -T %1 > " + '"' + resultFile + '"' + '\n';
+            File commandFile = CommandUtils.getCommandFile("rri.bat", false, text);
+            return '"' + commandFile.getPath() + '"' + ' ' + '"' + searchTerm + '"';
         } else {
-            rri = "#!/bin/sh\n"
-                    + "ri -T $1 > " + resultFile + '\n';
+            String text = "#!/bin/sh\n"
+                                + "ri -T $1 > " + resultFile + '\n';
+            File commandFile = CommandUtils.getCommandFile("rri.sh", false, text);
+            return commandFile.getPath() + ' ' + searchTerm;
         }
-        PrintWriter writer = new PrintWriter(new FileWriter(commandFile));
-        writer.print(rri);
-        writer.close();
     }
 
-    private JScrollPane getScrollPane(JTextArea label, Action closeAction) {
+    private static JScrollPane getScrollPane(JTextArea label, Action closeAction) {
         JScrollPane scrollPane = new JScrollPane(label);
         final String CLOSE = "close";
         scrollPane.getActionMap().put(CLOSE, closeAction);
@@ -311,7 +223,7 @@ public class RDocSeacher {
     /**
      * Displays dialog for user to enter search term.
      */
-    private String getSearchTerm(View view, String term) {
+    private static String getSearchTerm(View view, String term) {
         if (term == null) {
             term = jEdit.getProperty("ruby-ri-search-term", "");
         }

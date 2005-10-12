@@ -47,12 +47,15 @@ import gnu.regexp.*;
  *   loop do
  *   y do |z|
  * </pre>
- * It also auto-aligns <code>else</code> and <code>end</code> keywords.
+ * It also:<ul>
+ * <li>auto-aligns <code>else</code> and <code>end</code> keywords</li>
+ * <li>removes empty brackets () when you press enter inside of them</li>
+ * </ul>
  * </p>
  *
  * @author robmckinnon at users.sourceforge.net
  */
-public class AutoIndentAndInsertEnd {
+public final class AutoIndentAndInsertEnd {
 
     private static final AutoIndentAndInsertEnd instance = new AutoIndentAndInsertEnd();
 
@@ -95,6 +98,12 @@ public class AutoIndentAndInsertEnd {
             if (CommentRegExp.instance.isMatch(line)) {
                 handleComment(line, row);
             } else {
+                boolean oneCharFromEnd = caretPosition == line.length() - 1;
+                boolean insideEmptyParenthesis = oneCharFromEnd && caretPosition != 0 && line.charAt(caretPosition - 1) == '(' && line.charAt(caretPosition) == ')';
+                if (insideEmptyParenthesis) {
+                    area.selectLine();
+                    area.setSelectedText(line.substring(0, line.length() - 2));
+                }
                 area.insertEnterAndIndent();
             }
         } else if (trimLine.startsWith("else") || trimLine.startsWith("elsif")) {
@@ -108,7 +117,6 @@ public class AutoIndentAndInsertEnd {
         boolean matchesConditionalAssignment = TrailingConditionRegExp.instance.isMatch(line);
         boolean matchesDo = DoRegExp.instance.isMatch(line) && !isDoInComment(line);
         boolean matchesSyntax = MatchRegExp.instance.isMatch(line);
-
         boolean ignore = IgnoreRegExp.instance.isMatch(line);
 
         if (matchesConditionalAssignment) {
@@ -131,10 +139,24 @@ public class AutoIndentAndInsertEnd {
                 line = area.getLineText(row);
             }
             line = line.trim();
-            if(line.endsWith("; end") || line.endsWith(";end")) {
+            if(line.endsWith("end")
+                    && line.substring(0, line.length()-3).trim().endsWith(";")
+                    && line.indexOf("#") == -1) {
                 area.shiftIndentLeft();
             }
         }
+    }
+
+    private String adjustForIfBracket(String line) {
+        int ifBracket = line.indexOf("if(");
+        if (ifBracket != -1) {
+            int endBracket = line.indexOf(")");
+            if (endBracket != -1) {
+                String suffix = endBracket == (line.length() -1) ? "" : line.substring(endBracket + 1);
+                line = line.substring(0, ifBracket) + "if " + line.substring(ifBracket+3, endBracket) + " " + suffix;
+            }
+        }
+        return line;
     }
 
     private void handleElse(String trimLine, int row) {
@@ -255,7 +277,7 @@ public class AutoIndentAndInsertEnd {
         }
     }
 
-    private boolean isDoInComment(String line) {
+    private static boolean isDoInComment(String line) {
         boolean inComment = false;
         int commentIndex = line.indexOf("#");
         int paramIndex = line.indexOf("#{");
@@ -281,7 +303,13 @@ public class AutoIndentAndInsertEnd {
             area.deleteLine();
         }
 
-        area.goToPrevLine(false);
+        int caretLine = area.getCaretLine() + 1;
+        int lineCount = area.getLineCount();
+        RubyPlugin.log(caretLine + " " + lineCount, getClass());
+        if (caretLine != lineCount) {
+            area.goToPrevLine(false);
+        }
+
         area.goToEndOfWhiteSpace(false);
         area.insertEnterAndIndent();
         area.selectLine();
@@ -295,7 +323,6 @@ public class AutoIndentAndInsertEnd {
 
     private boolean endsNotBalanced() {
         String line;
-//        int row = area.getCaretLine();
         int count = area.getLineCount();
         int balancedCount = 0;
 //        StringBuffer buffer = new StringBuffer("");
@@ -304,10 +331,14 @@ public class AutoIndentAndInsertEnd {
         for (int i = 0; i < count; i++) {
             line = area.getLineText(i).trim();
             if (hasEndKeyword(line)) {
-//                buffer.append(balancedCount + "");
-//                for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : "")) ;
-//                buffer.append(line + "\n");
-                balancedCount--;
+                int endCount = SimpleEndRegExp.instance.getAllMatches(line).length;
+                while (endCount != 0) {
+                    balancedCount--;
+//                    buffer.append(balancedCount).append("");
+//                    for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : ""));
+//                    buffer.append(line).append("\n");
+                    endCount--;
+                }
             }
             if (line.indexOf("<<-EOF") != -1) {
                 isString = true;
@@ -318,7 +349,7 @@ public class AutoIndentAndInsertEnd {
                 boolean isDoMatch = DoRegExp.instance.isMatch(line);
                 boolean doInComment = isDoInComment(line);
 //                if(line.indexOf("File.open") != -1) {
-//                    buffer.append("do: " + isDoMatch + ", in comment: " + doInComment + ',' + line + '\n');
+//                    buffer.append("do: ").append(isDoMatch).append(", in comment: ").append(doInComment).append(',').append(line).append('\n');
 //                }
                 boolean isDoStatement = isDoMatch && !doInComment;
                 boolean ignore = IgnoreRegExp.instance.isMatch(line);
@@ -328,16 +359,43 @@ public class AutoIndentAndInsertEnd {
                     boolean openingBrace = line.indexOf("{") != -1 && line.indexOf("}") == -1;
                     boolean elsif = line.indexOf("elsif") != -1;
                     if (!openingBrace && !elsif) {
-//                        buffer.append(balancedCount + "");
-//                        for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : "")) ;
-//                        buffer.append(line + "\n");
                         balancedCount++;
+//                        buffer.append(balancedCount).append("");
+//                        for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : ""));
+//                        buffer.append(line).append("\n");
 
                         int moduleIndex = line.indexOf("module");
                         while(moduleIndex != -1) {
                             moduleIndex = line.indexOf("module", moduleIndex+5);
                             if(moduleIndex != -1) {
                                 balancedCount++;
+//                                buffer.append(balancedCount).append("");
+//                                for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : ""));
+//                                buffer.append(line).append("\n");
+                            }
+                        }
+
+                        moduleIndex = line.indexOf("module");
+
+                        if(moduleIndex != -1) {
+                            int classIndex = line.indexOf("class", moduleIndex+5);
+                            if(classIndex != -1) {
+                                balancedCount++;
+                            }
+                        }
+
+                        int classIndex = line.indexOf("class");
+//                        buffer.append("balance: ").append(balancedCount).append("\n");
+//                        buffer.append("classIndex: ").append(classIndex).append("\n");
+                        if(classIndex != -1) {
+                            int defIndex = line.indexOf("def", classIndex+4);
+//                            buffer.append("defIndex: ").append(defIndex).append("\n");
+                            while(defIndex != -1) {
+                                balancedCount++;
+//                                buffer.append(balancedCount).append("");
+//                                for (int j = 0; j < balancedCount; buffer.append(j++ > -1 ? "    " : ""));
+//                                buffer.append(line).append("\n");
+                                defIndex = line.indexOf("def", defIndex+2);
                             }
                         }
                     }
@@ -347,13 +405,14 @@ public class AutoIndentAndInsertEnd {
 
 //        RubyPlugin.log(buffer.toString(), AutoIndentAndInsertEnd.class);
         boolean endsNotBalanced = balancedCount < 0;
-        RubyPlugin.log("Ends " + (endsNotBalanced ? "not " : "") + "balanced", AutoIndentAndInsertEnd.class);
+        RubyPlugin.log("Ends " + (endsNotBalanced ? "not " : "") + "balanced: " + balancedCount, AutoIndentAndInsertEnd.class);
         return endsNotBalanced;
     }
 
     public static boolean hasEndKeyword(String line) {
         return EnhancedEndRegExp.instance.isMatch(line) ||
-                EnhancedEndRegExp2.instance.isMatch(line);
+                EnhancedEndRegExp2.instance.isMatch(line) ||
+                (line.trim().endsWith("end") && line.indexOf("#") == -1);
     }
 
     public static abstract class RegularExpression extends RE {
@@ -373,7 +432,7 @@ public class AutoIndentAndInsertEnd {
     }
 
     private static abstract class IndentRegularExpression extends RegularExpression {
-        String indent(String line) {
+        final String indent(String line) {
             REMatch match = instance().getMatch(line);
             StringBuffer indent = new StringBuffer(match.toString(1));
 
@@ -396,9 +455,9 @@ public class AutoIndentAndInsertEnd {
     /**
      * matches other syntax that requires end
      */
-    private static class MatchRegExp extends IndentRegularExpression {
+    private static final class MatchRegExp extends IndentRegularExpression {
         private static final RegularExpression instance = new MatchRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             String indent = "(\\s*)";
             String leadingText = "([^#]*)";
             String trailingSpace = "\\s*";
@@ -411,11 +470,11 @@ public class AutoIndentAndInsertEnd {
                     + ")" + trailingSpace;
         }
 
-        protected RE instance() {
+        protected final RE instance() {
             return instance;
         }
 
-        boolean extraIndent(String line) {
+        final boolean extraIndent(String line) {
             return line.indexOf("begin") == -1 && line.indexOf("do") == -1;
         }
     }
@@ -423,9 +482,9 @@ public class AutoIndentAndInsertEnd {
     /**
      * matches lines to ignore
      */
-    private static class IgnoreRegExp extends RegularExpression {
+    private static final class IgnoreRegExp extends RegularExpression {
         private static final RE instance = new IgnoreRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "((.*)(" +
                     "([[:graph:]]\\s+(if|unless)(\\s+\\S+)+)" +
                     ")\\s*)" +
@@ -439,55 +498,62 @@ public class AutoIndentAndInsertEnd {
     /**
      * matches x.y do |z| expressions
      */
-    private static class DoRegExp extends RegularExpression {
+    private static final class DoRegExp extends RegularExpression {
         private static final RegularExpression instance = new DoRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "(\\s*)(\\S+\\s+)+do\\s+\\|+[^\\|]*\\|\\s*";
         }
     }
 
-    private static class EndRegExp extends RegularExpression {
+    private static final class SimpleEndRegExp extends RegularExpression {
+        private static final RE instance = new SimpleEndRegExp();
+        protected final String getPattern() {
+            return "end";
+        }
+    }
+
+    private static final class EndRegExp extends RegularExpression {
         private static final RE instance = new EndRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "[^#]*end\\s*";
         }
     }
 
-    private static class EnhancedEndRegExp extends RegularExpression {
+    private static final class EnhancedEndRegExp extends RegularExpression {
         private static final RE instance = new EnhancedEndRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "^end(\\s*|(\\s+.*))";
         }
     }
 
-    private static class EnhancedEndRegExp2 extends RegularExpression {
+    private static final class EnhancedEndRegExp2 extends RegularExpression {
         private static final RE instance = new EnhancedEndRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "[^#]*\\s+end(\\s*|(\\s+.*))";
         }
     }
 
-    private static class CommentRegExp extends RegularExpression {
+    private static final class CommentRegExp extends RegularExpression {
         private static final RE instance = new CommentRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "(\\s*)(##?)(.*)";
         }
     }
 
-    private static class TrailingConditionRegExp extends IndentRegularExpression {
+    private static final class TrailingConditionRegExp extends IndentRegularExpression {
         private static final RegularExpression instance = new TrailingConditionRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "(\\s*)([^#]*=\\s*)(((if)|(unless)|(case)).*)";
         }
 
-        protected RE instance() {
+        protected final RE instance() {
             return instance;
         }
     }
 
-    private static class IfElsifRegExp extends RegularExpression {
+    private static final class IfElsifRegExp extends RegularExpression {
         private static final RE instance = new IfElsifRegExp();
-        protected String getPattern() {
+        protected final String getPattern() {
             return "(\\s*)((if)|(elsif))(.*)";
         }
     }

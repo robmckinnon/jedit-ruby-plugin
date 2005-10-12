@@ -22,5 +22,5 @@ package org.jedit.ruby.ri;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class IncludedModule extends NamedThing {
+public final class IncludedModule extends NamedThing {
 }

@@ -27,17 +27,17 @@ import java.util.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class RubyCache {
+public final class RubyCache {
 
     private static final RubyCache instance = new RubyCache();
 
-    private NameToMethods nameToMethods;
-    private NameToParents nameToParents;
-    private MethodToParents methodToParents;
-    private ParentToMethods parentToMethods;
-    private ParentToImmediateMethods parentToImmediateMethods;
+    private final NameToMethods nameToMethods;
+    private final NameToParents nameToParents;
+    private final MethodToParents methodToParents;
+    private final ParentToMethods parentToMethods;
+    private final ParentToImmediateMethods parentToImmediateMethods;
 
-    private Map pathToMembers;
+    private final Map pathToMembers;
 
     private RubyCache() {
         nameToMethods = new NameToMethods();
@@ -54,7 +54,7 @@ public class RubyCache {
         return instance;
     }
 
-    public synchronized void clear() {
+    public final synchronized void clear() {
         pathToMembers.clear();
         methodToParents.clear();
         parentToMethods.clear();
@@ -62,50 +62,50 @@ public class RubyCache {
         nameToMethods.clear();
     }
 
-    public synchronized void add(String text, String path) {
+    public final synchronized void add(String text, String path) {
         RubyMembers members = RubyParser.getMembers(text, path, null, true);
         add(members, path);
     }
 
-    public synchronized void add(RubyMembers members, String path) {
+    public final synchronized void add(RubyMembers members, String path) {
         if (!members.containsErrors()) {
             add(path, members);
         }
     }
 
-    public synchronized ParentMember getParentMember(String parentMemberName) {
+    public final synchronized ParentMember getParentMember(String parentMemberName) {
         return nameToParents.getMember(parentMemberName);
     }
 
-    public synchronized List<Method> getMethods(String method) {
+    public final synchronized List<Method> getMethods(String method) {
         return new ArrayList<Method>(nameToMethods.getMethods(method));
     }
 
-    public synchronized Set<Member> getMembersWithMethod(String method) {
+    public final synchronized Set<Member> getMembersWithMethod(String method) {
         return new HashSet<Member>(methodToParents.getParentSet(method));
     }
 
-    public synchronized Set<Method> getMethodsOfMember(String memberName) {
+    public final synchronized Set<Method> getMethodsOfMember(String memberName) {
         return new HashSet<Method>(parentToMethods.getMethodSet(memberName));
     }
 
-    public synchronized List<Method> getAllMethods() {
+    public final synchronized List<Method> getAllMethods() {
         return parentToMethods.getAllMethods();
     }
 
-    public synchronized List<Member> getAllImmediateMembers() {
+    public final synchronized List<Member> getAllImmediateMembers() {
         return new ArrayList<Member>(nameToParents.getAllMembers());
     }
 
-    public synchronized List<Member> getMembersWithMethodAsList(String method) {
+    public final synchronized List<Member> getMembersWithMethodAsList(String method) {
         return new ArrayList<Member>(methodToParents.getParentList(method));
     }
 
-    public synchronized List<Method> getMethodsOfMemberAsList(String memberName) {
+    public final synchronized List<Method> getMethodsOfMemberAsList(String memberName) {
         return new ArrayList<Method>(parentToMethods.getMethodList(memberName));
     }
 
-    public synchronized void populateSuperclassMethods() {
+    public final synchronized void populateSuperclassMethods() {
         Collection<ParentMember> allParents = nameToParents.getAllParents();
 
         for (ParentMember member : allParents) {

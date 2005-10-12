@@ -31,11 +31,11 @@ import java.util.List;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-class TypeAheadPopupListCellRenderer extends DefaultListCellRenderer {
+final class TypeAheadPopupListCellRenderer extends DefaultListCellRenderer {
 
-    private Member gotoParentMember;
+    private final Member gotoParentMember;
     private boolean allHaveSameName;
-    private boolean showAll;
+    private final boolean showAll;
 
     public TypeAheadPopupListCellRenderer(Member toParentMember, boolean showAllMembers) {
         gotoParentMember = toParentMember;
@@ -43,7 +43,7 @@ class TypeAheadPopupListCellRenderer extends DefaultListCellRenderer {
         allHaveSameName = false;
     }
 
-    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+    public final Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
         super.getListCellRendererComponent(list, null, index, isSelected, cellHasFocus);
 
         Member member = (Member)value;
@@ -62,7 +62,8 @@ class TypeAheadPopupListCellRenderer extends DefaultListCellRenderer {
             }
 
             if (allHaveSameName && member.hasParentMember()) {
-                buffer.append(" (" + member.getParentMember().getFullName() + ")");
+                String fullName = member.getParentMember().getFullName();
+                buffer.append(" (").append(fullName).append(")");
             }
         }
 
@@ -72,7 +73,7 @@ class TypeAheadPopupListCellRenderer extends DefaultListCellRenderer {
         return this;
     }
 
-    void resetAllHaveSameName(List<Member> members) {
+    final void resetAllHaveSameName(List<Member> members) {
         allHaveSameName = members.size() > 1;
         String name = null;
         for (Member member : members) {

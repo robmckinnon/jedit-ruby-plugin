@@ -31,35 +31,35 @@ public class Description implements Serializable {
     private String name;
     private String comment;
 
-    public String getFullName() {
+    public final String getFullName() {
         return fullName;
     }
 
-    public void setFullName(String fullName) {
+    public final void setFullName(String fullName) {
         this.fullName = fullName;
     }
 
-    public String getName() {
+    public final String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public final void setName(String name) {
         this.name = name;
     }
 
-    public String getNamespace() {
+    public final String getNamespace() {
         return namespace;
     }
 
-    public void setNamespace(String namespace) {
+    public final void setNamespace(String namespace) {
         this.namespace = namespace;
     }
 
-    public String getComment() {
+    public final String getComment() {
         return comment;
     }
 
-    public void setComment(String comment) {
+    public final void setComment(String comment) {
         this.comment = comment;
     }
 }

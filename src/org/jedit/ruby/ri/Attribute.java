@@ -22,14 +22,14 @@ package org.jedit.ruby.ri;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class Attribute extends NamedThing {
+public final class Attribute extends NamedThing {
     private String comment;
 
-    public String getComment() {
+    public final String getComment() {
         return comment;
     }
 
-    public void setComment(String comment) {
+    public final void setComment(String comment) {
         this.comment = comment;
     }
 }

@@ -39,10 +39,10 @@ public abstract class Member implements Comparable<Member> {
 
     private String namespace;
     private String name;
-    private String shortName;
+    private final String shortName;
     private String documentation;
-    private int startOuterOffset;
-    private int startOffset;
+    private final int startOuterOffset;
+    private final int startOffset;
     private int endOffset;
 
     public Member(String name, int startOuterOffset, int startOffset) {
@@ -58,13 +58,13 @@ public abstract class Member implements Comparable<Member> {
         return getFullName().compareTo(member.getFullName());
     }
 
-    public void setEndOffset(int endOffset) {
+    public final void setEndOffset(int endOffset) {
         this.endOffset = endOffset;
     }
 
     public abstract void accept(MemberVisitor visitor);
 
-    public void visitChildren(MemberVisitor visitor) {
+    final void visitChildren(MemberVisitor visitor) {
         if (hasChildMembers()) {
             for (Member member : getChildMembersAsList()) {
                 member.accept(visitor);
@@ -72,11 +72,11 @@ public abstract class Member implements Comparable<Member> {
         }
     }
 
-    protected String getNamespace() {
+    final String getNamespace() {
         return namespace;
     }
 
-    public void setNamespace(String namespace) {
+    public final void setNamespace(String namespace) {
         this.namespace = namespace;
     }
 
@@ -100,7 +100,7 @@ public abstract class Member implements Comparable<Member> {
         return name;
     }
 
-    protected void setName(String name) {
+    void setName(String name) {
         this.name = name;
     }
 
@@ -114,11 +114,11 @@ public abstract class Member implements Comparable<Member> {
         return shortName;
     }
 
-    public String getLowerCaseName() {
+    public final String getLowerCaseName() {
         return name;
     }
 
-    public int getStartOuterOffset() {
+    public final int getStartOuterOffset() {
         return startOuterOffset;
     }
 
@@ -135,7 +135,7 @@ public abstract class Member implements Comparable<Member> {
      * is a member with the same display name
      * and parent member as this member.
      */
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         boolean equal = false;
         if (obj instanceof Member) {
             Member member = ((Member)obj);
@@ -152,7 +152,7 @@ public abstract class Member implements Comparable<Member> {
         return equal;
     }
 
-    public int hashCode() {
+    public final int hashCode() {
         int code = getFullName().hashCode();
         if (hasParentMember()) {
             code += getParentMember().hashCode();
@@ -160,15 +160,15 @@ public abstract class Member implements Comparable<Member> {
         return code;
     }
 
-    public String toString() {
+    public final String toString() {
         return getFullName();
     }
 
-    public boolean hasChildMembers() {
+    public final boolean hasChildMembers() {
         return childMembers != null;
     }
 
-    public Member[] getChildMembers() {
+    public final Member[] getChildMembers() {
         if (hasChildMembers()) {
             return childMembers.toArray(EMPTY_MEMBER_ARRAY);
         } else {
@@ -176,11 +176,11 @@ public abstract class Member implements Comparable<Member> {
         }
     }
 
-    public List<Member> getChildMembersAsList() {
+    public final List<Member> getChildMembersAsList() {
         return childMembers;
     }
 
-    public void addChildMember(Member member) {
+    public final void addChildMember(Member member) {
         if (childMembers == null) {
             childMembers = new ArrayList<Member>();
         }
@@ -188,11 +188,11 @@ public abstract class Member implements Comparable<Member> {
         member.setParentMember(this);
     }
 
-    public boolean hasParentMember() {
+    public final boolean hasParentMember() {
         return parentMember != null && !(parentMember instanceof Root);
     }
 
-    public Member getTopMostParent() {
+    public final Member getTopMostParent() {
         if (hasParentMember()) {
             return getTopMostParentOrSelf(getParentMember());
         } else {
@@ -216,7 +216,7 @@ public abstract class Member implements Comparable<Member> {
      * If this member has no parent, the list only
      * contains this member.
      */
-    public List<Member> getMemberPath() {
+    public final List<Member> getMemberPath() {
         if (parentPath == null) {
             List<Member> path = new ArrayList<Member>();
             Member current = this;
@@ -234,7 +234,7 @@ public abstract class Member implements Comparable<Member> {
         return parentPath;
     }
 
-    public int getParentCount() {
+    public final int getParentCount() {
         if (parentCount == -1) {
             parentCount = getMemberPath().size() - 1;
         }
@@ -242,27 +242,27 @@ public abstract class Member implements Comparable<Member> {
         return parentCount;
     }
 
-    public Member getParentMember() {
+    public final Member getParentMember() {
         return parentMember;
     }
 
-    public boolean hasParentMemberName() {
+    public final boolean hasParentMemberName() {
         return parentMemberName != null && parentMemberName.length() > 0;
     }
 
-    public String getParentMemberName() {
+    public final String getParentMemberName() {
         return parentMemberName;
     }
 
-    public void setParentMemberName(String superclass) {
+    public final void setParentMemberName(String superclass) {
         this.parentMemberName = superclass;
     }
 
-    public void setParentMember(Member parentMember) {
+    public final void setParentMember(Member parentMember) {
         this.parentMember = parentMember;
     }
 
-    public void setDocumentationComment(String documentation) {
+    public final void setDocumentationComment(String documentation) {
         int index = documentation.indexOf("|lt;");
         while (index != -1) {
             documentation = documentation.substring(0, index) + "&lt;" + documentation.substring(index+4);

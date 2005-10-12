@@ -30,9 +30,9 @@ import org.jedit.ruby.icons.MemberIcon;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class MemberNode extends Asset {
+public final class MemberNode extends Asset {
 
-    private Icon icon;
+    private final Icon icon;
 
     public MemberNode(Member member) {
         super(member.getName());
@@ -40,23 +40,23 @@ public class MemberNode extends Asset {
         icon = memberIcon.getIcon();
     }
 
-    public DefaultMutableTreeNode createTreeNode() {
+    public final DefaultMutableTreeNode createTreeNode() {
        return new DefaultMutableTreeNode(this, true);
     }
 
-    public Icon getIcon() {
+    public final Icon getIcon() {
         return icon;
     }
 
-    public String getShortString() {
+    public final String getShortString() {
         return name;
     }
 
-    public String getLongString() {
+    public final String getLongString() {
         return getShortString();
     }
 
-    public String toString() {
+    public final String toString() {
         return name + " " + start + " " + end;
     }
 
