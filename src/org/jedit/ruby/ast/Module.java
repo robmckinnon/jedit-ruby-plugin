@@ -23,8 +23,9 @@ package org.jedit.ruby.ast;
  * @author robmckinnon at users.sourceforge.net
  */
 public final class Module extends ParentMember {
-    public Module(String name, int startOuterOffset, int startOffset) {
-        super(name, startOuterOffset, startOffset);
+
+    public Module(String name) {
+        super(name);
     }
 
     public final void accept(MemberVisitor visitor) {

@@ -21,6 +21,7 @@ package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
 import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
+import gnu.regexp.REMatch;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -65,6 +66,26 @@ public final class TestAutoIndent extends TestCase {
 
     public final void testEndFalse5() {
         assertFalse(hasEnd("  def tag_end name"));
+    }
+
+    public final void testMatchIf() {
+        REMatch match = AutoIndentAndInsertEnd.MatchRegExp.instance.getMatch("  if true");
+        assertMatchCorrect(match, " true");
+    }
+
+    public final void testMatchIfWithBracket() {
+        REMatch match = AutoIndentAndInsertEnd.MatchRegExp.instance.getMatch("  if(true)");
+        assertMatchCorrect(match, "(true)");
+    }
+
+    private void assertMatchCorrect(REMatch match, String partMatch) {
+        assertNotNull("Assert match not null.", match);
+        assertEquals("Assert match correct.", "  ", match.toString(1));
+        assertEquals("Assert match correct.", "", match.toString(2));
+        assertEquals("Assert match correct.", "if"+partMatch, match.toString(3));
+        assertEquals("Assert match correct.", "if"+partMatch, match.toString(4));
+        assertEquals("Assert match correct.", "if", match.toString(5));
+        assertEquals("Assert match correct.", partMatch, match.toString(6));
     }
 
     private boolean hasEnd(String line) {

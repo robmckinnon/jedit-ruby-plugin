@@ -64,7 +64,7 @@ interface MemberMatcher {
         }
 
         public final Member createMember(String name, String filePath, int startOuterOffset, int startOffset, String params, String text) {
-            return new Module(name, startOuterOffset, startOffset);
+            return new Module(name);
         }
     }
 
@@ -77,7 +77,7 @@ interface MemberMatcher {
 
         public final Member createMember(String name, String filePath, int startOuterOffset, int startOffset, String params, String text) {
             RubyPlugin.log("class: " + name, getClass());
-            return new ClassMember(name, startOuterOffset, startOffset);
+            return new ClassMember(name);
         }
     }
 
@@ -101,7 +101,7 @@ interface MemberMatcher {
             }
             params = formatParameters(params);
 
-            return new Method(name, params, filePath, fileName, startOuterOffset, startOffset, false);
+            return new Method(name, params, filePath, fileName, false);
         }
 
         private String concatLines(String text, int startOffset, boolean continueLine, String params) {
@@ -216,7 +216,7 @@ interface MemberMatcher {
 
         static final String SPACES = "                                                     ";
 
-        protected String adjustForSingleLine(String text, LineCounter lineCounter, String keyword) throws REException {
+        protected final String adjustForSingleLine(String text, LineCounter lineCounter, String keyword) throws REException {
             List<Match> oneLineMatches = getMatchList("([ ]*)("+keyword +"[ ]+)(\\w+[^;\\s]*;[ ]*)", text);
 
             if (!oneLineMatches.isEmpty() && keyword.equals("class")) {

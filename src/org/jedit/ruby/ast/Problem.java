@@ -25,6 +25,7 @@ import org.jedit.ruby.RubyPlugin;
  * @author robmckinnon at users.sourceforge.net
  */
 public abstract class Problem extends Member {
+
     private final int line;
 
     /**
@@ -32,7 +33,7 @@ public abstract class Problem extends Member {
      * @param line line number starting at 0
      */
     Problem(String message, int line) {
-        super(message, 0, 0);
+        super(message);
         this.line = line;
     }
 

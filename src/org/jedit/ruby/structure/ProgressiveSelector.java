@@ -306,10 +306,15 @@ public final class ProgressiveSelector {
 
     private static boolean needToSelectMore(JEditTextArea textArea, Selection originalSelection, boolean defaultNeed) {
         if (originalSelection != null && !defaultNeed) {
-            Selection selection = textArea.getSelection()[0];
-            int start = originalSelection.getStart();
-            int end = originalSelection.getEnd();
-            return selection.getStart() >= start && selection.getEnd() <= end;
+            Selection[] selections = textArea.getSelection();
+            if (selections == null || selections.length == 0) {
+                return true;
+            } else {
+                Selection selection = selections[0];
+                int start = originalSelection.getStart();
+                int end = originalSelection.getEnd();
+                return selection.getStart() >= start && selection.getEnd() <= end;
+            }
         } else {
             return defaultNeed;
         }

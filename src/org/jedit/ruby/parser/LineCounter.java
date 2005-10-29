@@ -79,34 +79,47 @@ public final class LineCounter {
     }
 
     /**
-     * @param line starting at 0
+     * @param index starting at 0
      */
-    public final String getLine(int line) {
-        if (line == 0) {
-            return getLine(0, getEndOffset(0));
-        } else {
-            int beginIndex = getEndOffset(line - 1) + 1;
-            int endOffset = getEndOffset(line);
-            return getLine(beginIndex, endOffset);
-        }
+    public final String getLine(int index) {
+        return getLineUpTo(index, getEndOffset(index));
     }
 
     /**
-     * Returns end offset for line.
-     *
-     * @param line starting at 0.
+     * Returns part of line at given index
+     * up to the given upToOffset.
      */
-    public final int getEndOffset(int line) {
-        return endOffsets.get(line);
+    public final String getLineUpTo(int index, int upToOffset) {
+        return getLine(getStartOffset(index), upToOffset);
+    }
+
+    /**
+     * Returns start offset for line.
+     * @param index starting at 0
+     */
+    public final int getStartOffset(int index) {
+        return (index == 0) ? 0 : getEndOffset(index - 1) + 1;
+    }
+
+    /**
+     * Returns end offset for index.
+     * @param index starting at 0.
+     */
+    public final int getEndOffset(int index) {
+        return endOffsets.get(index);
     }
 
     private String getLine(int beginIndex, int endIndex) {
-        char endChar = text.charAt(endIndex);
+        char endChar = charAt(endIndex);
         if (isNewLineCharacter(endChar)) {
             return text.substring(beginIndex, endIndex);
         } else {
             return text.substring(beginIndex, endIndex + 1);
         }
+    }
+
+    public char charAt(int index) {
+        return text.charAt(index);
     }
 
     private int handleNewLine(int line, int index, char[] chars, char character) {
@@ -127,4 +140,7 @@ public final class LineCounter {
         return character == '\n' || character == '\r';
     }
 
+    public String getText() {
+        return text;
+    }
 }

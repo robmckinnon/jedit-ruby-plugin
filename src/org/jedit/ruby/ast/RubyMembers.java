@@ -86,8 +86,16 @@ public final class RubyMembers {
 
     public final Member getPreviousMember(int caretPosition) {
         int index = getCurrentMemberIndex(caretPosition);
+        Member currentMember = memberList.get(index);
         if (index > 0) {
-            return memberList.get(index - 1);
+            Member member = memberList.get(index - 1);
+            if (member.getEndOffset() < currentMember.getEndOffset() || caretPosition == currentMember.getStartOffset()) {
+                return member;
+            } else {
+                return currentMember;
+            }
+        } else if(currentMember.getStartOffset() < caretPosition) {
+            return currentMember;
         } else {
             return null;
         }
@@ -116,12 +124,12 @@ public final class RubyMembers {
 
         for (int i = 0; memberIndex == -1 && i < memberList.size(); i++) {
             Member member = memberList.get(i);
-            int offset = member.getStartOuterOffset();
+            int start = member.getStartOffset();
 
-            if (caretPosition >= offset) {
+            if (caretPosition >= start) {
                 if (i < memberList.size() - 1) {
                     Member nextMember = memberList.get(i + 1);
-                    int nextOffset = nextMember.getStartOuterOffset();
+                    int nextOffset = nextMember.getStartOffset();
                     if (caretPosition < nextOffset) {
                         memberIndex = i;
                     }

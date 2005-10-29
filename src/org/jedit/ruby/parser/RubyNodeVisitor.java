@@ -21,11 +21,10 @@ package org.jedit.ruby.parser;
 
 import org.jruby.ast.visitor.AbstractVisitor;
 import org.jruby.ast.*;
-import org.jruby.lexer.yacc.SourcePosition;
 import org.jruby.lexer.yacc.SyntaxException;
-import org.jedit.ruby.ast.Member;
-import org.jedit.ruby.ast.Root;
-import org.jedit.ruby.ast.Method;
+import org.jruby.lexer.yacc.ISourcePosition;
+import org.jruby.evaluator.SingleNodeVisitor;
+import org.jedit.ruby.ast.*;
 import org.jedit.ruby.RubyPlugin;
 
 import java.util.List;
@@ -39,30 +38,24 @@ import java.util.Iterator;
 final class RubyNodeVisitor extends AbstractVisitor {
 
     private final List<String> namespaceNames;
+    private final List<String> compositeNamespaceNames;
     private final LinkedList<Member> currentMember;
-    private int moduleIndex;
-    private int classIndex;
     private int methodIndex;
 
-    private final List<Member> modules;
-    private final List<Member> classes;
     private final List<Member> methods;
     private final List<RubyParser.WarningListener> problemListeners;
     private final LineCounter lineCounter;
     private final NameVisitor nameVisitor;
 
-    public RubyNodeVisitor(LineCounter lineCounts, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
+    public RubyNodeVisitor(LineCounter lineCounts, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
         lineCounter = lineCounts;
         namespaceNames = new ArrayList<String>();
+        compositeNamespaceNames = new ArrayList<String>();
         currentMember = new LinkedList<Member>();
         currentMember.add(new Root(RubyPlugin.getEndOfFileOffset()));
         nameVisitor = new NameVisitor();
         problemListeners = listeners;
-        modules = moduleMembers;
-        classes = classMembers;
         methods = methodMembers;
-        moduleIndex = 0;
-        classIndex = 0;
         methodIndex = 0;
     }
 
@@ -70,17 +63,20 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return currentMember.getFirst().getChildMembersAsList();
     }
 
-    protected final void visitNode(Node node) {
-        if (printNode(node)) {
-            String name = node.getClass().getName();
-            int index = name.lastIndexOf('.');
-            SourcePosition position = node.getPosition();
-            if (position != null) {
-                System.out.print("Line " + position.getLine() + ": " + name.substring(index + 1));
-            } else {
-                System.out.print("          Node: " + name.substring(index + 1));
-            }
-        }
+    protected final SingleNodeVisitor visitNode(Node node) {
+//        if (printNode(node)) {
+//            String name = node.getClass().getName();
+//            int index = name.lastIndexOf('.');
+//            ISourcePosition position = node.getPosition();
+//            if (position != null) {
+//                System.out.print("Line " + position.getStartLine() +"-"+ position.getEndLine() +
+//                        ": " + position.getStartOffset() + "-" + position.getEndOffset() +
+//                        " " + name.substring(index + 1));
+//            } else {
+//                System.out.print("          Node: " + name.substring(index + 1));
+//            }
+//        }
+        return null;
     }
 
     private static boolean printNode(Node node) {
@@ -98,99 +94,107 @@ final class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    public final void visitBlockNode(BlockNode node) {
+    public final SingleNodeVisitor visitBlockNode(BlockNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         visitNodeIterator(node.iterator());
+        return null;
     }
 
-    public final void visitNewlineNode(NewlineNode node) {
+    public final SingleNodeVisitor visitNewlineNode(NewlineNode node) {
         visitNode(node);
         node.getNextNode().accept(this);
+        return null;
     }
 
-    public final void visitModuleNode(ModuleNode node) {
-        System.out.print("[");
-        visitNode(node);
-        node.getCPath().accept(nameVisitor);
-        String moduleName = nameVisitor.name;
-        System.out.print(": " + moduleName);
-
-        Member module;
-        try {
-            module = getMember("module", moduleIndex, modules, moduleName, node.getPosition());
-        } catch (IndexAdjustmentException e) {
-            moduleIndex = e.getIndex();
-            module = getMemberNoCheckedException("module", moduleIndex, modules, moduleName, node.getPosition());
-        }
-        moduleIndex++;
-        module.setEndOffset(getEndOffset(node));
-        populateNamespace(module);
-
-        namespaceNames.add(moduleName);
-        Member parent = currentMember.getLast();
-        parent.addChildMember(module);
-        currentMember.add(module);
-
-        node.getBodyNode().accept(this);
-
-        namespaceNames.remove(moduleName);
-        currentMember.removeLast();
-        RubyPlugin.log("]", getClass());
+    public final SingleNodeVisitor visitModuleNode(ModuleNode module) {
+//        System.out.print("[");
+        addParentNode("module", module, module, module.getBodyNode());
+//        System.out.print("]");
+        return null;
     }
 
-    public final void visitClassNode(ClassNode node) {
+    public final SingleNodeVisitor visitClassNode(ClassNode classNode) {
+        addParentNode("class", classNode, classNode, classNode.getBodyNode());
+        return null;
+    }
+
+    private void addParentNode(String memberType, Node node, IScopingNode scopeNode, ScopeNode bodyNode) {
         visitNode(node);
-        node.getCPath().accept(nameVisitor);
-        String className = nameVisitor.name;
-        System.out.print(": " + className);
+        scopeNode.getCPath().accept(nameVisitor);
+        String name = nameVisitor.name;
+//        System.out.print(": " + name);
 
-        Member clas;
-        try {
-            clas = getMember("class", classIndex, classes, className, node.getPosition());
-        } catch (IndexAdjustmentException e) {
-            classIndex = e.getIndex();
-            clas = getMemberNoCheckedException("class", classIndex, classes, className, node.getPosition());
+        Member member = new Module(name);
+        member = populateOffsets(member, node.getPosition(), memberType);
+
+        int colonNameCount = nameVisitor.namespaces.size();
+        for (String namespace : nameVisitor.namespaces) {
+            compositeNamespaceNames.add(namespace);
+            namespaceNames.add(namespace);
         }
-        classIndex++;
-        clas.setEndOffset(getEndOffset(node));
-        populateNamespace(clas);
+        nameVisitor.namespaces.clear();
+        populateNamespace(member);
+        compositeNamespaceNames.clear();
 
-        namespaceNames.add(className);
+        namespaceNames.add(name);
         Member parent = currentMember.getLast();
-        parent.addChildMember(clas);
-        currentMember.add(clas);
+        parent.addChildMember(member);
+        currentMember.add(member);
 
-        node.getBodyNode().accept(this);
+        bodyNode.accept(this);
 
-        namespaceNames.remove(className);
+        namespaceNames.remove(name);
+        while (colonNameCount > 0) {
+            namespaceNames.remove(namespaceNames.size() - 1);
+            colonNameCount--;
+        }
         currentMember.removeLast();
     }
 
-    public final void visitDefnNode(DefnNode node) {
+    public SingleNodeVisitor visitArgsCatNode(ArgsCatNode node) {
         visitNode(node);
-        String methodName = node.getName();
-        System.out.print(": " + methodName);
+        return null;
+    }
+
+    public SingleNodeVisitor visitArgsNode(ArgsNode node) {
+        visitNode(node);
+        node.accept(this);
+        return null;
+    }
+
+    public final SingleNodeVisitor visitDefnNode(DefnNode node) {
+        visitNode(node);
+//        System.out.print(": " + node.getName());
 
         Member method;
         try {
-            method = getMember("method", methodIndex, methods, node.getName(), node.getPosition());
+            method = getMember("def", null, methodIndex, methods, node.getName(), node.getPosition());
         } catch (IndexAdjustmentException e) {
             methodIndex = e.getIndex();
-            method = getMemberNoCheckedException("method", methodIndex, methods, node.getName(), node.getPosition());
+            method = getMethodNoCheckedException("def", methodIndex, methods, node.getName(), node.getPosition());
         }
         methodIndex++;
-        method.setEndOffset(getEndOffset(node));
         Member parent = currentMember.getLast();
         parent.addChildMember(method);
+        return null;
     }
 
-    public final void visitDefsNode(DefsNode node) {
+    private Member getMethodNoCheckedException(String memberType, int index, List<Member> members, String memberName, ISourcePosition position) {
+        try {
+            return getMember(memberType, null, index, members, memberName, position);
+        } catch (IndexAdjustmentException e) {
+            return throwCantFindException(memberType, memberName, position);
+        }
+    }
+
+    public final SingleNodeVisitor visitDefsNode(DefsNode node) {
         visitNode(node);
 
         Method method = (Method)methods.get(methodIndex++);
-        method.setEndOffset(getEndOffset(node));
-
+        method.setStartOffset(getStartOffset(node.getPosition()));
+        method.setEndOffset(getEndOffset(node.getPosition()));
+        method.setStartOuterOffset(getOuterOffset(method, "def "));
         String methodName = node.getName();
         String receiverName;
         if (node.getReceiverNode() instanceof ConstNode) {
@@ -210,53 +214,65 @@ final class RubyNodeVisitor extends AbstractVisitor {
         node.getBodyNode().accept(this);
 
         currentMember.removeLast();
+        return null;
     }
 
     private void populateNamespace(Member member) {
         if (namespaceNames.size() > 0) {
             String namespace = "";
-            for (String module : namespaceNames) {
-                namespace += module + "::";
+            for (String name : namespaceNames) {
+                namespace += name + "::";
             }
             member.setNamespace(namespace);
         }
-    }
-
-    private Member getMemberNoCheckedException(String memberType, int index, List<Member> members, String memberName, SourcePosition position) {
-        try {
-            return getMember(memberType, index, members, memberName, position);
-        } catch (IndexAdjustmentException e) {
-            return throwCantFindException(memberType, memberName, position);
+        if (compositeNamespaceNames.size() > 0) {
+            String namespace = "";
+            for (String name : compositeNamespaceNames) {
+                namespace += name + "::";
+            }
+            member.setCompositeNamespace(namespace);
         }
     }
 
-    private Member getMember(String memberType, int index, List<Member> members, String memberName, SourcePosition position) throws IndexAdjustmentException {
-        Member member;
-        try {
-            member = members.get(index);
-            if (!memberName.equals(member.getShortName())) {
-                index++;
-                while(index < members.size()) {
-                    member = members.get(index);
-                    if (memberName.equals(member.getShortName())) {
-                        throw new IndexAdjustmentException(index);
-                    } else {
-                        index++;
+    private Member getMember(String memberType, Member member, int index, List<Member> members, String memberName, ISourcePosition position) throws IndexAdjustmentException {
+        if (member == null) {
+            try {
+                member = members.get(index);
+                if (!memberName.equals(member.getShortName())) {
+                    index++;
+                    while(index < members.size()) {
+                        member = members.get(index);
+                        if (memberName.equals(member.getShortName())) {
+                            throw new IndexAdjustmentException(index);
+                        } else {
+                            index++;
+                        }
                     }
+                    throw new Exception();
                 }
-                throw new Exception();
-            }
-        } catch (Exception e) {
-            if (e instanceof IndexAdjustmentException) {
-                throw (IndexAdjustmentException)e;
-            } else {
-                return throwCantFindException(memberType, memberName, position);
+            } catch (Exception e) {
+                if (e instanceof IndexAdjustmentException) {
+                    throw (IndexAdjustmentException)e;
+                } else {
+                    return throwCantFindException(memberType, memberName, position);
+                }
             }
         }
+        return populateOffsets(member, position, memberType);
+    }
+
+    private Member populateOffsets(Member member, ISourcePosition position, String memberType) {
+        member.setStartOffset(getStartOffset(position));
+        member.setEndOffset(getEndOffset(position));
+        member.setStartOuterOffset(getOuterOffset(member, memberType+" "));
         return member;
     }
 
-    private Member throwCantFindException(String memberType, String memberName, SourcePosition position) {
+    private static int getStartOffset(ISourcePosition position) {
+        return position.getStartOffset() + 1;
+    }
+
+    private Member throwCantFindException(String memberType, String memberName, ISourcePosition position) {
         String message = "parser can't find " + memberType + " " + memberName;
         for (RubyParser.WarningListener listener : problemListeners) {
             listener.error(position, message);
@@ -264,56 +280,77 @@ final class RubyNodeVisitor extends AbstractVisitor {
         throw new SyntaxException(position, message);
     }
 
-    public final void visitScopeNode(ScopeNode node) {
+    public final SingleNodeVisitor visitScopeNode(ScopeNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         if (node.getBodyNode() != null) {
             node.getBodyNode().accept(this);
         }
+        return null;
     }
 
-    public final void visitIfNode(IfNode node) {
+    public final SingleNodeVisitor visitIfNode(IfNode node) {
         visitNode(node);
         if (node.getThenBody() != null) {
             node.getThenBody().accept(this);
         }
+        return null;
     }
 
-    public final void visitIterNode(IterNode node) {
+    public final SingleNodeVisitor visitIterNode(IterNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         if (node.getBodyNode() != null) {
             node.getBodyNode().accept(this);
         }
+        return null;
     }
 
-    public final void visitFCallNode(FCallNode node) {
+    public final SingleNodeVisitor visitFCallNode(FCallNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
+        return null;
     }
 
-    public final void visitClassVarDeclNode(ClassVarDeclNode node) {
+    public final SingleNodeVisitor visitClassVarDeclNode(ClassVarDeclNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
+        return null;
     }
 
-    public final void visitClassVarAsgnNode(ClassVarAsgnNode node) {
+    public final SingleNodeVisitor visitClassVarAsgnNode(ClassVarAsgnNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
+        return null;
     }
 
-    private int getEndOffset(Node node) {
-        int endLine = getEndLine(node);
-        return lineCounter.getEndOffset(endLine);
+    private int getOuterOffset(Member clas, String keyword) {
+        int startOffset = clas.getStartOffset();
+        int index = lineCounter.getLineAtOffset(startOffset);
+        String line = lineCounter.getLineUpTo(index, startOffset);
+        return line.lastIndexOf(keyword) + lineCounter.getStartOffset(index);
     }
 
-    private int getEndLine(Node node) {
-        int line = node.getPosition().getLine() - 1;
-        String text = lineCounter.getLine(line);
-        if (text.indexOf("end") == -1 && text.indexOf("}") == -1) {
-            line = node.getPosition().getLine();
+    private int getEndOffset(ISourcePosition position) {
+        int end = position.getEndOffset();
+        if (lineCounter.charAt(end - 3) == 'e'
+                && lineCounter.charAt(end - 2) == 'n'
+                && lineCounter.charAt(end - 1) == 'd') {
+            return end;
         }
-        return line;
+
+        char endChar = lineCounter.charAt(end);
+        switch (endChar) {
+            case 'd': return end + 1;
+            case 'n': return end + 2;
+            case 'e': return end + 3;
+        }
+        int endLine = position.getEndLine();
+        String line = lineCounter.getLine(endLine);
+        int start = lineCounter.getStartOffset(endLine);
+        int beginIndex = end - start;
+        String text = line.substring(beginIndex);
+        return text.indexOf("end") + 3 + beginIndex;
     }
 
     private static final class IndexAdjustmentException extends Exception {
@@ -329,13 +366,37 @@ final class RubyNodeVisitor extends AbstractVisitor {
     }
 
     private static final class NameVisitor extends AbstractVisitor {
+        private List<String> namespaces;
         private String name;
+        private int visits;
 
-        protected final void visitNode(Node node) {
+        public NameVisitor() {
+            namespaces = new ArrayList<String>();
+            visits = 0;
         }
 
-        public final void visitColon2Node(Colon2Node node) {
-            this.name = node.getName();
+        protected final SingleNodeVisitor visitNode(Node node) {
+            return null;
+        }
+
+        public final SingleNodeVisitor visitColon2Node(Colon2Node node) {
+            visits++;
+            if (node.getLeftNode() != null) {
+                node.getLeftNode().accept(this);
+            }
+            visits--;
+
+            if (visits == 0) {
+                this.name = node.getName();
+            } else {
+                namespaces.add(node.getName());
+            }
+            return null;
+        }
+
+        public SingleNodeVisitor visitConstNode(ConstNode node) {
+            namespaces.add(node.getName());
+            return null;
         }
     }
 }

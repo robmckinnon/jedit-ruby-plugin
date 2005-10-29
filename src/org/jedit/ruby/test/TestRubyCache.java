@@ -33,12 +33,12 @@ import junit.framework.TestCase;
 public final class TestRubyCache extends TestCase {
 
     private void addClassesToCache() {
-        RubyCache.instance().add(TestRubyParser.CLASS, "CLASS");
-        RubyCache.instance().add(TestRubyParser.ARR_CLASS, "ARR_CLASS");
+        RubyCache.instance().addMembers(TestRubyParser.CLASS, "CLASS");
+        RubyCache.instance().addMembers(TestRubyParser.ARR_CLASS, "ARR_CLASS");
     }
 
     private void addModuleToCache() {
-        RubyCache.instance().add(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
+        RubyCache.instance().addMembers(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
     }
 
     public final void testGetMethods() {

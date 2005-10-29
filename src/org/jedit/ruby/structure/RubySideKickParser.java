@@ -25,7 +25,7 @@ import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
 import org.gjt.sp.jedit.syntax.Token;
-import org.jruby.lexer.yacc.SourcePosition;
+import org.jruby.lexer.yacc.ISourcePosition;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.ast.RubyMembers;
@@ -134,16 +134,16 @@ public final class RubySideKickParser extends SideKickParser {
         }
     }
 
-    private void addWarning(String message, SourcePosition position, DefaultErrorSource errorSource) {
+    private void addWarning(String message, ISourcePosition position, DefaultErrorSource errorSource) {
         addToErrorList(ErrorSource.WARNING, position, errorSource, message);
     }
 
-    private void addError(String message, SourcePosition position, DefaultErrorSource errorSource) {
+    private void addError(String message, ISourcePosition position, DefaultErrorSource errorSource) {
         addToErrorList(ErrorSource.ERROR, position, errorSource, message);
     }
 
-    private void addToErrorList(int type, SourcePosition position, DefaultErrorSource errorSource, String message) {
-        int line = position == null ? 0 : position.getLine() - 1;
+    private void addToErrorList(int type, ISourcePosition position, DefaultErrorSource errorSource, String message) {
+        int line = position == null ? 0 : position.getEndLine();
         String file = position == null ? null : position.getFile();
 
         int startOffset = RubyPlugin.getStartOffset(line);
@@ -181,7 +181,11 @@ public final class RubySideKickParser extends SideKickParser {
             this.errorSource = errorSource;
         }
 
-        public final void warn(SourcePosition position, String message) {
+        public boolean isVerbose() {
+            return false;
+        }
+
+        public final void warn(ISourcePosition position, String message) {
             addWarning(message, position, errorSource);
         }
 
@@ -189,7 +193,7 @@ public final class RubySideKickParser extends SideKickParser {
             addWarning(message, null, errorSource);
         }
 
-        public final void warning(SourcePosition position, String message) {
+        public final void warning(ISourcePosition position, String message) {
             addWarning(message, position, errorSource);
         }
 
@@ -197,7 +201,7 @@ public final class RubySideKickParser extends SideKickParser {
             addWarning(message, null, errorSource);
         }
 
-        public final void error(SourcePosition position, String message) {
+        public final void error(ISourcePosition position, String message) {
             addError(message, position, errorSource);
         }
 

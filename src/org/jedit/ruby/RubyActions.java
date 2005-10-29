@@ -118,7 +118,7 @@ public final class RubyActions {
                 if (member != null) {
                     textArea.setCaretPosition(member.getStartOffset(), true);
                 } else {
-                    textArea.setCaretPosition(textArea.getBufferLength() - 1, true);
+                    textArea.setCaretPosition(textArea.getBufferLength(), true);
                 }
             }
         } else {

@@ -195,7 +195,7 @@ public final class RDocViewer extends JPanel
         return members;
     }
 
-    private void populateMatches(String text, boolean matchLength, List<Member> members) {
+    private static void populateMatches(String text, boolean matchLength, List<Member> members) {
         for (Member member : RubyCache.instance().getAllImmediateMembers()) {
             if (isMatch(member.getFullName(), text, matchLength)) {
                 members.add(member);

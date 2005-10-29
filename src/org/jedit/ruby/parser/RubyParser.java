@@ -25,7 +25,8 @@ import org.gjt.sp.jedit.Buffer;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.ast.*;
 import org.jedit.ruby.ast.Error;
-import org.jruby.lexer.yacc.SourcePosition;
+import org.jruby.lexer.yacc.ISourcePosition;
+import org.jruby.common.IRubyWarnings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,8 +50,6 @@ public final class RubyParser {
     private static final RubyParser instance = new RubyParser();
 
     private final RubyParser.LogWarningListener logListener;
-    private final MemberMatcher moduleMatcher;
-    private final MemberMatcher classMatcher;
     private final MemberMatcher methodMatcher;
 
     private final Map<File, Long> fileToLastModified;
@@ -61,8 +60,6 @@ public final class RubyParser {
 
     private RubyParser() {
         logListener = new LogWarningListener();
-        moduleMatcher = new MemberMatcher.ModuleMatcher();
-        classMatcher = new MemberMatcher.ClassMatcher();
         methodMatcher = new MemberMatcher.MethodMatcher();
         fileToLastModified = new HashMap<File, Long>();
         fileToOldText = new HashMap<File, String>();
@@ -142,14 +139,11 @@ public final class RubyParser {
 
         try {
             LineCounter lineCounter = new LineCounter(text);
-            List<Member> modules = createMembers(text, filePath, lineCounter, moduleMatcher);
-            List<Member> classes = createMembers(text, filePath, lineCounter, classMatcher);
-            // replace class x; .... end
 
             List<Member> methods = createMembers(text, filePath, lineCounter, methodMatcher);
             List<WarningListener> listeners = getListeners(listener);
 
-            members = JRubyParser.getMembers(text, modules, classes, methods, listeners, filePath, lineCounter);
+            members = JRubyParser.getMembers(text, methods, listeners, filePath, lineCounter);
         } catch (REException e) {
             e.printStackTrace();
         }
@@ -186,17 +180,9 @@ public final class RubyParser {
      * Interface defining methods called back
      * with parsing warnings.
      */
-    public static interface WarningListener {
+    public static interface WarningListener extends IRubyWarnings {
 
-        void warn(SourcePosition position, String message);
-
-        void warn(String message);
-
-        void warning(SourcePosition position, String message);
-
-        void warning(String message);
-
-        void error(SourcePosition position, String message);
+        void error(ISourcePosition position, String message);
 
         void clear();
     }
@@ -209,7 +195,11 @@ public final class RubyParser {
             return problems;
         }
 
-        public final void warn(SourcePosition position, String message) {
+        public boolean isVerbose() {
+            return false;
+        }
+
+        public final void warn(ISourcePosition position, String message) {
             problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
@@ -219,7 +209,7 @@ public final class RubyParser {
             RubyPlugin.log("warn:  " + message, getClass());
         }
 
-        public final void warning(SourcePosition position, String message) {
+        public final void warning(ISourcePosition position, String message) {
             problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
@@ -229,8 +219,8 @@ public final class RubyParser {
             problems.add(new Warning(message, 0));
         }
 
-        public final void error(SourcePosition position, String message) {
-            RubyPlugin.log("error: " + position.getFile() + " " + position.getLine() + " " + message, getClass());
+        public final void error(ISourcePosition position, String message) {
+            RubyPlugin.log("error: " + position.getFile() + " " + position.getEndLine() + " " + message, getClass());
             problems.add(new Error(message, getLine(position)));
         }
 
@@ -238,12 +228,12 @@ public final class RubyParser {
             problems.clear();
         }
 
-        private void log(SourcePosition position, String message) {
-            RubyPlugin.log("warn:  " + position.getFile() + " " + position.getLine() + " " + message, getClass());
+        private void log(ISourcePosition position, String message) {
+            RubyPlugin.log("warn:  " + position.getFile() + " " + position.getEndLine() + " " + message, getClass());
         }
 
-        private int getLine(SourcePosition position) {
-            return position == null ? 0 : position.getLine() - 1;
+        private int getLine(ISourcePosition position) {
+            return position == null ? 0 : position.getEndLine();
         }
 
     }

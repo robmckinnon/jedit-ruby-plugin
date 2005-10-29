@@ -24,7 +24,6 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.Macros;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
-import org.jedit.ruby.structure.*;
 import org.jedit.ruby.structure.TypeAheadPopup;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.utils.CommandUtils;
@@ -118,7 +117,7 @@ public final class RDocSeacher {
                         methodName = methodName.substring(index + adj);
                     }
 
-                    Method method = new Method(methodName, null, "none", "none", 0, 0, isClassMethod);
+                    Method method = new Method(methodName, null, "none", "none", isClassMethod);
                     method.setNamespace(namespace);
                     methods.add(method);
                 }
@@ -162,7 +161,7 @@ public final class RDocSeacher {
         }
     }
 
-    private String rri(String searchTerm) throws IOException, InterruptedException {
+    private static String rri(String searchTerm) throws IOException, InterruptedException {
         File resultFile = CommandUtils.getStoragePath("ri_result.txt");
         String command = getRriCommand(resultFile, searchTerm);
         CommandUtils.getOutput(command, false);

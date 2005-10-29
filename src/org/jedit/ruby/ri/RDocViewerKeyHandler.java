@@ -103,13 +103,13 @@ final class RDocViewerKeyHandler extends KeyAdapter {
         event.consume();
     }
 
-    private void handleOtherKeys(KeyEvent event) {
+    private static void handleOtherKeys(KeyEvent event) {
         if (event.isAltDown() || event.isMetaDown()) {
-            char keyChar = event.getKeyChar();
-            boolean handled = false;
-            if (handled) {
-                event.consume();
-            }
+//            char keyChar = event.getKeyChar();
+//            boolean handled = false;
+//            if (handled) {
+//                event.consume();
+//            }
         }
     }
 

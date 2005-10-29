@@ -7,9 +7,8 @@ import org.jruby.lexer.yacc.SyntaxException;
 import org.jruby.parser.RubyParserConfiguration;
 import org.jruby.parser.DefaultRubyParser;
 import org.jruby.parser.RubyParserResult;
-import org.jruby.parser.SyntaxErrorState;
-import org.jruby.common.RubyWarnings;
 import org.jruby.common.NullWarnings;
+import org.jruby.common.IRubyWarnings;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.RubyPlugin;
 
@@ -24,11 +23,11 @@ public final class JRubyParser {
 
     private static final JRubyParser instance = new JRubyParser();
 
-    private static String found;
-    private static String expected;
-    private static String nothing;
+    private static String found = "found";
+    private static String expected = "expected";
+    private static String nothing = "nothing";
 
-    private RubyWarnings warnings;
+    private IRubyWarnings warnings;
 
     /** singleton private constructor */
     private JRubyParser() {
@@ -46,16 +45,16 @@ public final class JRubyParser {
         JRubyParser.nothing = nothing;
     }
 
-    static List<Member> getMembers(String text, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath, LineCounter lineCounter) {
-        return instance.parse(text, listeners, moduleMembers, classMembers, methodMembers, filePath, lineCounter);
+    static List<Member> getMembers(String text, List<Member> methodMembers, List<RubyParser.WarningListener> listeners, String filePath, LineCounter lineCounter) {
+        return instance.parse(text, listeners, methodMembers, filePath, lineCounter);
     }
 
-    private List<Member> parse(String text, List<RubyParser.WarningListener> listeners, List<Member> moduleMembers, List<Member> classMembers, List<Member> methodMembers, String filePath, LineCounter lineCounter) {
+    private List<Member> parse(String text, List<RubyParser.WarningListener> listeners, List<Member> methodMembers, String filePath, LineCounter lineCounter) {
         this.warnings = new Warnings(listeners);
 
         Reader content = new StringReader(text);
         List<Member> members;
-        RubyNodeVisitor visitor = new RubyNodeVisitor(lineCounter, moduleMembers, classMembers, methodMembers, listeners);
+        RubyNodeVisitor visitor = new RubyNodeVisitor(lineCounter, methodMembers, listeners);
 
         try {
             Node node = parse(filePath, content, new RubyParserConfiguration());
@@ -67,7 +66,7 @@ public final class JRubyParser {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.error(e.getPosition(), e.getMessage());
             }
-            String message = e.getPosition().getLine() + ": " + e.getMessage();
+            String message = e.getPosition().getEndLine() + ": " + e.getMessage();
             RubyPlugin.log(message, getClass());
             members = null;
         }
@@ -78,11 +77,11 @@ public final class JRubyParser {
     private Node parse(String name, Reader content, RubyParserConfiguration config) {
         DefaultRubyParser parser = new DefaultRubyParser() {
             /** Hack to ensure we get original error message */
-            public void yyerror(String message, Object syntaxErrorState) {
+            public void yyerror(String message, String[] expected, String found) {
                 try {
-                    super.yyerror(message, syntaxErrorState);
+                    super.yyerror(message, expected, found);
                 } catch (SyntaxException e) {
-                    String errorMessage = formatErrorMessage(message, syntaxErrorState);
+                    String errorMessage = formatErrorMessage(message, expected, found);
                     throw new SyntaxException(e.getPosition(), errorMessage);
                 }
             }
@@ -95,23 +94,16 @@ public final class JRubyParser {
         return result.getAST();
     }
 
-    private String formatErrorMessage(String message, Object syntaxErrorState) {
+    private static String formatErrorMessage(String message, String[] expectedValues, String found) {
         if (message.equals("syntax error")) {
             message = "";
-        } else {
-            message += ": ";
         }
 
         StringBuffer buffer = new StringBuffer(message);
-        if (syntaxErrorState instanceof SyntaxErrorState) {
-            SyntaxErrorState errorState = (SyntaxErrorState) syntaxErrorState;
-            String[] expectedValues = errorState.expected();
-            String found = errorState.found();
-            if (found != null) {
-                buffer.append(JRubyParser.found).append(" ").append(reformatValue(found)).append("; ");
-            }
+        if (found != null) {
+            buffer.append(JRubyParser.found).append(" ").append(reformatValue(found)).append("; ");
             buffer.append(expected).append(" ");
-            if (expectedValues.length == 0) {
+            if (expectedValues == null || expectedValues.length == 0) {
                 buffer.append(nothing);
             } else {
                 for (String value : expectedValues) {
@@ -120,6 +112,7 @@ public final class JRubyParser {
                 }
             }
         }
+
         return buffer.toString();
     }
 

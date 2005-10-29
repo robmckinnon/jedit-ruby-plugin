@@ -29,15 +29,22 @@ import java.util.*;
  */
 public final class RubyCache {
 
-    private static final RubyCache instance = new RubyCache();
+    private static RubyCache instance;
 
     private final NameToMethods nameToMethods;
     private final NameToParents nameToParents;
     private final MethodToParents methodToParents;
     private final ParentToMethods parentToMethods;
     private final ParentToImmediateMethods parentToImmediateMethods;
-
     private final Map pathToMembers;
+
+    public static synchronized void resetCache() {
+        instance = new RubyCache();
+    }
+
+    public static synchronized RubyCache instance() {
+        return instance;
+    }
 
     private RubyCache() {
         nameToMethods = new NameToMethods();
@@ -50,26 +57,14 @@ public final class RubyCache {
         parentToMethods.setNameToParents(nameToParents);
     }
 
-    public static RubyCache instance() {
-        return instance;
-    }
-
-    public final synchronized void clear() {
-        pathToMembers.clear();
-        methodToParents.clear();
-        parentToMethods.clear();
-        parentToImmediateMethods.clear();
-        nameToMethods.clear();
-    }
-
-    public final synchronized void add(String text, String path) {
+    public final synchronized void addMembers(String text, String path) {
         RubyMembers members = RubyParser.getMembers(text, path, null, true);
-        add(members, path);
+        addMembers(members, path);
     }
 
-    public final synchronized void add(RubyMembers members, String path) {
+    public final synchronized void addMembers(RubyMembers members, String path) {
         if (!members.containsErrors()) {
-            add(path, members);
+            add(members, path);
         }
     }
 
@@ -119,8 +114,8 @@ public final class RubyCache {
         }
     }
 
-    private void add(String path, RubyMembers members) {
-        parentToMethods.reset();
+    private void add(RubyMembers members, String path) {
+        parentToMethods.resetAllMethodsList();
         pathToMembers.put(path, members);
         members.visitMembers(new MemberVisitorAdapter() {
             public void handleModule(Module module) {

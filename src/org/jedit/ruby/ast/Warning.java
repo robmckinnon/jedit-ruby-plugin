@@ -23,6 +23,7 @@ package org.jedit.ruby.ast;
  * @author robmckinnon at users.sourceforge.net
  */
 public final class Warning extends Problem {
+
     /**
      * @param message warning message
      * @param line line number starting at 0

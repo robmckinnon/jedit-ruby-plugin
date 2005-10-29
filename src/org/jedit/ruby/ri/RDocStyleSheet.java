@@ -86,7 +86,7 @@ final class RDocStyleSheet extends StyleSheet {
 
     private Rule em() {
         Rule r = new Rule("em");
-//        r.add("font-style", "italic");
+//        r.addMembers("font-style", "italic");
         r.add("color", getColor(Token.KEYWORD1));
         return r;
     }
@@ -105,7 +105,7 @@ final class RDocStyleSheet extends StyleSheet {
         return getHexColor(color);
     }
 
-    private String getHexColor(Color color) {
+    private static String getHexColor(Color color) {
         StringBuffer buffer = new StringBuffer("#");
         buffer.append(getHex(color.getRed()));
         buffer.append(getHex(color.getGreen()));

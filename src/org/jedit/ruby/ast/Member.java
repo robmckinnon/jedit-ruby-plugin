@@ -38,24 +38,30 @@ public abstract class Member implements Comparable<Member> {
     private List<Member> childMembers;
 
     private String namespace;
+    private String compositeNamespace;
     private String name;
     private final String shortName;
     private String documentation;
-    private final int startOuterOffset;
-    private final int startOffset;
+    private int startOuterOffset;
+    private int startOffset;
     private int endOffset;
 
-    public Member(String name, int startOuterOffset, int startOffset) {
+    public Member(String name) {
         parentCount = -1;
-        this.startOffset = startOffset;
-        this.startOuterOffset = startOuterOffset;
-        setEndOffset(startOffset);
         setName(name);
-        shortName = (new StringTokenizer(name, " (")).nextToken();
+        shortName = name.indexOf("(") != -1 ? (new StringTokenizer(name, " (")).nextToken() : name;
     }
 
     public int compareTo(Member member) {
         return getFullName().compareTo(member.getFullName());
+    }
+
+    public final void setStartOuterOffset(int outerOffset) {
+        startOuterOffset = outerOffset;
+    }
+
+    public final void setStartOffset(int startOffset) {
+        this.startOffset = startOffset;
     }
 
     public final void setEndOffset(int endOffset) {
@@ -76,6 +82,10 @@ public abstract class Member implements Comparable<Member> {
         return namespace;
     }
 
+    public final void setCompositeNamespace(String namespace) {
+        compositeNamespace = namespace;
+    }
+
     public final void setNamespace(String namespace) {
         this.namespace = namespace;
     }
@@ -89,6 +99,20 @@ public abstract class Member implements Comparable<Member> {
             return name;
         } else {
             return namespace + name;
+        }
+    }
+
+    /**
+     * Returns composite name for members
+     * that have been defined in code
+     * in the form
+     * module Www::Xxx or class Yyy::Zzz.
+     */
+    public String getCompositeName() {
+        if (compositeNamespace == null) {
+            return name;
+        } else {
+            return compositeNamespace + name;
         }
     }
 

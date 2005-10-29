@@ -28,8 +28,8 @@ public final class ClassMember extends ParentMember {
 
     private String fullDocumentation;
 
-    public ClassMember(String name, int startOuterOffset, int startOffset) {
-        super(name, startOuterOffset, startOffset);
+    public ClassMember(String name) {
+        super(name);
     }
 
     public final void accept(MemberVisitor visitor) {

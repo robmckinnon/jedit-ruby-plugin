@@ -223,7 +223,7 @@ public final class CodeAnalyzer {
         return demarked;
     }
 
-    private boolean demarked(String rest) {
+    private static boolean demarked(String rest) {
         boolean demarked = matches("{", "}", rest) || matches("(", ")", rest) || matches("[", "]", rest);
 
         if (!demarked) {

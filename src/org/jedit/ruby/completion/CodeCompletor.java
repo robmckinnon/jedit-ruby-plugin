@@ -119,7 +119,7 @@ public final class CodeCompletor {
         return methods;
     }
 
-    private Set<Method> completeUsingMethods(List<String> methods) {
+    private static Set<Method> completeUsingMethods(List<String> methods) {
         Set<Member> members = null;
 
         for (String method : methods) {

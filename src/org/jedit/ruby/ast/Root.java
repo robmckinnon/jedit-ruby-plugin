@@ -25,7 +25,7 @@ package org.jedit.ruby.ast;
 public final class Root extends Member {
 
     public Root(int endOffset) {
-        super("root", 0, 0);
+        super("root");
         setEndOffset(endOffset);
     }
 

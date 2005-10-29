@@ -109,6 +109,11 @@ public final class AutoIndentAndInsertEnd {
         } else if (trimLine.startsWith("else") || trimLine.startsWith("elsif")) {
             handleElse(trimLine, row);
         } else {
+//            String text = area.getText();
+//            int offset = area.getCaretPosition();
+//            if (text.indexOf('\n', offset) == text.lastIndexOf('\n', offset)) {
+//                area.setText(text + '\n');
+//            }
             handleInsertEnter(trimLine, row, line);
         }
     }
@@ -145,18 +150,6 @@ public final class AutoIndentAndInsertEnd {
                 area.shiftIndentLeft();
             }
         }
-    }
-
-    private String adjustForIfBracket(String line) {
-        int ifBracket = line.indexOf("if(");
-        if (ifBracket != -1) {
-            int endBracket = line.indexOf(")");
-            if (endBracket != -1) {
-                String suffix = endBracket == (line.length() -1) ? "" : line.substring(endBracket + 1);
-                line = line.substring(0, ifBracket) + "if " + line.substring(ifBracket+3, endBracket) + " " + suffix;
-            }
-        }
-        return line;
     }
 
     private void handleElse(String trimLine, int row) {
@@ -303,13 +296,7 @@ public final class AutoIndentAndInsertEnd {
             area.deleteLine();
         }
 
-        int caretLine = area.getCaretLine() + 1;
-        int lineCount = area.getLineCount();
-        RubyPlugin.log(caretLine + " " + lineCount, getClass());
-        if (caretLine != lineCount) {
-            area.goToPrevLine(false);
-        }
-
+        area.goToPrevLine(false);
         area.goToEndOfWhiteSpace(false);
         area.insertEnterAndIndent();
         area.selectLine();
@@ -455,16 +442,16 @@ public final class AutoIndentAndInsertEnd {
     /**
      * matches other syntax that requires end
      */
-    private static final class MatchRegExp extends IndentRegularExpression {
-        private static final RegularExpression instance = new MatchRegExp();
-        protected final String getPattern() {
-            String indent = "(\\s*)";
-            String leadingText = "([^#]*)";
-            String trailingSpace = "\\s*";
+    public static final class MatchRegExp extends IndentRegularExpression {
+        public static final RegularExpression instance = new MatchRegExp();
+        private static final String indent = "(\\s*)";
+        private static final String leadingText = "([^#]*)";
+        private static final String trailingSpace = "\\s*";
 
+        protected final String getPattern() {
             return indent + leadingText
                     + "("
-                    + "((if|for|while|until|unless|def|case|class|module)(\\s+\\S+)+)"
+                    + "((if|for|while|until|unless|def|case|class|module)((?:\\s|\\()\\s*\\S+)+)"
                     + "|"
                     + "(begin|loop[ ]do|do)"
                     + ")" + trailingSpace;

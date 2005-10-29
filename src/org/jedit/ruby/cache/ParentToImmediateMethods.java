@@ -55,7 +55,7 @@ final class ParentToImmediateMethods {
     }
 
     /**
-     * Note: Have to add methods separately because there
+     * Note: Have to addMembers methods separately because there
      * may be some classes defined across more than one file.
      */
     final void add(ParentMember member) {

@@ -40,8 +40,8 @@ public final class Method extends Member {
     private boolean isClassMethod;
     private boolean hasParameters;
 
-    public Method(String name, String params, String filePath, String fileName, int startOuterOffset, int startOffset, boolean classMethod) {
-        super(params == null ? name : name + params, startOuterOffset, startOffset);
+    public Method(String name, String params, String filePath, String fileName, boolean classMethod) {
+        super(params == null ? name : name + params);
         this.filePath = filePath;
         this.fileName = fileName;
         isClassMethod = classMethod;
@@ -291,7 +291,7 @@ public final class Method extends Member {
         removeType("Fixnum", "0.0", result, types);
     }
 
-    private void removeType(String parentMemberName, String match, Result result, Set<Member> types) {
+    private static void removeType(String parentMemberName, String match, Result result, Set<Member> types) {
         if (result.has(match)) {
             types.remove(getParentMember(parentMemberName));
         }
@@ -309,7 +309,7 @@ public final class Method extends Member {
         }
     }
 
-    private void addType(String parentMemberName, Set<Member> types) {
+    private static void addType(String parentMemberName, Set<Member> types) {
         types.add(getParentMember(parentMemberName));
     }
 
