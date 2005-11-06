@@ -24,7 +24,6 @@ import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
-import org.gjt.sp.jedit.syntax.Token;
 import org.jruby.lexer.yacc.ISourcePosition;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
@@ -45,9 +44,11 @@ public final class RubySideKickParser extends SideKickParser {
 
     private static DefaultErrorSource errorSource;
     private static final ErrorSource.Error[] EMPTY_ERROR_LIST = new ErrorSource.Error[0];
+    private RubyTokenHandler tokenHandler;
 
     public RubySideKickParser() {
         super("ruby");
+        tokenHandler = new RubyTokenHandler();
     }
 
     public final boolean supportsCompletion() {
@@ -60,7 +61,7 @@ public final class RubySideKickParser extends SideKickParser {
 
     public static ErrorSource.Error[] getErrors() {
         ErrorSource.Error[] errors = errorSource.getAllErrors();
-        if(errors != null) {
+        if (errors != null) {
             return errors;
         } else {
             return EMPTY_ERROR_LIST;
@@ -78,7 +79,7 @@ public final class RubySideKickParser extends SideKickParser {
 
         if (!members.containsErrors()) {
             addNodes(parentNode, members.getMembers(), buffer);
-        } else if(RubyParser.hasLastGoodMembers(buffer)) {
+        } else if (RubyParser.hasLastGoodMembers(buffer)) {
             members = RubyParser.getLastGoodMembers(buffer);
             addNodes(parentNode, members.combineMembersAndProblems(0), buffer);
         } else {
@@ -96,7 +97,7 @@ public final class RubySideKickParser extends SideKickParser {
 
     public final SideKickCompletion complete(EditPane editPane, int caret) {
         RubyCompletion completion = null;
-        Token syntaxType = RubyPlugin.getToken(editPane.getBuffer(), caret);
+        RubyToken syntaxType = tokenHandler.getTokenAtCaret(editPane.getBuffer(), caret);
 
         if (!ignore(syntaxType)) {
             RubyPlugin.log("completing", getClass());
@@ -115,22 +116,13 @@ public final class RubySideKickParser extends SideKickParser {
         return completion;
     }
 
-    private boolean ignore(Token token) {
-        switch(token.id) {
-            case Token.COMMENT1:
-            case Token.COMMENT2:
-            case Token.COMMENT3:
-            case Token.COMMENT4:
-            case Token.LITERAL1:
-            case Token.LITERAL2:
-            case Token.LITERAL3:
-            case Token.LITERAL4:
-                RubyPlugin.log("ignoring: " + Token.TOKEN_TYPES[token.id], getClass());
-                return true;
-            default:
-                String tokenType = token.id < Token.TOKEN_TYPES.length ? Token.TOKEN_TYPES[token.id] : String.valueOf(token.id);
-                RubyPlugin.log("not ignoring: " + tokenType, getClass());
-                return false;
+    private boolean ignore(RubyToken token) {
+        if (token.isComment() || token.isLiteral()) {
+            RubyPlugin.log("ignoring: " + token, getClass());
+            return true;
+        } else {
+            RubyPlugin.log("not ignoring: " + token, getClass());
+            return false;
         }
     }
 
@@ -158,8 +150,8 @@ public final class RubySideKickParser extends SideKickParser {
     }
 
     private void addNodes(DefaultMutableTreeNode parentNode, Member[] members, Buffer buffer) {
-        if(members != null) {
-            for(Member member : members) {
+        if (members != null) {
+            for (Member member : members) {
                 MemberNode node = new org.jedit.ruby.structure.MemberNode(member);
                 node.start = buffer.createPosition(Math.min(buffer.getLength(), member.getStartOffset()));
                 node.end = buffer.createPosition(Math.min(buffer.getLength(), member.getEndOffset()));

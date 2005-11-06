@@ -47,6 +47,15 @@ public final class RiParser {
         RubyCache.instance().populateSuperclassMethods();
     }
 
+    private static List<String> getRDocExcludePatterns() {
+        List<String> excludePatterns = new ArrayList<String>();
+        if (!jEdit.getBooleanProperty(RDocViewer.INCLUDE_RAILS, true)) {
+            excludePatterns.add("gems/Action");
+            excludePatterns.add("gems/Active");
+        }
+        return excludePatterns;
+    }
+
     private static void copyOverRubyCode() {
         try {
             copyOverFile("rdoc_to_java.rb");
@@ -96,6 +105,7 @@ public final class RiParser {
     }
 
     private static List<JarEntry> getEntries() {
+        List<String> rdocExcludePatterns = getRDocExcludePatterns();
         List<JarEntry> entries = new ArrayList<JarEntry>();
         try {
             File file = getJarFile();
@@ -103,9 +113,20 @@ public final class RiParser {
             JarInputStream jar = new JarInputStream(new FileInputStream(file));
             JarEntry entry = jar.getNextJarEntry();
             while(entry != null) {
-                if(!entry.isDirectory() && entry.getName().endsWith(".dat")) {
-                    log(entry.getName());
-                    entries.add(entry);
+                String name = entry.getName();
+                if(!entry.isDirectory() && name.endsWith(".dat")) {
+                    boolean exclude = false;
+
+                    for (String excludePattern : rdocExcludePatterns) {
+                        if (name.indexOf(excludePattern) != -1) {
+                            exclude = true;
+                            break;
+                        }
+                    }
+
+                    if (!exclude) {
+                        entries.add(entry);
+                    }
                 }
                 entry = jar.getNextJarEntry();
             }

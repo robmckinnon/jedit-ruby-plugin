@@ -19,22 +19,22 @@
  */
 package org.jedit.ruby.structure;
 
-import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.TextUtilities;
-import org.gjt.sp.jedit.syntax.Token;
-import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
+import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.jedit.ruby.RubyPlugin;
-import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.RubyMembers;
+import org.jedit.ruby.parser.RubyParser;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
 public final class ProgressiveSelector {
+
+    private static RubyTokenHandler tokenHandler = new RubyTokenHandler();
 
     public static void doProgressiveSelection(View view) {
         JEditTextArea textArea = view.getTextArea();
@@ -50,7 +50,7 @@ public final class ProgressiveSelector {
         boolean needToSelectMoreDefault = true;
 
         if (!matchesLiteralChar(text.charAt(caretPosition))) {
-            if(!(caretPosition > 0 && matchesLiteralChar(text.charAt(caretPosition - 1)))) {
+            if (!(caretPosition > 0 && matchesLiteralChar(text.charAt(caretPosition - 1)))) {
                 needToSelectMoreDefault = false;
                 selectWord(textArea);
 
@@ -86,66 +86,78 @@ public final class ProgressiveSelector {
     }
 
     private static void handleLiteral(Buffer buffer, int caretPosition, JEditTextArea textArea, Selection selection) {
-        DefaultTokenHandler tokens = RubyPlugin.getTokens(buffer, caretPosition);
-        Token priorToken = RubyPlugin.getToken(buffer, caretPosition, tokens);
-        Token currentToken = priorToken.next;
-        Token nextToken = currentToken.next;
+        RubyToken first = tokenHandler.getTokenAtCaret(buffer, caretPosition);
+        RubyToken second = first.getNextToken();
 
-        boolean priorLiteral = isLiteral(priorToken);
-        boolean currentLiteral = isLiteral(currentToken);
-        boolean nextLiteral = isLiteral(nextToken);
+        RubyToken prior = first;
+        RubyToken current = second;
 
-        if (priorLiteral && currentLiteral && nextLiteral) {
-            selectLiteral(priorToken, currentToken, nextToken, textArea, selection);
-
-        } else if(currentLiteral && nextLiteral && isLiteral(nextToken.next)) {
-            selectLiteral(currentToken, nextToken, nextToken.next, textArea, selection, false);
-
-        } else {
-            Token previousToken = RubyPlugin.getPreviousToken(tokens, priorToken);
-            boolean previousLiteral = isLiteral(previousToken);
-
-            if (previousLiteral && priorLiteral && currentLiteral) {
-                selectLiteral(previousToken, priorToken, currentToken, textArea, selection);
-
-            } else {
-                Token earlierToken = RubyPlugin.getPreviousToken(tokens, previousToken);
-
-                if (isLiteral(earlierToken) && previousLiteral && priorLiteral) {
-                    selectLiteral(earlierToken, previousToken, priorToken, textArea, selection, false);
-
-                } else if (previousLiteral && priorLiteral) {
-                    selectLiteral(previousToken, null, priorToken, textArea, selection);
-
-                } else if (priorLiteral && currentLiteral) {
-                    selectLiteral(priorToken, null, currentToken, textArea, selection);
-
-                } else if (currentLiteral && nextLiteral) {
-                    selectLiteral(currentToken, null, nextToken, textArea, selection);
+        if (prior.isLiteral() || current.isLiteral()) {
+            if (current.isLiteral() && (selection != null || !prior.isLiteral())) {
+                while (current.isNextLiteral()) {
+                    current = current.getNextToken();
                 }
             }
-        }
-    }
 
-    private static void selectLiteral(Token literalStart, Token literal, Token literalEnd, JEditTextArea textArea, Selection selection) {
-        selectLiteral(literalStart, literal, literalEnd, textArea, selection, true);
-    }
-
-    private static void selectLiteral(Token literalStart, Token literal, Token literalEnd, JEditTextArea textArea, Selection selection, boolean inside) {
-        int lineStartOffset = textArea.getLineStartOffset(textArea.getCaretLine());
-
-        if (literal != null) {
-            int offset = literal.offset + lineStartOffset;
-            int end = offset + literal.length;
-            setSelection(offset, end, textArea);
-            if (!inside || needToSelectMore(textArea, selection)) {
-                setSelection(offset - literalStart.length, end + literalEnd.length, textArea);
+            if (prior.isLiteral() && (selection != null || !current.isLiteral())) {
+                while (prior.isPreviousLiteral()) {
+                    prior = prior.getPreviousToken();
+                }
             }
 
-        } else {
-            int offset = literalStart.offset + lineStartOffset;
-            int end = offset + literalStart.length + literalEnd.length;
-            setSelection(offset, end, textArea);
+            int lineStartOffset = textArea.getLineStartOffset(textArea.getCaretLine());
+
+            int start = lineStartOffset;
+            int end = lineStartOffset;
+
+            if (prior.isLiteral()) {
+                start += prior.offset;
+            } else {
+                start += second.offset;
+            }
+
+            if (current.isLiteral()) {
+                end += current.offset + current.length;
+            } else {
+                end += first.offset + first.length;
+            }
+
+            RubyPlugin.log("prior " + prior + " current " + current, ProgressiveSelector.class);
+            RubyPlugin.log("start " + start + " end " + end, ProgressiveSelector.class);
+            if (selection != null) {
+                RubyPlugin.log("sstart " + selection.getStart() + " send " + selection.getEnd(), ProgressiveSelector.class);
+            }
+
+            boolean unselectQuotes = true;
+            boolean emptyString = start == (end - 2);
+
+            if (selection != null) {
+                if (selection.getStart() == start) {
+                    unselectQuotes = false;
+                } else if ((start + 1) == selection.getStart() && (end - 1) == selection.getEnd()) {
+                    unselectQuotes = false;
+                }
+            } else {
+                unselectQuotes = false;
+
+                if(!emptyString) {
+                    if (first.length == 1 && first.isLiteral() && !first.isPreviousLiteral()) {
+                        start++;
+                    } else if(second.length == 1 && second.isLiteral() && !second.isNextLiteral()) {
+                        end--;
+                    }
+                }
+            }
+
+            if (!current.isLiteral() || !prior.isLiteral()) {
+                unselectQuotes = false;
+            }
+
+            if (unselectQuotes && !emptyString) {
+                start++;
+                end--;
+            }
+            setSelection(start, end, textArea);
         }
     }
 
@@ -158,22 +170,6 @@ public final class ProgressiveSelector {
                 return true;
             default:
                 return false;
-        }
-    }
-
-    private static boolean isLiteral(Token token) {
-        if (token == null) {
-            return false;
-        } else {
-            switch (token.id) {
-                case Token.LITERAL1:
-                case Token.LITERAL2:
-                case Token.LITERAL3:
-                case Token.LITERAL4:
-                    return true;
-                default:
-                    return false;
-            }
         }
     }
 
@@ -226,11 +222,11 @@ public final class ProgressiveSelector {
             if (!(hitMemberStart && hitMemberEnd)) {
                 if (hitMemberStart) {
                     int line = textArea.getLineOfOffset(member.getStartOffset());
-                    int offset = textArea.getLineStartOffset(line+1);
+                    int offset = textArea.getLineStartOffset(line + 1);
                     setSelection(offset, paragraphSelection.getEnd(), textArea);
-                } else if(hitMemberEnd) {
+                } else if (hitMemberEnd) {
                     int line = textArea.getLineOfOffset(member.getEndOffset());
-                    int offset = textArea.getLineEndOffset(line-1);
+                    int offset = textArea.getLineEndOffset(line - 1);
                     setSelection(paragraphSelection.getStart(), offset, textArea);
                 }
             }
@@ -251,7 +247,7 @@ public final class ProgressiveSelector {
     }
 
     private static void selectMemberOrParent(Member member, JEditTextArea textArea, Selection selection) {
-        if(insideMember(textArea, member)) {
+        if (insideMember(textArea, member)) {
             selectMemberContents(member, textArea);
         }
 
@@ -322,6 +318,7 @@ public final class ProgressiveSelector {
 
     /**
      * Selects the word at the caret position.
+     *
      * @since jEdit 2.7pre2
      */
     private static void selectWord(JEditTextArea textArea) {
@@ -329,17 +326,17 @@ public final class ProgressiveSelector {
         int lineStart = textArea.getLineStartOffset(line);
         int offset = textArea.getCaretPosition() - lineStart;
 
-        if(textArea.getLineLength(line) == 0)
+        if (textArea.getLineLength(line) == 0)
             return;
 
         String lineText = textArea.getLineText(line);
         String noWordSep = textArea.getBuffer().getStringProperty("noWordSep");
 
-        if(offset == textArea.getLineLength(line))
+        if (offset == textArea.getLineLength(line))
             offset--;
 
-        int wordStart = TextUtilities.findWordStart(lineText,offset,noWordSep);
-        int wordEnd = TextUtilities.findWordEnd(lineText,offset+1,noWordSep);
+        int wordStart = TextUtilities.findWordStart(lineText, offset, noWordSep);
+        int wordEnd = TextUtilities.findWordEnd(lineText, offset + 1, noWordSep);
 
         Selection s = new Selection.Range(lineStart + wordStart, lineStart + wordEnd);
         addToSelection(textArea, s);
@@ -347,12 +344,13 @@ public final class ProgressiveSelector {
 
     /**
      * Selects the paragraph at the caret position.
+     *
      * @since jEdit 2.7pre2
      */
     private static void selectParagraph(JEditTextArea textArea) {
         int caretLine = textArea.getCaretLine();
 
-        if(textArea.getLineLength(caretLine) == 0) {
+        if (textArea.getLineLength(caretLine) == 0) {
             textArea.getToolkit().beep();
             return;
         }
@@ -360,15 +358,15 @@ public final class ProgressiveSelector {
         int start = caretLine;
         int end = caretLine;
 
-        while(start >= 0) {
-            if(textArea.getLineLength(start) == 0 || textArea.getLineText(start).trim().length() == 0)
+        while (start >= 0) {
+            if (textArea.getLineLength(start) == 0 || textArea.getLineText(start).trim().length() == 0)
                 break;
             else
                 start--;
         }
 
-        while(end < textArea.getLineCount()) {
-            if(textArea.getLineLength(end) == 0 || textArea.getLineText(end).trim().length() == 0)
+        while (end < textArea.getLineCount()) {
+            if (textArea.getLineLength(end) == 0 || textArea.getLineText(end).trim().length() == 0)
                 break;
             else
                 end++;
@@ -377,20 +375,21 @@ public final class ProgressiveSelector {
         int selectionStart = textArea.getLineStartOffset(start + 1);
         int selectionEnd = textArea.getLineEndOffset(end - 1) - 1;
         if (selectionEnd > selectionStart) {
-            Selection s = new Selection.Range(selectionStart,selectionEnd);
+            Selection s = new Selection.Range(selectionStart, selectionEnd);
             addToSelection(textArea, s);
         }
     }
 
     /**
      * Selects the current line.
+     *
      * @since jEdit 2.7pre2
      */
     private static void selectLine(JEditTextArea textArea) {
         int caretLine = textArea.getCaretLine();
         int start = textArea.getLineStartOffset(caretLine);
         int end = textArea.getLineEndOffset(caretLine) - 1;
-        Selection s = new Selection.Range(start,end);
+        Selection s = new Selection.Range(start, end);
         addToSelection(textArea, s);
     }
 
@@ -409,7 +408,7 @@ public final class ProgressiveSelector {
     }
 
     private static void addToSelection(JEditTextArea textArea, Selection s) {
-        if(textArea.isMultipleSelectionEnabled()) {
+        if (textArea.isMultipleSelectionEnabled()) {
             textArea.addToSelection(s);
         } else {
             textArea.setSelection(s);

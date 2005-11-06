@@ -22,7 +22,6 @@ package org.jedit.ruby.completion;
 import java.util.*;
 
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.cache.RubyCache;

@@ -38,13 +38,27 @@ public final class XmlToBinary {
     }
 
     private static void loadClassDescription(File file, String inputPath, String resultPath) {
+        FileInputStream stream = getStream(file);
+        XMLDecoder d = new XMLDecoder(new BufferedInputStream(stream));
+        ClassDescription result = null;
         try {
-            XMLDecoder d = new XMLDecoder(new BufferedInputStream(new FileInputStream(file)));
-            ClassDescription result = (ClassDescription)d.readObject();
-            d.close();
+            result = (ClassDescription) d.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        d.close();
+
+        if (result != null) {
             encode(result, file, inputPath, resultPath);
+        }
+    }
+
+    private static FileInputStream getStream(File file) {
+        try {
+            return new FileInputStream(file);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            return null;
         }
     }
 

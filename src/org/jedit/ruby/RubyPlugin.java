@@ -20,18 +20,15 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.jedit.syntax.Token;
-import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 import org.jedit.ruby.parser.JRubyParser;
 import org.jedit.ruby.ri.RiParser;
 
-import javax.swing.SwingUtilities;
-import javax.swing.JOptionPane;
-import java.io.*;
-import java.awt.Point;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.io.*;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -49,8 +46,44 @@ public final class RubyPlugin extends EditPlugin {
         RiParser.parseRdoc();
     }
 
+//    public void handleMessage(EBMessage message) {
+//        if (message instanceof ViewUpdate) {
+//            handleViewUpdate((ViewUpdate)message);
+//        } else if (message instanceof EditPaneUpdate) {
+//            handleEditUpdate((EditPaneUpdate)message);
+//        } else if (message instanceof BufferUpdate) {
+//            handleBufferUpdate((BufferUpdate) message);
+//        } else if (message instanceof PropertiesChanged) {
+//            SideKickActions.propertiesChanged();
+//        }
+//    }
+//
+//    private void handleBufferUpdate(BufferUpdate update) {
+//        if (update.getWhat() == BufferUpdate.CLOSED) {
+////            finishParsingBuffer(update.getBuffer());
+//        }
+//    }
+//
+//    private void handleEditUpdate(EditPaneUpdate update) {
+//        EditPane editPane = update.getEditPane();
+//
+//        if (update.getWhat() == EditPaneUpdate.CREATED) {
+//            addKeyListener(editPane.getTextArea());
+//        } else if (update.getWhat() == EditPaneUpdate.DESTROYED) {
+//            removeKeyListener(editPane.getTextArea());
+//        }
+//    }
+//
+//    private void handleViewUpdate(ViewUpdate update) {
+//        if (update.getWhat() == ViewUpdate.CREATED) {
+////                initView(update.getView());
+//        } else if (update.getWhat() == ViewUpdate.CLOSED) {
+////                uninitView(update.getView());
+//        }
+//    }
+
     public static void log(String message, Class clas) {
-        if(debug) {
+        if (debug) {
             try {
                 Log.log(Log.MESSAGE, clas, message);
             } catch (Exception e) {
@@ -62,7 +95,7 @@ public final class RubyPlugin extends EditPlugin {
     public static void error(Exception e, Class clas) {
         String message = e.getClass().getName();
         message = message.substring(message.lastIndexOf('.') + 1);
-        if(e.getMessage() != null && e.getMessage().length() > 0) {
+        if (e.getMessage() != null && e.getMessage().length() > 0) {
             message += ": " + e.getMessage();
         }
         e.printStackTrace();
@@ -74,7 +107,7 @@ public final class RubyPlugin extends EditPlugin {
             Log.log(Log.ERROR, clas, message);
             View view = jEdit.getActiveView();
             if (view != null) {
-                if(debug) {
+                if (debug) {
                     show("", message, view, JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -217,7 +250,8 @@ public final class RubyPlugin extends EditPlugin {
             case KeyEvent.VK_END:
             case KeyEvent.VK_LEFT:
             case KeyEvent.VK_RIGHT:
-                ignore = true; break;
+                ignore = true;
+                break;
             default:
                 // for some reason have to match backspace and tab using keyChar
                 ignore = keyChar == KeyEvent.VK_BACK_SPACE
@@ -228,41 +262,6 @@ public final class RubyPlugin extends EditPlugin {
                         || event.isMetaDown();
         }
         return ignore;
-    }
-
-    public static Token getToken(Buffer buffer, int caret) {
-        DefaultTokenHandler tokens = getTokens(buffer, caret);
-        return getToken(buffer, caret, tokens);
-    }
-
-    public static Token getToken(Buffer buffer, int caret, DefaultTokenHandler tokens) {
-        int offset = caret;
-        offset -= buffer.getLineStartOffset(buffer.getLineOfOffset(caret));
-        if(offset != 0)
-            offset--;
-        return TextUtilities.getTokenAtOffset(tokens.getTokens(), offset);
-    }
-
-    public static DefaultTokenHandler getTokens(Buffer buffer, int caret) {
-        int line = buffer.getLineOfOffset(caret);
-        DefaultTokenHandler tokens = new DefaultTokenHandler();
-        buffer.markTokens(line,tokens);
-        return tokens;
-    }
-
-    public static Token getPreviousToken(DefaultTokenHandler tokens, Token tokenOfInterest) {
-        Token token = tokens.getTokens();
-        Token previous = null;
-
-        while (token != null && token.next != null) {
-            if (token.next == tokenOfInterest) {
-                previous = token;
-                break;
-            }
-            token = token.next;
-        }
-
-        return previous;
     }
 
 }

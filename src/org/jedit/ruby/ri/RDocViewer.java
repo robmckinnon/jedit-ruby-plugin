@@ -27,14 +27,13 @@ import org.jedit.ruby.cache.RubyCache;
 import org.jedit.ruby.ast.*;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.DocumentEvent;
+import javax.swing.event.*;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.util.*;
 import java.util.List;
 
@@ -43,6 +42,8 @@ import java.util.List;
  */
 public final class RDocViewer extends JPanel
         implements DefaultFocusComponent, ListSelectionListener, DocumentListener {
+
+    public static final String INCLUDE_RAILS = "ruby.rdoc-viewer.include-rails";
 
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
 
@@ -67,10 +68,38 @@ public final class RDocViewer extends JPanel
 
         JPanel searchPanel = initSearchPanel(searchField, resultList);
         documentationScrollPane = wrapInScrollPane(documentationPane);
-        add(initSplitPane(position, searchPanel, documentationScrollPane));
-        viewers.put(this, null);
 
+        add(initSplitPane(position, searchPanel, documentationScrollPane));
+        add(initRailsPanel(view), BorderLayout.SOUTH);
+
+        viewers.put(this, null);
         setListData(RubyCache.instance().getAllImmediateMembers());
+    }
+
+    private JPanel initRailsPanel(final View view) {
+        JPanel panel = new JPanel(new BorderLayout());
+        boolean selected = jEdit.getBooleanProperty(INCLUDE_RAILS, true);
+
+        String text = jEdit.getProperty("ruby.rdoc-viewer.include-rails.label");
+        final JCheckBox checkBox = new JCheckBox(text, selected);
+        panel.add(checkBox, BorderLayout.WEST);
+
+        checkBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    view.showWaitCursor();
+                    boolean selected = checkBox.isSelected();
+                    jEdit.setBooleanProperty(INCLUDE_RAILS, selected);
+                    RiParser.parseRdoc();
+                    setListData(RubyCache.instance().getAllImmediateMembers());
+                } finally {
+                    view.hideWaitCursor();
+                    documentationPane.setText(jEdit.getProperty(""));
+                }
+            }
+        });
+
+        return panel;
     }
 
     public static void setMethod(Method method) {
