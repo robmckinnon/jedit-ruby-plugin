@@ -2,14 +2,15 @@
 plugin.org.jedit.ruby.RubyPlugin.activate=defer
 plugin.org.jedit.ruby.RubyPlugin.name=Ruby Plugin
 plugin.org.jedit.ruby.RubyPlugin.author=Robert McKinnon
-plugin.org.jedit.ruby.RubyPlugin.version=0.6.8
+plugin.org.jedit.ruby.RubyPlugin.version=0.7
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.4
 plugin.org.jedit.ruby.RubyPlugin.depend.1=jedit 04.02.99.00
-plugin.org.jedit.ruby.RubyPlugin.depend.2=plugin sidekick.SideKickPlugin 0.3.3
+plugin.org.jedit.ruby.RubyPlugin.depend.2=plugin sidekick.SideKickPlugin 0.3.4
 plugin.org.jedit.ruby.RubyPlugin.depend.3=plugin projectviewer.ProjectPlugin 2.1.0.1
 #plugin.org.jedit.ruby.RubyPlugin.depend.4=plugin retroweaver.RetroweaverPlugin 1.1
-plugin.org.jedit.ruby.RubyPlugin.jars=jruby.jar
+plugin.org.jedit.ruby.RubyPlugin.jars=jruby.jar \
+	retroweaver.jar
 
 
 # Dockables
@@ -52,18 +53,33 @@ ruby.next-error.label=Go to next error
 ruby.auto-indent-and-insert-end.label=Auto indent and insert end
 ruby.complete-method.label=Complete method
 
-# Option panes
-#plugin.org.jedit.ruby.RubyPlugin.option-group=ruby.general
 
-#options.ruby.general.label=General
-#options.ruby.general.code=new org.jedit.ruby.options.GeneralOptionPane();
+# Option panes
+#plugin.org.jedit.ruby.RubyPlugin.option-group=rdoc-selection
+
+options.rdoc.label=Ruby Documentation
+options.rdoc.code=new org.jedit.ruby.ri.RDocSelectionPane();
+
+#plugin.org.jedit.ruby.RubyPlugin.option-group=rdoc
+options.rdoc.label=Ruby Documentation
+options.rdoc.code=new org.jedit.ruby.ri.RDocOptionsPane();
+options.rdoc.caption=Imported RDoc directories
+options.rdoc.add=Add
+options.rdoc.remove=Remove
+options.rdoc.dialog.title=Add element
+options.rdoc.dialog.message=Enter qualified element name:
+
 
 # ProjectViewer listeners
 plugin.projectviewer.org.jedit.ruby.RubyPlugin.global-pv-listeners=org.jedit.ruby.cache.RubyProjectViewerListener
 plugin.projectviewer.org.jedit.ruby.RubyPlugin.prj-listeners=org.jedit.ruby.cache.RubyProjectListener
 
+
+# Other properties
 ruby.not-ruby-file.title=Not recognized as a Ruby file.
 ruby.not-ruby-file.message=Not recognized as a Ruby file.\n\n To mark as a Ruby file, change edit mode \n on Utilities->Buffer Options dialog.\n
+
+ruby.ruby-not-found.message=Ruby executable not found, please install Ruby.
 
 ruby.file-structure-popup.narrow-search.label=Narrow down the list on typing
 ruby.file-structure-popup.narrow-search.mnemonic=n
@@ -74,15 +90,16 @@ ruby.file-structure-popup.no-structure.label=No structure to show.
 
 ruby.find-declaration.no-matches.label=No matches found, try adding relevant files to Project Viewer.
 
+ruby.rdoc-viewer.include-rails.label=Include Rails docs
 ruby.rdoc-viewer.no-description.label=no documentation available...
 
 ruby.search-documentation.error=Error:\nri An error has occurred, see the Activity Log for details.
-ruby.search-documentation.permission=\n To allow searches to return long result messages\n execute this file permission change on the command line:\n\n    chmod +x {0}\n
 ruby.search-documentation.dialog.label=Search using ri for:
 
 ruby.syntax-error.found.label=found
 ruby.syntax-error.expected.label=expected
 ruby.syntax-error.nothing.label=nothing
+
 
 # SideKick structure browser properties
 sidekick.parser.ruby.label=Ruby

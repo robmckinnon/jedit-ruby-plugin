@@ -13,7 +13,7 @@
      To use it for building your own plugin, make these changes:
 
      - Change definition of 'jar.name' to the name of your plugin's JAR file
-     - If necessary, add any dependencies to the 'project.class.path'
+     - If necessary, addMembers any dependencies to the 'project.class.path'
        definition
      - If necessary, change the list of files in the 'dist' targtet
      - If necessary, change the 'docs-xalan' and 'docs-xsltproc' targets
@@ -105,11 +105,13 @@
 	</target>
 
 	<target name="parse_rdoc" depends="compile">
-		<exec dir="ri" executable="ri/convert.rb"/>
+		<exec dir="ri" executable="ri/convert.sh"/>
 	</target>
 
 	<target name="convert_rdoc" depends="parse_rdoc">
-		<java classname="org.jedit.ruby.ri.RiParser" classpath="/home/b/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
+		<java args="/home/b/apps/versions/jedit/4.2/plugins/RubyPlugin/ri/java-xml /home/b/apps/versions/jedit/4.2/plugins/RubyPlugin/ri/rdoc"
+      classname="org.jedit.ruby.ri.XmlToBinary"
+      classpath="/home/b/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
 	</target>
 
 	<target name="retroweave" depends="compile" if="retroweaver.present">
@@ -142,7 +144,7 @@
 			</fileset>
 		</jar>
 	</target>
-	
+
 	<target name="dist" depends="check-for-retroweaver, retroweave, jar">
 		<antcall target="retroweaver-warning"/>
 	</target>
