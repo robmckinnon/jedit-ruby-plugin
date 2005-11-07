@@ -22,11 +22,10 @@ package org.jedit.ruby.completion;
 import gnu.regexp.RE;
 import gnu.regexp.REMatch;
 import gnu.regexp.REException;
-import org.gjt.sp.jedit.Buffer;
-import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.RegularExpression;
+import org.jedit.ruby.utils.EditorView;
 import org.jedit.ruby.ast.Member;
-import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -42,19 +41,18 @@ public final class CodeAnalyzer {
     private static String LAST_COMPLETED;
     private static Set<Member> LAST_RETURN_TYPES;
 
-    private final Buffer buffer;
-    private final JEditTextArea textArea;
+    private final EditorView view;
     private String textWithoutLine;
     private String partialMethod;
+    private String partialClass;
     private String restOfLine;
     private String methodCalledOnThis;
 
-    public CodeAnalyzer(JEditTextArea textArea, Buffer buffer) {
-        this.textArea = textArea;
-        this.buffer = buffer;
-        String line = getLineUpToCaret(textArea);
+    public CodeAnalyzer(EditorView view) {
+        this.view = view;
+        String line = view.getLineUpToCaret();
         RubyPlugin.log("line: "+line, getClass());
-        REMatch match = CompleteRegExp.instance.getMatch(line);
+        REMatch match = DotCompleteRegExp.instance.getMatch(line);
 
         if (match != null) {
             methodCalledOnThis = match.toString(1);
@@ -68,20 +66,26 @@ public final class CodeAnalyzer {
                 restOfLine = restOfLine.substring(parenthesisIndex + 1);
             }
 
-            if(match.toString(5).length() > 0) {
+            if (match.toString(5).length() > 0) {
                 partialMethod = match.toString(5);
+            }
+        } else {
+            match = PartialNameRegExp.instance.getMatch(line);
+
+            if (match != null) {
+                String partialName = match.toString(2);
+
+                if (ClassNameRegExp.instance.isMatch(partialName)) {
+                    partialClass = partialName;
+                } else {
+                    partialMethod = partialName;
+                }
             }
         }
     }
 
-    public static boolean isInsertionPoint(JEditTextArea textArea) {
-        String lineUpToCaret = getLineUpToCaret(textArea);
-        return CompleteRegExp.instance.isMatch(lineUpToCaret.trim());
-    }
-
-    public static void setLastReturnTypes(Set<Member> type) {
-        RubyPlugin.log("set last return type: " + String.valueOf(type), CodeAnalyzer.class);
-        LAST_RETURN_TYPES = type;
+    public static boolean isDotInsertionPoint(EditorView view) {
+        return DotCompleteRegExp.instance.isMatch(view.getLineUpToCaret().trim());
     }
 
     public static boolean hasLastReturnTypes() {
@@ -92,12 +96,21 @@ public final class CodeAnalyzer {
         return LAST_RETURN_TYPES;
     }
 
-    public static void setLastCompleted(String text) {
-        RubyPlugin.log("last completed: " + String.valueOf(text), CodeAnalyzer.class);
-        LAST_COMPLETED = text;
+    public static void setLastReturnTypes(Set<Member> type) {
+        if (type != LAST_RETURN_TYPES) {
+            RubyPlugin.log("set last return type: " + String.valueOf(type), CodeAnalyzer.class);
+            LAST_RETURN_TYPES = type;
+        }
     }
 
-    public final boolean isInsertionPoint() {
+    public static void setLastCompleted(String text) {
+        if (text != LAST_COMPLETED) {
+            RubyPlugin.log("last completed: " + String.valueOf(text), CodeAnalyzer.class);
+            LAST_COMPLETED = text;
+        }
+    }
+
+    public final boolean isDotInsertionPoint() {
         RubyPlugin.log("insertion? " + String.valueOf(methodCalledOnThis) + " " + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
         boolean insertionPoint = methodCalledOnThis != null;
 
@@ -112,24 +125,17 @@ public final class CodeAnalyzer {
         return methodCalledOnThis;
     }
 
-    private static String getLineUpToCaret(JEditTextArea textArea) {
-        int lineIndex = textArea.getCaretLine();
-        int start = textArea.getLineStartOffset(lineIndex);
-        int end = textArea.getCaretPosition();
-        return textArea.getText(start, end - start);
-    }
-
     public final boolean isClass() {
         return isClass(methodCalledOnThis);
     }
 
-    public static boolean isClass(String methodCalledOnThis) {
-        boolean isClass = ClassNameRegExp.instance.isMatch(methodCalledOnThis);
+    public static boolean isClass(String name) {
+        boolean isClass = ClassNameRegExp.instance.isMatch(name);
         RubyPlugin.log("isClass: " + isClass, CodeAnalyzer.class);
         return isClass;
     }
 
-    final String getClassName() {
+    final String getClassMethodCalledFrom() {
         String className;
 
         if (isClass()) {
@@ -238,19 +244,9 @@ public final class CodeAnalyzer {
     }
 
     private String getTextWithoutLine() {
-        if(textWithoutLine == null) {
-            int caretPosition = textArea.getCaretPosition();
-            int line = textArea.getLineOfOffset(caretPosition);
-            int start = textArea.getLineStartOffset(line);
-            int end = textArea.getLineEndOffset(line);
-            StringBuffer text = new StringBuffer();
-            text.append(buffer.getText(0, start));
-            if(buffer.getLength() > end) {
-                text.append(buffer.getText(end, buffer.getLength() - end));
-            }
-            textWithoutLine = text.toString();
+        if (textWithoutLine == null) {
+            textWithoutLine = view.getTextWithoutLine();
         }
-
         return textWithoutLine;
     }
 
@@ -282,6 +278,10 @@ public final class CodeAnalyzer {
         } else {
             return null;
         }
+    }
+
+    public String getPartialClass() {
+        return partialClass;
     }
 
     public final String getPartialMethod() {
@@ -323,21 +323,28 @@ public final class CodeAnalyzer {
         }
     }
 
-    private static final class CompleteRegExp extends AutoIndentAndInsertEnd.RegularExpression {
-        private static final RE instance = new CompleteRegExp();
+    private static final class PartialNameRegExp extends RegularExpression {
+        private static final RE instance = new PartialNameRegExp();
         protected final String getPattern() {
-            return "((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)(\\S*)$";
+            return "(\\s*)(\\S+)$";
         }
     }
 
-    private static final class SymbolRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+    private static final class DotCompleteRegExp extends RegularExpression {
+        private static final RE instance = new DotCompleteRegExp();
+        protected final String getPattern() {
+            return "((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)((?:[^A-Z]\\S*)?)$";
+        }
+    }
+
+    private static final class SymbolRegExp extends RegularExpression {
         private static final RE instance = new SymbolRegExp();
         protected final String getPattern() {
             return ":\\w+";
         }
     }
 
-    public static final class ClassNameRegExp extends AutoIndentAndInsertEnd.RegularExpression {
+    public static final class ClassNameRegExp extends RegularExpression {
         private static final RE instance = new ClassNameRegExp();
         protected final String getPattern() {
             return "^([A-Z]\\w*(::)?)+";

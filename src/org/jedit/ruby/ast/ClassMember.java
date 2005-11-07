@@ -27,6 +27,7 @@ import org.jedit.ruby.cache.RubyCache;
 public final class ClassMember extends ParentMember {
 
     private String fullDocumentation;
+    private String superClassName;
 
     public ClassMember(String name) {
         super(name);
@@ -36,13 +37,25 @@ public final class ClassMember extends ParentMember {
         visitor.handleClass(this);
     }
 
+    public boolean hasSuperClassName() {
+        return superClassName != null;
+    }
+
+    public String getSuperClassName() {
+        return superClassName;
+    }
+
+    public void setSuperClassName(String superClassName) {
+        this.superClassName = superClassName;
+    }
+
     public final String getDocumentation() {
         if (fullDocumentation == null) {
             StringBuffer buffer = new StringBuffer();
             buffer.append("<p>Class: ").append(getFullName());
 
-            String parentMemberName = getParentMemberName();
-            appendParentToDocumentation(parentMemberName, buffer);
+            String superClassName = getSuperClassName();
+            appendSuperClassToDocumentation(superClassName, buffer);
 
             buffer.append("</p><br>");
             buffer.append(super.getDocumentation());
@@ -52,13 +65,14 @@ public final class ClassMember extends ParentMember {
         return fullDocumentation;
     }
 
-    private void appendParentToDocumentation(String parentMemberName, StringBuffer buffer) {
-        if (parentMemberName != null && parentMemberName.trim().length() > 0) {
-            ParentMember parentMember = RubyCache.instance().getParentMember(parentMemberName);
-            if (parentMember != null && !parentMember.getFullName().equals("Object")) {
-                buffer.append(" &lt; ").append(parentMember.getFullName());
-                appendParentToDocumentation(parentMember.getParentMemberName(), buffer);
+    private void appendSuperClassToDocumentation(String superClassName, StringBuffer buffer) {
+        if (superClassName != null && superClassName.trim().length() > 0) {
+            ClassMember superClass = RubyCache.instance().getClass(superClassName);
+            if (superClass != null && !superClass.getFullName().equals("Object")) {
+                buffer.append(" &lt; ").append(superClass.getFullName());
+                appendSuperClassToDocumentation(superClass.getSuperClassName(), buffer);
             }
         }
     }
+
 }

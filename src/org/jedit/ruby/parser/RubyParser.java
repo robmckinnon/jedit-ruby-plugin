@@ -70,8 +70,7 @@ public final class RubyParser {
 
     public static RubyMembers getMembers(View view) {
         String text = view.getTextArea().getText();
-        Buffer buffer = view.getBuffer();
-        String filePath = buffer.getPath();
+        String filePath = view.getBuffer().getPath();
         return getMembers(text, filePath);
     }
 
@@ -120,18 +119,20 @@ public final class RubyParser {
             members = memberList != null ? memberList.toArray(EMPTY_MEMBER_ARRAY) : null;
 
             fileToMembers.put(file, members);
+
             if (members != null) {
-                fileToLastGoodMembers.put(file, new RubyMembers(members, null));
+                fileToLastGoodMembers.put(file, new RubyMembers(members, null, text.length()));
             } else if (fileToLastGoodMembers.containsKey(file)) {
                 RubyMembers lastGoodMembers = fileToLastGoodMembers.get(file);
                 lastGoodMembers.setProblems(problems);
             }
+
             fileToLastModified.put(file, file.lastModified());
             fileToOldText.put(file, text);
             fileToProblems.put(file, problems);
         }
 
-        return new RubyMembers(members, problems);
+        return new RubyMembers(members, problems, text.length());
     }
 
     private synchronized List<Member> createMembersAsList(String text, String filePath, WarningListener listener) {

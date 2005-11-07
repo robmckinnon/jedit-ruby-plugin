@@ -36,7 +36,7 @@ public final class RubyCache {
     private final MethodToParents methodToParents;
     private final ParentToMethods parentToMethods;
     private final ParentToImmediateMethods parentToImmediateMethods;
-    private final Map pathToMembers;
+    private final Map<String, RubyMembers> pathToMembers;
 
     public static synchronized void resetCache() {
         instance = new RubyCache();
@@ -52,7 +52,7 @@ public final class RubyCache {
         methodToParents = new MethodToParents();
         parentToMethods = new ParentToMethods();
         parentToImmediateMethods = new ParentToImmediateMethods();
-        pathToMembers = new HashMap();
+        pathToMembers = new HashMap<String, RubyMembers>();
         nameToParents.setParentToImmediateMethods(parentToImmediateMethods);
         parentToMethods.setNameToParents(nameToParents);
     }
@@ -66,6 +66,10 @@ public final class RubyCache {
         if (!members.containsErrors()) {
             add(members, path);
         }
+    }
+
+    public final synchronized ClassMember getClass(String className) {
+        return nameToParents.getClass(className);
     }
 
     public final synchronized ParentMember getParentMember(String parentMemberName) {
@@ -100,11 +104,15 @@ public final class RubyCache {
         return new ArrayList<Method>(parentToMethods.getMethodList(memberName));
     }
 
-    public final synchronized void populateSuperclassMethods() {
+    public final synchronized void populateSuperClassMethods() {
         Collection<ParentMember> allParents = nameToParents.getAllParents();
 
         for (ParentMember member : allParents) {
-            populateSuperclassMethods(member, member);
+            member.accept(new MemberVisitorAdapter() {
+                public void handleClass(ClassMember classMember) {
+                    populateSuperClassMethods(classMember, classMember);
+                }
+            });
         }
 
         List<Method> methods = getAllMethods();
@@ -137,24 +145,88 @@ public final class RubyCache {
         });
     }
 
-    private void populateSuperclassMethods(ParentMember member, ParentMember memberOrSuperclass) {
-        if (memberOrSuperclass.hasParentMemberName()) {
-            String parentName = memberOrSuperclass.getParentMemberName();
-            ParentMember parent = nameToParents.getMember(parentName);
-            if (parent != null) {
-                Set<Method> parentMethods = parent.getMethods();
+    private final static String[] ACTION_CONTROLLER_BASE_INCLUDES = new String[]{
+            "ActionController::Filters",
+            "ActionController::Layout",
+            "ActionController::Flash",
+            "ActionController::Benchmarking",
+            "ActionController::Rescue",
+            "ActionController::Dependencies",
+            "ActionController::Pagination",
+            "ActionController::Scaffolding",
+            "ActionController::Helpers",
+            "ActionController::Cookies",
+            "ActionController::Caching",
+            "ActionController::Components",
+            "ActionController::Verification",
+            "ActionController::Streaming",
+            "ActionController::SessionManagement",
+            "ActionController::Macros::AutoComplete",
+            "ActionController::Macros::InPlaceEditing"
+    };
 
-                for (Method method : parentMethods) {
-                    methodToParents.add(method, member);
+    private final static String[] ACTIVE_RECORD_BASE_INCLUDES = new String[]{
+            "ActiveRecord::Validations",
+            "ActiveRecord::Locking",
+            "ActiveRecord::Callbacks",
+            "ActiveRecord::Observing",
+            "ActiveRecord::Timestamp",
+            "ActiveRecord::Associations",
+            "ActiveRecord::Aggregations",
+            "ActiveRecord::Transactions",
+            "ActiveRecord::Reflection",
+            "ActiveRecord::Acts::Tree",
+            "ActiveRecord::Acts::List",
+            "ActiveRecord::Acts::NestedSet"
+    };
+
+    private void populateSuperClassMethods(ClassMember member, ClassMember memberOrSuperclass) {
+        if (memberOrSuperclass.hasSuperClassName()) {
+            String superClassName = memberOrSuperclass.getSuperClassName();
+            ClassMember superClass = nameToParents.getClass(superClassName);
+            if (superClass != null) {
+                includeClassMethods(member, superClass);
+                populateSuperClassMethods(member, superClass);
+            }
+
+            addIncludes(member, "ActiveRecord::Base", ACTIVE_RECORD_BASE_INCLUDES);
+            addIncludes(member, "ActionController::Base", ACTION_CONTROLLER_BASE_INCLUDES);
+        }
+    }
+
+    private void addIncludes(ClassMember member, String fullName, String[] includeModules) {
+        if (member.getFullName().equals(fullName)) {
+            for (String include : includeModules) {
+                ClassMember classMethodClass = nameToParents.getClass(include + "::ClassMethods");
+                if (classMethodClass != null && classMethodClass.getMethods().size() > 0) {
+                    includeClassMethods(member, classMethodClass);
+                } else {
+                    classMethodClass = nameToParents.getClass(include);
+                    if (classMethodClass != null) {
+                        includeClassMethods(member, classMethodClass);
+                    }
                 }
-
-                parentMethods = filterOutDuplicates(member, parentMethods);
-
-                parentToMethods.add(member, parentMethods);
-
-                populateSuperclassMethods(member, parent);
             }
         }
+    }
+
+    private void includeClassMethods(ClassMember member, ClassMember classMethodClass) {
+        Set<Method> methods = classMethodClass.getMethods();
+        Set<Method> classMethods = new HashSet<Method>();
+
+        for (Method classMethod : methods) {
+            classMethod.setClassMethod(true);
+            classMethods.add(classMethod);
+        }
+        addSuperClassMethods(member, classMethods);
+    }
+
+    private void addSuperClassMethods(ClassMember member, Set<Method> superClassMethods) {
+        for (Method method : superClassMethods) {
+            methodToParents.add(method, member);
+        }
+        superClassMethods = filterOutDuplicates(member, superClassMethods);
+        parentToMethods.add(member, superClassMethods);
     }
 
     private Set<Method> filterOutDuplicates(ParentMember member, Set<Method> parentMethods) {

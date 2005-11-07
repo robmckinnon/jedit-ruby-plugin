@@ -28,6 +28,11 @@ import gnu.regexp.REMatch;
  */
 public final class TestAutoIndent extends TestCase {
 
+    public final void testEndCount() {
+        int endCount = AutoIndentAndInsertEnd.getEndCount("end");
+        assertEquals("Assert end count correct.", 1, endCount);
+    }
+
     public final void testEndTrue() {
         assertTrue(hasEnd("end"));
     }

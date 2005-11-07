@@ -20,12 +20,13 @@
 package org.jedit.ruby.completion;
 
 import org.gjt.sp.jedit.Buffer;
-import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.jedit.ruby.ast.Method;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ri.RDocViewer;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.ViewWrapper;
+import org.jedit.ruby.utils.EditorView;
 import sidekick.SideKickCompletion;
 
 import javax.swing.JScrollPane;
@@ -48,8 +49,8 @@ public final class RubyCompletion extends SideKickCompletion {
     private final String partialMethod;
     private JWindow frame;
 
-    public RubyCompletion(View view, String partialMethod, List<Method> methods) {
-        super(view, partialMethod == null ? "." : "." + partialMethod, methods);
+    public RubyCompletion(EditorView view, String partialMethod, List<Method> methods) {
+        super(view.getView(), partialMethod == null ? "." : "." + partialMethod, methods);
         this.methods = methods;
         this.partialMethod = partialMethod;
         frame = new JWindow((Frame)null);
@@ -104,7 +105,7 @@ public final class RubyCompletion extends SideKickCompletion {
             textArea.setSelectedText(text.substring(0, text.length() - 1));
             textArea.setCaretPosition(caretPosition - 1);
         }
-        return CodeAnalyzer.isInsertionPoint(textArea);
+        return CodeAnalyzer.isDotInsertionPoint(new ViewWrapper(view));
     }
 
     public final void insert(int index) {

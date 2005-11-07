@@ -21,11 +21,10 @@ package org.jedit.ruby.completion;
 
 import java.util.*;
 
-import org.gjt.sp.jedit.*;
-import org.jedit.ruby.ast.Member;
-import org.jedit.ruby.ast.Method;
+import org.jedit.ruby.ast.*;
 import org.jedit.ruby.cache.RubyCache;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.EditorView;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -34,9 +33,12 @@ public final class CodeCompletor {
 
     private final CodeAnalyzer analyzer;
     private final List<Method> methods;
+    private final EditorView view;
 
-    public CodeCompletor(View view) {
-        analyzer = new CodeAnalyzer(view.getTextArea(), view.getBuffer());
+    public CodeCompletor(EditorView editorView) {
+        RubyPlugin.log("completing", getClass());
+        view = editorView;
+        analyzer = new CodeAnalyzer(editorView);
         methods = findMethods();
     }
 
@@ -52,13 +54,27 @@ public final class CodeCompletor {
         return analyzer.getPartialMethod();
     }
 
-    public final boolean isInsertionPoint() {
-        return analyzer.isInsertionPoint();
+    private String getPartialClass() {
+        return analyzer.getPartialClass();
+    }
+
+    public final boolean isDotInsertionPoint() {
+        return analyzer.isDotInsertionPoint();
+    }
+
+    public RubyCompletion getDotCompletion() {
+        return new RubyCompletion(view, getPartialMethod(), getMethods());
+    }
+
+    public boolean hasCompletion() {
+        return true;
+    }
+
+    public RubyCompletion getCompletion() {
+        return new RubyCompletion(view, getPartialMethod(), methods);
     }
 
     private List<Method> findMethods() {
-        Set<Method> methods;
-
 //        if (CodeAnalyzer.hasLastReturnTypes()) {
 //            methods = getMethodsOfParents(CodeAnalyzer.getLastReturnTypes());
 //
@@ -66,17 +82,12 @@ public final class CodeCompletor {
 //                filterMethods(methods, getPartialMethod());
 //            }
 //        } else if (analyzer.getMethodCalledOnThis() != null) {
+        Set<Method> methods;
         if (analyzer.getMethodCalledOnThis() != null) {
-            String className = analyzer.getClassName();
-            if (className != null) {
-                methods = completeUsingClass(className);
-            } else {
-                methods = completeUsingMethods(analyzer.getMethodsCalledOnVariable());
-            }
+            methods = findMethodsFromCallee();
 
-            if (getPartialMethod() != null) {
-                filterMethods(methods, getPartialMethod());
-            }
+        } else if (getPartialClass() == null) {
+            methods = findMethodsFromPosition();
 
         } else {
             methods = new HashSet<Method>();
@@ -91,27 +102,98 @@ public final class CodeCompletor {
         return methodList;
     }
 
-    private static void filterMethods(Set<Method> methods, String partialMethod) {
-        for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
-            Method method = iterator.next();
+    private Set<Method> findMethodsFromPosition() {
+        Member member = view.getMemberAtCaretPosition();
+        Set<Method> methods;
 
-            if (!method.getShortName().startsWith(partialMethod)) {
-                iterator.remove();
+        if (member == null) {
+            methods = findMethods("Kernel", false);
+        } else {
+            MethodFinderVisitor visitor = new MethodFinderVisitor();
+            member.accept(visitor);
+            methods = visitor.methods;
+        }
+
+        if (methods == null) {
+            methods = new HashSet<Method>();
+        }
+        return methods;
+    }
+
+    private class MethodFinderVisitor extends MemberVisitorAdapter {
+        Set<Method> methods;
+
+        public void handleModule(Module module) {
+            methods = findMethods(module.getFullName(), true);
+        }
+
+        public void handleClass(ClassMember classMember) {
+            methods = findMethods(classMember.getFullName(), true);
+            String superClass = classMember.getSuperClassName();
+
+            if (superClass != null) {
+                methods.addAll(findMethods(superClass, true));
             }
+        }
+
+        public void handleMethod(Method method) {
+            methods = findMethods(method.getParentMemberName(), false);
+        }
+
+        public void handleRoot(Root root) {
+            methods = findMethods("Kernel", false);
         }
     }
 
-    private Set<Method> completeUsingClass(String className) {
-        RubyPlugin.log("class: " + className, getClass());
-        Set<Method> methods = RubyCache.instance().getMethodsOfMember(className);
-        RubyPlugin.log("methods: " + methods.size(), getClass());
+    private Set<Method> findMethods(String parentName, boolean removeInstanceMethods) {
+        Set<Method> methods = getMethodsOfParentMember(parentName, removeInstanceMethods);
+        return filterMethods(methods, getPartialMethod());
+    }
 
-        if (analyzer.isClass()) {
+    private Set<Method> findMethodsFromCallee() {
+        Set<Method> methods;
+        String className = analyzer.getClassMethodCalledFrom();
+        if (className != null) {
+            methods = getMethodsOfParentMember(className, analyzer.isClass());
+        } else {
+            methods = completeUsingMethods(analyzer.getMethodsCalledOnVariable());
+        }
+
+        if (getPartialMethod() != null) {
+            filterMethods(methods, getPartialMethod());
+        }
+        return methods;
+    }
+
+    private Set<Method> filterMethods(Set<Method> methods, String partialMethod) {
+        if (partialMethod != null) {
             for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
                 Method method = iterator.next();
-                if (!method.isClassMethod()) {
+
+                if (!method.getShortName().startsWith(partialMethod)) {
                     iterator.remove();
                 }
+            }
+        }
+
+        return methods;
+    }
+
+    private Set<Method> getMethodsOfParentMember(String parentMember, boolean removeInstanceMethods) {
+        RubyPlugin.log("parent: " + parentMember, getClass());
+        Set<Method> methods = RubyCache.instance().getMethodsOfMember(parentMember);
+        RubyPlugin.log("methods: " + methods.size(), getClass());
+
+        for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
+            Method method = iterator.next();
+
+            if (method.isClassMethod()) {
+                String name = method.getName();
+                if (name.equals("new") || name.equals("[]")) {
+                    iterator.remove();
+                }
+            } else if (removeInstanceMethods) {
+                iterator.remove();
             }
         }
 
@@ -192,4 +274,5 @@ public final class CodeCompletor {
             this.objectMethodsLast = objectMethodsLast;
         }
     }
+
 }

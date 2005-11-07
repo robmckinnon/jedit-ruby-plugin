@@ -46,6 +46,8 @@ final class RubyNodeVisitor extends AbstractVisitor {
     private final List<RubyParser.WarningListener> problemListeners;
     private final LineCounter lineCounter;
     private final NameVisitor nameVisitor;
+    private static final String CLASS = "class";
+    private static final String MODULE = "module";
 
     public RubyNodeVisitor(LineCounter lineCounts, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
         lineCounter = lineCounts;
@@ -109,23 +111,42 @@ final class RubyNodeVisitor extends AbstractVisitor {
 
     public final SingleNodeVisitor visitModuleNode(ModuleNode module) {
 //        System.out.print("[");
-        addParentNode("module", module, module, module.getBodyNode());
+        addParentNode(MODULE, module, module, module.getBodyNode());
 //        System.out.print("]");
         return null;
     }
 
     public final SingleNodeVisitor visitClassNode(ClassNode classNode) {
-        addParentNode("class", classNode, classNode, classNode.getBodyNode());
+        Member member = addParentNode(CLASS, classNode, classNode, classNode.getBodyNode());
+        Node superNode = classNode.getSuperNode();
+
+        if (superNode != null) {
+            superNode.accept(nameVisitor);
+            StringBuffer name = new StringBuffer();
+            for (String namespace : nameVisitor.namespaces) {
+                name.append(namespace).append("::");
+            }
+            nameVisitor.namespaces.clear();
+            name.append(nameVisitor.name);
+            ((ClassMember)member).setSuperClassName(name.toString());
+        }
+
         return null;
     }
 
-    private void addParentNode(String memberType, Node node, IScopingNode scopeNode, ScopeNode bodyNode) {
+    private Member addParentNode(String memberType, Node node, IScopingNode scopeNode, ScopeNode bodyNode) {
         visitNode(node);
         scopeNode.getCPath().accept(nameVisitor);
         String name = nameVisitor.name;
 //        System.out.print(": " + name);
 
-        Member member = new Module(name);
+        Member member;
+        if (memberType == MODULE) {
+            member = new Module(name);
+        } else {
+            member = new ClassMember(name);
+        }
+
         member = populateOffsets(member, node.getPosition(), memberType);
 
         int colonNameCount = nameVisitor.namespaces.size();
@@ -150,6 +171,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
             colonNameCount--;
         }
         currentMember.removeLast();
+        return member;
     }
 
     public SingleNodeVisitor visitArgsCatNode(ArgsCatNode node) {
@@ -218,19 +240,19 @@ final class RubyNodeVisitor extends AbstractVisitor {
     }
 
     private void populateNamespace(Member member) {
+        StringBuffer namespace = new StringBuffer();
         if (namespaceNames.size() > 0) {
-            String namespace = "";
             for (String name : namespaceNames) {
-                namespace += name + "::";
+                namespace.append(name).append("::");
             }
-            member.setNamespace(namespace);
+            member.setNamespace(namespace.toString());
         }
         if (compositeNamespaceNames.size() > 0) {
-            String namespace = "";
+            namespace = new StringBuffer();
             for (String name : compositeNamespaceNames) {
-                namespace += name + "::";
+                namespace.append(name).append("::");
             }
-            member.setCompositeNamespace(namespace);
+            member.setCompositeNamespace(namespace.toString());
         }
     }
 
@@ -387,7 +409,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
             visits--;
 
             if (visits == 0) {
-                this.name = node.getName();
+                name = node.getName();
             } else {
                 namespaces.add(node.getName());
             }
@@ -395,7 +417,11 @@ final class RubyNodeVisitor extends AbstractVisitor {
         }
 
         public SingleNodeVisitor visitConstNode(ConstNode node) {
-            namespaces.add(node.getName());
+            if (visits == 0) {
+                name = node.getName();
+            } else {
+                namespaces.add(node.getName());
+            }
             return null;
         }
     }

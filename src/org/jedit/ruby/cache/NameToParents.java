@@ -21,6 +21,8 @@ package org.jedit.ruby.cache;
 
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.ParentMember;
+import org.jedit.ruby.ast.ClassMember;
+import org.jedit.ruby.ast.MemberVisitorAdapter;
 
 import java.util.*;
 
@@ -31,6 +33,8 @@ final class NameToParents {
 
     private final Map<String, ParentMember> fullNameToMember = new HashMap<String, ParentMember>();
     private final Map<String, ParentMember> nameToMember = new HashMap<String, ParentMember>();
+    private final ClassVisitor classVisitor = new ClassVisitor();
+
     private List<Member> allMembers;
     private ParentToImmediateMethods parentToImmediateMethods;
 
@@ -39,6 +43,17 @@ final class NameToParents {
         String name = member.getName();
         fullNameToMember.put(fullName, member);
         nameToMember.put(name, member);
+    }
+
+    final ClassMember getClass(String name) {
+        ParentMember member = getMember(name);
+
+        if (member == null) {
+            return null;
+        } else {
+            member.accept(classVisitor);
+            return classVisitor.classMember;
+        }
     }
 
     final ParentMember getMember(String name) {
@@ -85,5 +100,13 @@ final class NameToParents {
 
     public final void setParentToImmediateMethods(ParentToImmediateMethods parentToImmediateMethods) {
         this.parentToImmediateMethods = parentToImmediateMethods;
+    }
+
+    private static class ClassVisitor extends MemberVisitorAdapter {
+        ClassMember classMember = null;
+
+        public void handleClass(ClassMember clas) {
+            classMember = clas;
+        }
     }
 }

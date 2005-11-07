@@ -133,7 +133,7 @@ public final class RubyActions {
             if (!members.containsErrors()) {
                 JEditTextArea textArea = view.getTextArea();
                 int caretPosition = textArea.getCaretPosition();
-                Member member = members.getCurrentMember(caretPosition);
+                Member member = members.getLastMemberBefore(caretPosition);
                 if (member != null && caretPosition == member.getStartOffset()) {
                     member = members.getPreviousMember(caretPosition);
                 }

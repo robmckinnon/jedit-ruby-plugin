@@ -20,15 +20,22 @@
 package org.jedit.ruby.ast;
 
 /**
+ * Represents root of the file, can be
+ * used to represent a position that is
+ * outside of any other {@link Member}.
+ *
  * @author robmckinnon at users.sourceforge.net
  */
 public final class Root extends Member {
 
     public Root(int endOffset) {
         super("root");
+        setStartOuterOffset(0);
+        setStartOffset(0);
         setEndOffset(endOffset);
     }
 
     public final void accept(MemberVisitor visitor) {
+        visitor.handleRoot(this);
     }
 }

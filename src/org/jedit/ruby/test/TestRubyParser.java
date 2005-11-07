@@ -26,6 +26,7 @@ import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.parser.LineCounter;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.RubyMembers;
+import org.jedit.ruby.ast.ClassMember;
 import org.jruby.lexer.yacc.ISourcePosition;
 
 import java.util.List;
@@ -172,7 +173,6 @@ public final class TestRubyParser extends TestCase {
             "    puts \"waddling\"\n" +
             "  end";
 
-
     private String code;
 
     public void setUp() {
@@ -181,6 +181,24 @@ public final class TestRubyParser extends TestCase {
 
     private void assertNameCorrect(String expected, List<Member> members) {
         assertEquals("Assert method name correct", expected, members.get(0).getName());
+    }
+
+    public final void testParseExtendedClass() {
+        assertSuperClassCorrect("Less");
+    }
+
+    public final void testParseExtendedClass2() {
+        assertSuperClassCorrect("Base::Less");
+    }
+
+    public final void testParseExtendedClass3() {
+        assertSuperClassCorrect("ActiveRecord::Base::Less");
+    }
+
+    private void assertSuperClassCorrect(String superClass) {
+        List<Member> members = getMembersList("class Red < "+superClass +"\nend");
+        ClassMember classMember = (ClassMember)members.get(0);
+        assertEquals("Assert superclass name correct.", superClass, classMember.getSuperClassName());
     }
 
     public final void testParseParamMethod() {
@@ -272,18 +290,18 @@ public final class TestRubyParser extends TestCase {
 
     public final void testEndOffsets() {
         RubyMembers members = RubyParser.getMembers(DUCK, getUniquePath());
-        Member member = members.getCurrentMember(6);
+        Member member = members.getLastMemberBefore(6);
         assertEquals("Member correct.", "Duck", member.getName());
         assertEquals("End char correct.", DUCK.charAt(38), 'd');
         assertEquals("Class offset correct.", 39, member.getEndOffset());
 
-        member = members.getCurrentMember(13);
+        member = members.getLastMemberBefore(13);
         assertEquals("Member correct.", "Duck", member.getName());
-        member = members.getCurrentMember(14);
+        member = members.getLastMemberBefore(14);
         assertEquals("Member correct.", "Duck", member.getName());
-        member = members.getCurrentMember(17);
+        member = members.getLastMemberBefore(17);
         assertEquals("Member correct.", "quack", member.getName());
-        member = members.getCurrentMember(18);
+        member = members.getLastMemberBefore(18);
         assertEquals("Member correct.", "quack", member.getName());
         assertEquals("End char correct.", DUCK.charAt(35), '\n');
         assertEquals("Class offset correct.", 35, member.getEndOffset());
@@ -574,7 +592,7 @@ public final class TestRubyParser extends TestCase {
 
     private void assertPreviousMemberCorrect(String text, int caretPosition, String expectedName) {
         RubyMembers members = RubyParser.getMembers(text, getUniquePath(), new TestListener(), false);
-        Member member = members.getCurrentMember(caretPosition);
+        Member member = members.getLastMemberBefore(caretPosition);
 
         if(expectedName == null) {
             assertNull("assert previous member is null", member);

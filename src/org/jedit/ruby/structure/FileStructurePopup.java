@@ -85,7 +85,7 @@ public final class FileStructurePopup {
 
     private void showPopup(View view, RubyMembers members, Member[] displayMembers) {
         int caretPosition = view.getTextArea().getCaretPosition();
-        Member selectedMember = members.getCurrentMember(caretPosition);
+        Member selectedMember = members.getLastMemberBefore(caretPosition);
         showPopup(view, displayMembers, selectedMember);
     }
 

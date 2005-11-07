@@ -37,10 +37,10 @@ public abstract class Member implements Comparable<Member> {
     private Member parentMember;
     private List<Member> childMembers;
 
+    private final String shortName;
+    private String name;
     private String namespace;
     private String compositeNamespace;
-    private String name;
-    private final String shortName;
     private String documentation;
     private int startOuterOffset;
     private int startOffset;
@@ -49,7 +49,8 @@ public abstract class Member implements Comparable<Member> {
     public Member(String name) {
         parentCount = -1;
         setName(name);
-        shortName = name.indexOf("(") != -1 ? (new StringTokenizer(name, " (")).nextToken() : name;
+        boolean noParameters = name.indexOf("(") == -1;
+        shortName = noParameters ? name : (new StringTokenizer(name, " (")).nextToken();
     }
 
     public int compareTo(Member member) {
@@ -167,7 +168,7 @@ public abstract class Member implements Comparable<Member> {
 
             if (displayNamesEqual) {
                 if (hasParentMember()) {
-                    equal = parentMember.equals(member.getParentMember());
+                    equal = parentMember.equals(member.parentMember);
                 } else {
                     equal = true;
                 }

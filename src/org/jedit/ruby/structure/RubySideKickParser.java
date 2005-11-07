@@ -24,11 +24,13 @@ import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
+import org.gjt.sp.jedit.jEdit;
 import org.jruby.lexer.yacc.ISourcePosition;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.ViewWrapper;
 import org.jedit.ruby.completion.CodeCompletor;
 import org.jedit.ruby.completion.RubyCompletion;
 import org.jedit.ruby.completion.CodeAnalyzer;
@@ -42,13 +44,29 @@ import javax.swing.tree.DefaultMutableTreeNode;
  */
 public final class RubySideKickParser extends SideKickParser {
 
-    private static DefaultErrorSource errorSource;
     private static final ErrorSource.Error[] EMPTY_ERROR_LIST = new ErrorSource.Error[0];
+    private static DefaultErrorSource errorSource;
+
     private RubyTokenHandler tokenHandler;
 
     public RubySideKickParser() {
         super("ruby");
         tokenHandler = new RubyTokenHandler();
+    }
+
+    /**
+     * True if caret is at a method insertion
+     * point, else false.
+     * This means that if the user types a dot or
+     * equivalent, this method will return true
+     * permitting completion to automatically
+     * occur after a delay. In other cases
+     * there will be no automatic completion
+     * after a delay, the user will have to
+     * manually hit the completion shortcut.
+     */
+    public boolean canCompleteAnywhere() {
+        return CodeAnalyzer.isDotInsertionPoint(new ViewWrapper(jEdit.getActiveView()));
     }
 
     public final boolean supportsCompletion() {
@@ -61,11 +79,7 @@ public final class RubySideKickParser extends SideKickParser {
 
     public static ErrorSource.Error[] getErrors() {
         ErrorSource.Error[] errors = errorSource.getAllErrors();
-        if (errors != null) {
-            return errors;
-        } else {
-            return EMPTY_ERROR_LIST;
-        }
+        return errors != null ? errors : EMPTY_ERROR_LIST;
     }
 
     public final SideKickParsedData parse(final Buffer buffer, final DefaultErrorSource errorSource) {
@@ -73,38 +87,36 @@ public final class RubySideKickParser extends SideKickParser {
         RubySideKickParser.errorSource = errorSource;
 
         RubyParser.WarningListener listener = new RubySideKickWarningListener(errorSource);
-        SideKickParsedData data = new RubyParsedData(buffer.getName());
-        DefaultMutableTreeNode parentNode = data.root;
+        SideKickParsedData data = new SideKickParsedData(buffer.getName());
         RubyMembers members = RubyParser.getMembers(text, buffer.getPath(), listener, false);
 
         if (!members.containsErrors()) {
-            addNodes(parentNode, members.getMembers(), buffer);
+            addNodes(data.root, members.getMembers(), buffer);
+
         } else if (RubyParser.hasLastGoodMembers(buffer)) {
             members = RubyParser.getLastGoodMembers(buffer);
-            addNodes(parentNode, members.combineMembersAndProblems(0), buffer);
+            addNodes(data.root, members.combineMembersAndProblems(0), buffer);
+
         } else {
-            addNodes(parentNode, members.getProblems(), buffer);
+            addNodes(data.root, members.getProblems(), buffer);
         }
 
         return data;
     }
 
-    public static final class RubyParsedData extends SideKickParsedData {
-        public RubyParsedData(String fileName) {
-            super(fileName);
-        }
-    }
-
     public final SideKickCompletion complete(EditPane editPane, int caret) {
+        Buffer buffer = editPane.getBuffer();
+        RubyToken syntaxType = tokenHandler.getTokenAtCaret(buffer, caret);
         RubyCompletion completion = null;
-        RubyToken syntaxType = tokenHandler.getTokenAtCaret(editPane.getBuffer(), caret);
 
         if (!ignore(syntaxType)) {
-            RubyPlugin.log("completing", getClass());
-            CodeCompletor completor = new CodeCompletor(editPane.getView());
+            CodeCompletor completor = new CodeCompletor(new ViewWrapper(editPane.getView()));
 
-            if (completor.isInsertionPoint()) {
-                completion = new RubyCompletion(editPane.getView(), completor.getPartialMethod(), completor.getMethods());
+            if (completor.isDotInsertionPoint()) {
+                completion = completor.getDotCompletion();
+
+            } else if (completor.hasCompletion()) {
+                completion = completor.getCompletion();
             }
         }
 
@@ -152,7 +164,7 @@ public final class RubySideKickParser extends SideKickParser {
     private void addNodes(DefaultMutableTreeNode parentNode, Member[] members, Buffer buffer) {
         if (members != null) {
             for (Member member : members) {
-                MemberNode node = new org.jedit.ruby.structure.MemberNode(member);
+                MemberNode node = new MemberNode(member);
                 node.start = buffer.createPosition(Math.min(buffer.getLength(), member.getStartOffset()));
                 node.end = buffer.createPosition(Math.min(buffer.getLength(), member.getEndOffset()));
                 DefaultMutableTreeNode treeNode = node.createTreeNode();

@@ -53,8 +53,8 @@ public final class JRubyParser {
         this.warnings = new Warnings(listeners);
 
         Reader content = new StringReader(text);
-        List<Member> members;
         RubyNodeVisitor visitor = new RubyNodeVisitor(lineCounter, methodMembers, listeners);
+        List<Member> members;
 
         try {
             Node node = parse(filePath, content, new RubyParserConfiguration());

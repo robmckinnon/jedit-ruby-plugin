@@ -37,4 +37,7 @@ public class MemberVisitorAdapter implements MemberVisitor {
 
     public void handleError(Error warning) {
     }
+
+    public void handleRoot(Root root) {
+    }
 }

@@ -21,6 +21,10 @@ package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
 import org.jedit.ruby.completion.CodeAnalyzer;
+import org.jedit.ruby.utils.EditorView;
+import org.jedit.ruby.ast.RubyMembers;
+import org.jedit.ruby.ast.Member;
+import org.gjt.sp.jedit.View;
 
 import java.util.List;
 
@@ -36,6 +40,40 @@ public final class TestCodeAnalyzer extends TestCase {
                     "a.[] \n" +
                     "3 \n";
 
+    public final void testOutsideMember() {
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView("", 0));
+        assertCorrect(analyzer, null, null, false);
+    }
+
+    public final void testPartialClass() {
+        String clas = "Arr";
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(clas, clas.length()));
+        assertCorrect(analyzer, null, clas, false);
+    }
+
+    public final void testDotCompletePartialClass() {
+        String clas = "Red::arr";
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(clas, clas.length()));
+        assertCorrect(analyzer, "arr", null, true);
+    }
+
+    public final void testPartialNamespaceClass() {
+        String clas = "Red::Arr";
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(clas, clas.length()));
+        assertCorrect(analyzer, null, clas, false);
+    }
+
+    public final void testPartialMethod() {
+        String method = "to_";
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(method, 3));
+        assertCorrect(analyzer, method, null, false);
+    }
+
+    private void assertCorrect(CodeAnalyzer analyzer, String partialMethod, String partialClass, boolean isDotCompletion) {
+        assertEquals("Assert dot completion point correct", isDotCompletion, analyzer.isDotInsertionPoint());
+        assertEquals("Assert partial method correct", partialMethod, analyzer.getPartialMethod());
+        assertEquals("Assert partial class correct", partialClass, analyzer.getPartialClass());
+    }
 
     public final void testFindMethod1() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
@@ -72,4 +110,45 @@ public final class TestCodeAnalyzer extends TestCase {
 //        assertEquals("assert found method", "[]", methods.get(4));
 //    }
 
+    private static final class MockEditorView implements EditorView {
+        private String text;
+        private int caret;
+
+        public MockEditorView(String text, int caret) {
+            this.text = text;
+            this.caret = caret;
+        }
+
+        public int getCaretPosition() {
+            return caret;
+        }
+
+        public String getLineUpToCaret() {
+            return text.substring(0, caret);
+        }
+
+        public String getText(int start, int length) {
+            return text.substring(start, start+length);
+        }
+
+        public int getLength() {
+            return text.length();
+        }
+
+        public String getTextWithoutLine() {
+            return null;
+        }
+
+        public View getView() {
+            return null;
+        }
+
+        public RubyMembers getMembers() {
+            return null;
+        }
+
+        public Member getMemberAtCaretPosition() {
+            return null;
+        }
+    }
 }

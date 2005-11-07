@@ -355,5 +355,4 @@ public final class Method extends Member {
     private String getDocumentationParameters() {
         return parameters;
     }
-
 }

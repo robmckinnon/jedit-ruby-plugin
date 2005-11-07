@@ -44,7 +44,7 @@ public final class RiParser {
         for (JarEntry entry : entries) {
             loadClassDesciption(entry);
         }
-        RubyCache.instance().populateSuperclassMethods();
+        RubyCache.instance().populateSuperClassMethods();
     }
 
     private static List<String> getRDocExcludePatterns() {
@@ -151,7 +151,7 @@ public final class RiParser {
 
     private static void cache(ClassDescription description, String path) {
         ClassMember parent = new ClassMember(description.getName());
-        parent.setParentMemberName(description.getSuperclass());
+        parent.setSuperClassName(description.getSuperclass());
         parent.setEndOffset(0);
         String namespace = description.getNamespace();
         if(namespace != null && namespace.trim().length() > 0) {
@@ -164,7 +164,7 @@ public final class RiParser {
         addMethods(description.getClassMethods(), parent);
         Member[] members = new Member[1];
         members[0] = parent;
-        RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>());
+        RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>(), 0);
         RubyCache.instance().addMembers(rubyMembers, path);
     }
 

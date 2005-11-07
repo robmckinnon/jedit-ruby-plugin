@@ -117,12 +117,14 @@ public final class RDocViewer extends JPanel
     }
 
     private void setListData(final List members) {
-        resultList.setModel (
-            new AbstractListModel() {
-                public int getSize() { return members.size(); }
-                public Object getElementAt(int i) { return members.get(i); }
-            }
-        );
+        if (resultList.getModel() == null || resultList.getModel().getSize() != members.size()) {
+            resultList.setModel (
+                new AbstractListModel() {
+                    public int getSize() { return members.size(); }
+                    public Object getElementAt(int i) { return members.get(i); }
+                }
+            );
+        }
     }
 
     public final void focusOnDefaultComponent() {
