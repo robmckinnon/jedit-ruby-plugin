@@ -173,6 +173,13 @@ public final class TestRubyParser extends TestCase {
             "    puts \"waddling\"\n" +
             "  end";
 
+    private static final String TWO_METHOD_CLASS = "class Here\n"+
+            "  def there\n"+
+            "  end\n"+
+            "  def everywhere\n"+
+            "  end\n"+
+            "end";
+    
     private String code;
 
     public void setUp() {

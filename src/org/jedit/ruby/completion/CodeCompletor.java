@@ -67,7 +67,7 @@ public final class CodeCompletor {
     }
 
     public boolean hasCompletion() {
-        return true;
+        return methods.size() > 0 && !analyzer.isLastCompleted();
     }
 
     public RubyCompletion getCompletion() {
@@ -115,9 +115,13 @@ public final class CodeCompletor {
         }
 
         if (methods == null) {
-            methods = new HashSet<Method>();
+            methods = findMethods("Kernel", false);
         }
         return methods;
+    }
+
+    public static void setLastCompleted(Method method) {
+        CodeCompletionComparator.instance.addLastCompleted(method);
     }
 
     private class MethodFinderVisitor extends MemberVisitorAdapter {
@@ -245,6 +249,8 @@ public final class CodeCompletor {
 
     private static final class CodeCompletionComparator implements Comparator<Method> {
         private static final CodeCompletionComparator instance = new CodeCompletionComparator();
+
+        private Map<String, Method> classToLastCompletedMethod = new HashMap<String, Method>();
         private boolean objectMethodsLast;
 
         public final int compare(Method method, Method otherMethod) {
@@ -256,13 +262,31 @@ public final class CodeCompletor {
             } else if (objectMethodsLast && !onObjectClass && otherOnObjectClass) {
                 return -1;
             } else {
-                int compare = method.getName().compareTo(otherMethod.getName());
+                boolean isLastCompleted = isLastCompleted(method);
+                boolean isOtherLastCompleted = isLastCompleted(otherMethod);
 
-                if (compare == 0) {
-                    return method.getFullName().compareTo(otherMethod.getFullName());
+                if (isLastCompleted && !isOtherLastCompleted) {
+                    return -1;
+                } else if (!isLastCompleted && isOtherLastCompleted) {
+                    return 1;
                 } else {
-                    return compare;
+                    int compare = method.getName().compareTo(otherMethod.getName());
+
+                    if (compare == 0) {
+                        return method.getFullName().compareTo(otherMethod.getFullName());
+                    } else {
+                        return compare;
+                    }
                 }
+            }
+        }
+
+        private boolean isLastCompleted(Method method) {
+            if (method.hasParentMemberName()) {
+                Method last = classToLastCompletedMethod.get(method.getParentMemberName());
+                return method.equals(last);
+            } else {
+                return false;
             }
         }
 
@@ -272,6 +296,14 @@ public final class CodeCompletor {
 
         public final void setObjectMethodsLast(boolean objectMethodsLast) {
             this.objectMethodsLast = objectMethodsLast;
+        }
+
+        public void addLastCompleted(Method method) {
+            RubyPlugin.log("add last completed: " + String.valueOf(method), getClass());
+            if (method != null && method.hasParentMemberName()) {
+                RubyPlugin.log("add last completed: " + method.getParentMemberName() + "." + method.getName(), getClass());
+                classToLastCompletedMethod.put(method.getParentMemberName(), method);
+            }
         }
     }
 

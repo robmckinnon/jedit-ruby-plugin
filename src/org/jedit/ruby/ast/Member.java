@@ -279,8 +279,8 @@ public abstract class Member implements Comparable<Member> {
         return parentMemberName;
     }
 
-    public final void setParentMemberName(String superclass) {
-        this.parentMemberName = superclass;
+    public final void setParentMemberName(String parentClass) {
+        this.parentMemberName = parentClass;
     }
 
     public final void setParentMember(Member parentMember) {

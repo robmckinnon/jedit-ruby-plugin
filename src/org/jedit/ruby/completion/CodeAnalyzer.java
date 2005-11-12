@@ -85,7 +85,11 @@ public final class CodeAnalyzer {
     }
 
     public static boolean isDotInsertionPoint(EditorView view) {
-        return DotCompleteRegExp.instance.isMatch(view.getLineUpToCaret().trim());
+        String lineUpToCaret = view.getLineUpToCaret();
+        while (lineUpToCaret.length() > 0 && Character.isWhitespace(lineUpToCaret.charAt(0))) {
+            lineUpToCaret = lineUpToCaret.substring(1);
+        }
+        return DotCompleteRegExp.instance.isMatch(lineUpToCaret);
     }
 
     public static boolean hasLastReturnTypes() {
@@ -111,14 +115,15 @@ public final class CodeAnalyzer {
     }
 
     public final boolean isDotInsertionPoint() {
-        RubyPlugin.log("insertion? " + String.valueOf(methodCalledOnThis) + " " + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
-        boolean insertionPoint = methodCalledOnThis != null;
+        RubyPlugin.log("insertion? " + String.valueOf(methodCalledOnThis) + "."
+                + String.valueOf(partialMethod) + " vs. "
+                + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
 
-        if (partialMethod != null) {
-            insertionPoint = insertionPoint && !partialMethod.equals(LAST_COMPLETED);
-        }
+        return methodCalledOnThis != null && !isLastCompleted();
+    }
 
-        return insertionPoint;
+    public boolean isLastCompleted() {
+        return partialMethod != null && partialMethod.equals(LAST_COMPLETED);
     }
 
     public final String getMethodCalledOnThis() {

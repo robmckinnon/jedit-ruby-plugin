@@ -94,6 +94,7 @@ public final class RubyCompletion extends SideKickCompletion {
         if(!continueCompleting) {
             CodeAnalyzer.setLastReturnTypes(null);
         }
+        RubyPlugin.log("continue completing: " + continueCompleting, getClass());
         return continueCompleting;
     }
 
@@ -119,7 +120,7 @@ public final class RubyCompletion extends SideKickCompletion {
 
     private Completion insert(Method method) {
         Buffer buffer = view.getBuffer();
-        RubyPlugin.log("method: " + method.getName(), getClass());
+        RubyPlugin.log("insert method: " + method.getName(), getClass());
         int caretPosition = textArea.getCaretPosition();
         int offset = caretPosition;
 
@@ -141,7 +142,9 @@ public final class RubyCompletion extends SideKickCompletion {
             }
         }
         buffer.insert(offset, completion.text);
-        CodeAnalyzer.setLastCompleted(completion.text);
+        RubyPlugin.log("completion text: " + completion.text, getClass());
+        CodeAnalyzer.setLastCompleted(completion.member.getName());
+        CodeCompletor.setLastCompleted((Method)completion.member);
         textArea.setCaretPosition(textArea.getCaretPosition() + completion.caretAdjustment);
         frame.setVisible(false);
         frame.dispose();
@@ -153,39 +156,43 @@ public final class RubyCompletion extends SideKickCompletion {
         String name = method.getName();
 
         if (name.equals("each")) {
-            return new Completion("each do ||", -1, true);
+            return new Completion(method, "each do ||", -1, true);
 
         } else if (name.startsWith("[")) {
-            return new Completion(name, -1, false);
+            return new Completion(method, name, -1, false);
 
         } else if (NO_DOT_METHOD_STARTS.indexOf(name.charAt(0)) != -1) {
-            return new Completion(name + " ", 0, false);
+            return new Completion(method, name + " ", 0, false);
 
         } else if (name.endsWith("=") && name.length() > 1) {
             name = name.substring(0, name.length() - 1) + " = ";
-            return new Completion(name, 0, true);
+            return new Completion(method, name, 0, true);
 
         } else if (name.endsWith("?") && name.length() > 1) {
-            return new Completion(name + " ", 0, true);
+            return new Completion(method, name + " ", 0, true);
 
         } else if (method.hasParameters()) {
-            return new Completion(name + "()", -1, true);
+            return new Completion(method, name + "()", -1, true);
 
         } else {
-            return new Completion(name, 0, true);
+            return new Completion(method, name, 0, true);
         }
     }
 
     private static final class Completion {
+        final Member member;
         final String text;
         final int caretAdjustment;
         final boolean showDot;
 
-        public Completion(String text, int caretPositionAdjustment, boolean showDot) {
+        public Completion(Member member, String text, int caretPositionAdjustment, boolean showDot) {
             this.caretAdjustment = caretPositionAdjustment;
+            this.member = member;
             this.text = text;
             this.showDot = showDot;
         }
+
+
     }
 
 }

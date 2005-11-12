@@ -54,21 +54,6 @@ public final class RubySideKickParser extends SideKickParser {
         tokenHandler = new RubyTokenHandler();
     }
 
-    /**
-     * True if caret is at a method insertion
-     * point, else false.
-     * This means that if the user types a dot or
-     * equivalent, this method will return true
-     * permitting completion to automatically
-     * occur after a delay. In other cases
-     * there will be no automatic completion
-     * after a delay, the user will have to
-     * manually hit the completion shortcut.
-     */
-    public boolean canCompleteAnywhere() {
-        return CodeAnalyzer.isDotInsertionPoint(new ViewWrapper(jEdit.getActiveView()));
-    }
-
     public final boolean supportsCompletion() {
         return true;
     }
@@ -102,6 +87,21 @@ public final class RubySideKickParser extends SideKickParser {
         }
 
         return data;
+    }
+
+    /**
+     * True if caret is at a method insertion
+     * point, else false.
+     * This means that if the user types a dot or
+     * equivalent, this method will return true
+     * permitting completion to automatically
+     * occur after a delay. In other cases
+     * there will be no automatic completion
+     * after a delay, the user will have to
+     * manually hit the completion shortcut.
+     */
+    public boolean canCompleteAnywhere() {
+        return CodeAnalyzer.isDotInsertionPoint(new ViewWrapper(jEdit.getActiveView()));
     }
 
     public final SideKickCompletion complete(EditPane editPane, int caret) {

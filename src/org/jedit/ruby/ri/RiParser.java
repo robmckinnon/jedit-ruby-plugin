@@ -177,6 +177,7 @@ public final class RiParser {
             method.setDocumentationBlockParams(methodDescription.getBlockParameters());
             method.setDocumentationParams(methodDescription.getParameters());
             method.setDocumentationComment(methodDescription.getComment());
+            method.setParentMemberName(parent.getName());
             method.setParentMember(null);
             method.setReceiver("");
             method.setEndOffset(0);
