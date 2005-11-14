@@ -44,9 +44,12 @@ public final class XmlToBinary {
         try {
             result = (ClassDescription) d.readObject();
         } catch (Exception e) {
+            System.out.println("Exception with: " + file.toString());
             e.printStackTrace();
+            System.exit(1);
+        } finally {
+            d.close();
         }
-        d.close();
 
         if (result != null) {
             encode(result, file, inputPath, resultPath);

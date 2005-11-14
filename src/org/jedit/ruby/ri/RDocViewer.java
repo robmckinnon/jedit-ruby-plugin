@@ -102,10 +102,10 @@ public final class RDocViewer extends JPanel
         return panel;
     }
 
-    public static void setMethod(Method method) {
+    public static void setMemberInViewer(Member member) {
         for (RDocViewer viewer : viewers.keySet()) {
             if (viewer.isVisible()) {
-                viewer.setMember(method);
+                viewer.setMember(member);
             }
         }
     }

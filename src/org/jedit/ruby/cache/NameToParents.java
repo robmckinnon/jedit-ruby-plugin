@@ -27,6 +27,10 @@ import org.jedit.ruby.ast.MemberVisitorAdapter;
 import java.util.*;
 
 /**
+ * Manages mapping of module or class name
+ * to cached {@link ParentMember} object
+ * that have that name.
+ * 
  * @author robmckinnon at users.sourceforge.net
  */
 final class NameToParents {

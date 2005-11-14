@@ -96,12 +96,13 @@ public final class RubySideKickParser extends SideKickParser {
      * equivalent, this method will return true
      * permitting completion to automatically
      * occur after a delay. In other cases
-     * there will be no automatic completion
+     * there won't be automatic completion
      * after a delay, the user will have to
      * manually hit the completion shortcut.
      */
     public boolean canCompleteAnywhere() {
-        return CodeAnalyzer.isDotInsertionPoint(new ViewWrapper(jEdit.getActiveView()));
+        ViewWrapper view = new ViewWrapper(jEdit.getActiveView());
+        return CodeAnalyzer.isDotInsertionPoint(view) || RubyCompletion.continueCompleting();
     }
 
     public final SideKickCompletion complete(EditPane editPane, int caret) {
@@ -114,18 +115,22 @@ public final class RubySideKickParser extends SideKickParser {
 
             if (completor.isDotInsertionPoint()) {
                 completion = completor.getDotCompletion();
-
             } else if (completor.hasCompletion()) {
                 completion = completor.getCompletion();
+            } else {
+                completion = completor.getEmptyCompletion();
+                clearLastCompletion();
             }
-        }
-
-        if (completion == null) {
-            CodeAnalyzer.setLastReturnTypes(null);
-            CodeAnalyzer.setLastCompleted(null);
+        } else {
+            clearLastCompletion();
         }
 
         return completion;
+    }
+
+    private void clearLastCompletion() {
+        CodeAnalyzer.setLastReturnTypes(null);
+        CodeAnalyzer.setLastCompleted(null);
     }
 
     private boolean ignore(RubyToken token) {

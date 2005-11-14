@@ -185,7 +185,7 @@ public final class RubyCache {
             String superClassName = memberOrSuperclass.getSuperClassName();
             ClassMember superClass = nameToParents.getClass(superClassName);
             if (superClass != null) {
-                includeClassMethods(member, superClass);
+                addSuperClassMethods(member, superClass.getMethods());
                 populateSuperClassMethods(member, superClass);
             }
 
@@ -251,4 +251,17 @@ public final class RubyCache {
         return methodNames;
     }
 
+    public List<ParentMember> getParentsStartingWith(String partialClass) {
+        List<ParentMember> members = new ArrayList<ParentMember>();
+
+        List<String> names = nameToParents.getAllParentNames();
+        for (String name : names) {
+            if (name.startsWith(partialClass)) {
+                ParentMember member = nameToParents.getMember(name);
+                members.add(member);
+            }
+        }
+
+        return members;
+    }
 }

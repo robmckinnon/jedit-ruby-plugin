@@ -33,13 +33,25 @@ public final class CodeCompletor {
 
     private final CodeAnalyzer analyzer;
     private final List<Method> methods;
+    private final List<ParentMember> classesAndModules;
     private final EditorView view;
+    private static final ArrayList EMPTY_LIST = new ArrayList();
 
     public CodeCompletor(EditorView editorView) {
         RubyPlugin.log("completing", getClass());
         view = editorView;
         analyzer = new CodeAnalyzer(editorView);
         methods = findMethods();
+
+        if (isClassComplete()) {
+            classesAndModules = findClassesAndModules();
+        } else {
+            classesAndModules = null;
+        }
+    }
+
+    private boolean isClassComplete() {
+        return methods.size() == 0 && getPartialClass() != null;
     }
 
     public final List<Method> getMethods() {
@@ -62,16 +74,42 @@ public final class CodeCompletor {
         return analyzer.isDotInsertionPoint();
     }
 
-    public RubyCompletion getDotCompletion() {
-        return new RubyCompletion(view, getPartialMethod(), getMethods());
+    public boolean hasCompletion() {
+        boolean haveMethods = methods.size() > 0 && !analyzer.isLastCompleted();
+        return haveMethods || (classesAndModules != null && classesAndModules.size() > 0);
     }
 
-    public boolean hasCompletion() {
-        return methods.size() > 0 && !analyzer.isLastCompleted();
+    public RubyCompletion getDotCompletion() {
+        List members = methods;
+        if (classesAndModules != null && classesAndModules.size() > 0) {
+            members = new ArrayList(members);
+            members.addAll(classesAndModules);
+        }
+        return new RubyCompletion(view, getPartialClass(), getPartialMethod(), members);
+    }
+
+    public RubyCompletion getEmptyCompletion() {
+        return new RubyCompletion(view, getPartialClass(), getPartialMethod(), EMPTY_LIST);
     }
 
     public RubyCompletion getCompletion() {
-        return new RubyCompletion(view, getPartialMethod(), methods);
+        if (isClassComplete()) {
+            return new RubyCompletion(view, getPartialClass(), getPartialMethod(), classesAndModules);
+        } else {
+            return new RubyCompletion(view, getPartialClass(), getPartialMethod(), methods);
+        }
+    }
+
+    private List<ParentMember> findClassesAndModules() {
+        RubyCache cache = RubyCache.instance();
+        List<ParentMember> members = cache.getParentsStartingWith(getPartialClass());
+
+        if (members.size() > 0) {
+            ParentCompletionComparator.instance.setPartialName(getPartialClass());
+            Collections.sort(members, ParentCompletionComparator.instance);
+        }
+
+        return members;
     }
 
     private List<Method> findMethods() {
@@ -94,10 +132,10 @@ public final class CodeCompletor {
         }
 
         List<Method> methodList = new ArrayList<Method>(methods);
-        int size = methods.size();
-        if (size > 0) {
-            CodeCompletionComparator.instance.setObjectMethodsLast(size > 8);
-            Collections.sort(methodList, CodeCompletionComparator.instance);
+
+        if (methods.size() > 0) {
+            MethodCompletionComparator.instance.setObjectMethodsLast(methods.size() > 8);
+            Collections.sort(methodList, MethodCompletionComparator.instance);
         }
         return methodList;
     }
@@ -107,7 +145,7 @@ public final class CodeCompletor {
         Set<Method> methods;
 
         if (member == null) {
-            methods = findMethods("Kernel", false);
+            methods = findMethods("Kernel", false, true);
         } else {
             MethodFinderVisitor visitor = new MethodFinderVisitor();
             member.accept(visitor);
@@ -115,13 +153,15 @@ public final class CodeCompletor {
         }
 
         if (methods == null) {
-            methods = findMethods("Kernel", false);
+            methods = findMethods("Kernel", false, true);
         }
         return methods;
     }
 
-    public static void setLastCompleted(Method method) {
-        CodeCompletionComparator.instance.addLastCompleted(method);
+    public static void setLastCompleted(String partialName, Member member) {
+        MethodCompletionComparator.instance.addLastCompleted(member);
+        ParentCompletionComparator.instance.addLastCompleted(partialName, member);
+        CodeAnalyzer.setLastCompleted(member.getName());
     }
 
     private class MethodFinderVisitor extends MemberVisitorAdapter {
@@ -145,12 +185,16 @@ public final class CodeCompletor {
         }
 
         public void handleRoot(Root root) {
-            methods = findMethods("Kernel", false);
+            methods = findMethods("Kernel", false, true);
         }
     }
 
     private Set<Method> findMethods(String parentName, boolean removeInstanceMethods) {
-        Set<Method> methods = getMethodsOfParentMember(parentName, removeInstanceMethods);
+        return findMethods(parentName, removeInstanceMethods, false);
+    }
+
+    private Set<Method> findMethods(String parentName, boolean removeInstanceMethods, boolean removeCommonClassMethods) {
+        Set<Method> methods = getMethodsOfParentMember(parentName, removeInstanceMethods, removeCommonClassMethods);
         return filterMethods(methods, getPartialMethod());
     }
 
@@ -158,7 +202,7 @@ public final class CodeCompletor {
         Set<Method> methods;
         String className = analyzer.getClassMethodCalledFrom();
         if (className != null) {
-            methods = getMethodsOfParentMember(className, analyzer.isClass());
+            methods = getMethodsOfParentMember(className, analyzer.isClass(), false);
         } else {
             methods = completeUsingMethods(analyzer.getMethodsCalledOnVariable());
         }
@@ -183,7 +227,7 @@ public final class CodeCompletor {
         return methods;
     }
 
-    private Set<Method> getMethodsOfParentMember(String parentMember, boolean removeInstanceMethods) {
+    private Set<Method> getMethodsOfParentMember(String parentMember, boolean removeInstanceMethods, boolean removeCommonClassMethods) {
         RubyPlugin.log("parent: " + parentMember, getClass());
         Set<Method> methods = RubyCache.instance().getMethodsOfMember(parentMember);
         RubyPlugin.log("methods: " + methods.size(), getClass());
@@ -192,9 +236,11 @@ public final class CodeCompletor {
             Method method = iterator.next();
 
             if (method.isClassMethod()) {
-                String name = method.getName();
-                if (name.equals("new") || name.equals("[]")) {
-                    iterator.remove();
+                if (removeCommonClassMethods) {
+                    String name = method.getName();
+                    if (name.equals("new") || name.equals("[]")) {
+                        iterator.remove();
+                    }
                 }
             } else if (removeInstanceMethods) {
                 iterator.remove();
@@ -247,10 +293,51 @@ public final class CodeCompletor {
         return intersection;
     }
 
-    private static final class CodeCompletionComparator implements Comparator<Method> {
-        private static final CodeCompletionComparator instance = new CodeCompletionComparator();
+    private static final class ParentCompletionComparator implements Comparator<ParentMember> {
+        private static final ParentCompletionComparator instance = new ParentCompletionComparator();
+        private final Map<String, Member> partialNameToMember = new HashMap<String, Member>();
+        private String partialName;
 
-        private Map<String, Method> classToLastCompletedMethod = new HashMap<String, Method>();
+        public final int compare(ParentMember parent, ParentMember otherParent) {
+            Member member = partialNameToMember.get(partialName);
+            if (member != null) {
+                boolean isLastCompleted = parent.equals(member);
+                boolean isOtherLastCompleted = otherParent.equals(member);
+
+                if (isLastCompleted && !isOtherLastCompleted) {
+                    return -1;
+                } else if (!isLastCompleted && isOtherLastCompleted) {
+                    return 1;
+                } else {
+                    return nameCompare(parent, otherParent);
+                }
+            } else {
+                return nameCompare(parent, otherParent);
+            }
+        }
+
+        private int nameCompare(ParentMember parent, ParentMember otherParent) {
+            return parent.getFullName().compareTo(otherParent.getFullName());
+        }
+
+        public void addLastCompleted(String partialName, Member member) {
+            if (partialName != null) {
+                while (partialName.length() > 0) {
+                    partialNameToMember.put(partialName, member);
+                    partialName = partialName.substring(0, partialName.length() - 1);
+                }
+            }
+        }
+
+        public void setPartialName(String partialName) {
+            this.partialName = partialName;
+        }
+    }
+
+    private static final class MethodCompletionComparator extends MemberVisitorAdapter implements Comparator<Method> {
+        private static final MethodCompletionComparator instance = new MethodCompletionComparator();
+
+        private final Map<String, Method> classToLastCompletedMethod = new HashMap<String, Method>();
         private boolean objectMethodsLast;
 
         public final int compare(Method method, Method otherMethod) {
@@ -298,12 +385,16 @@ public final class CodeCompletor {
             this.objectMethodsLast = objectMethodsLast;
         }
 
-        public void addLastCompleted(Method method) {
+        public void handleMethod(Method method) {
             RubyPlugin.log("add last completed: " + String.valueOf(method), getClass());
             if (method != null && method.hasParentMemberName()) {
                 RubyPlugin.log("add last completed: " + method.getParentMemberName() + "." + method.getName(), getClass());
                 classToLastCompletedMethod.put(method.getParentMemberName(), method);
             }
+        }
+
+        public void addLastCompleted(Member member) {
+            member.accept(this);
         }
     }
 

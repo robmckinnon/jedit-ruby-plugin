@@ -1,6 +1,7 @@
 package org.jedit.ruby.utils;
 
 import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
 import org.jedit.ruby.ast.RubyMembers;
@@ -29,6 +30,22 @@ public class ViewWrapper implements EditorView {
         int start = textArea.getLineStartOffset(lineIndex);
         int end = textArea.getCaretPosition();
         return textArea.getText(start, end - start);
+    }
+
+    public String getLineUpToCaretLeftTrimmed() {
+        String line = getLineUpToCaret();
+        while (line.length() > 0 && Character.isWhitespace(line.charAt(0))) {
+            line = line.substring(1);
+        }
+        return line;
+    }
+
+    public void replaceLineUpToCaret(String newText) {
+        int caretPosition = getCaretPosition();
+        String oldText = getLineUpToCaret();
+        Selection.Range range = new Selection.Range(caretPosition - oldText.length(), caretPosition);
+        textArea.setSelection(range);
+        textArea.setSelectedText(newText);
     }
 
     public String getText(int start, int length) {
@@ -85,4 +102,5 @@ public class ViewWrapper implements EditorView {
     public View getView() {
         return textArea.getView();
     }
+
 }

@@ -11,6 +11,8 @@ public interface EditorView {
 
     String getLineUpToCaret();
 
+    String getLineUpToCaretLeftTrimmed();
+
     String getText(int start, int length);
 
     int getLength();
@@ -24,4 +26,5 @@ public interface EditorView {
     RubyMembers getMembers();
 
     Member getMemberAtCaretPosition();
+
 }

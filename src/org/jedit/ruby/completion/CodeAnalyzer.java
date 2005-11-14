@@ -70,26 +70,35 @@ public final class CodeAnalyzer {
                 partialMethod = match.toString(5);
             }
         } else {
-            match = PartialNameRegExp.instance.getMatch(line);
+            lookForClassMatch(line, true);
+        }
 
-            if (match != null) {
-                String partialName = match.toString(2);
+        if (partialClass == null) {
+            lookForClassMatch(line, false);
+        }
+    }
 
-                if (ClassNameRegExp.instance.isMatch(partialName)) {
-                    partialClass = partialName;
-                } else {
-                    partialMethod = partialName;
-                }
+    private void lookForClassMatch(String line, boolean setMethod) {
+        REMatch match;
+        match = PartialNameRegExp.instance.getMatch(line);
+        if (match != null) {
+            String partialName = match.toString(2);
+            if (ClassNameRegExp.instance.isMatch(partialName)) {
+                partialClass = partialName;
+            } else if (setMethod) {
+                partialMethod = partialName;
             }
         }
     }
 
     public static boolean isDotInsertionPoint(EditorView view) {
-        String lineUpToCaret = view.getLineUpToCaret();
-        while (lineUpToCaret.length() > 0 && Character.isWhitespace(lineUpToCaret.charAt(0))) {
-            lineUpToCaret = lineUpToCaret.substring(1);
-        }
+        String lineUpToCaret = view.getLineUpToCaretLeftTrimmed();
         return DotCompleteRegExp.instance.isMatch(lineUpToCaret);
+    }
+
+    public static boolean isClassCompletionPoint(EditorView view) {
+        String lineUpToCaret = view.getLineUpToCaretLeftTrimmed();
+        return ClassNameRegExp.instance.isMatch(lineUpToCaret);
     }
 
     public static boolean hasLastReturnTypes() {
@@ -335,8 +344,8 @@ public final class CodeAnalyzer {
         }
     }
 
-    private static final class DotCompleteRegExp extends RegularExpression {
-        private static final RE instance = new DotCompleteRegExp();
+    public static final class DotCompleteRegExp extends RegularExpression {
+        public static final RE instance = new DotCompleteRegExp();
         protected final String getPattern() {
             return "((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)((?:[^A-Z]\\S*)?)$";
         }
@@ -350,9 +359,9 @@ public final class CodeAnalyzer {
     }
 
     public static final class ClassNameRegExp extends RegularExpression {
-        private static final RE instance = new ClassNameRegExp();
+        public static final RE instance = new ClassNameRegExp();
         protected final String getPattern() {
-            return "^([A-Z]\\w*(::)?)+";
+            return "^([A-Z]\\w*(::)?)+:?";
         }
     }
 }

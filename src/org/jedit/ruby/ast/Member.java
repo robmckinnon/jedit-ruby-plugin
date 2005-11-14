@@ -160,7 +160,7 @@ public abstract class Member implements Comparable<Member> {
      * is a member with the same display name
      * and parent member as this member.
      */
-    public final boolean equals(Object obj) {
+    public boolean equals(Object obj) {
         boolean equal = false;
         if (obj instanceof Member) {
             Member member = ((Member)obj);
@@ -177,7 +177,7 @@ public abstract class Member implements Comparable<Member> {
         return equal;
     }
 
-    public final int hashCode() {
+    public int hashCode() {
         int code = getFullName().hashCode();
         if (hasParentMember()) {
             code += getParentMember().hashCode();

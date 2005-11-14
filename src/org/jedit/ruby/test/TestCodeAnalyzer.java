@@ -69,6 +69,31 @@ public final class TestCodeAnalyzer extends TestCase {
         assertCorrect(analyzer, method, null, false);
     }
 
+    public final void testDotCompleteMatch() {
+        boolean match = CodeAnalyzer.DotCompleteRegExp.instance.isMatch("ActiveRecord:");
+        assertEquals("Assert dot completion match correct.", false, match);
+
+        match = CodeAnalyzer.DotCompleteRegExp.instance.isMatch("ActiveRecord::");
+        assertEquals("Assert dot completion match correct.", true, match);
+    }
+
+    public final void testClassMatch() {
+        boolean match = CodeAnalyzer.ClassNameRegExp.instance.isMatch("ActiveRecord:");
+        assertEquals("Assert class match correct.", true, match);
+        match = CodeAnalyzer.ClassNameRegExp.instance.isMatch("ActiveRecord::");
+        assertEquals("Assert class match correct.", true, match);
+    }
+
+    public final void testPartialClassPlusColon() {
+        String text = "ActiveRecord:";
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(text, text.length()));
+        assertCorrect(analyzer, null, text, false);
+
+        text = "ActiveRecord::";
+        analyzer = new CodeAnalyzer(new MockEditorView(text, text.length()));
+        assertCorrect(analyzer, null, text, true);
+    }
+
     private void assertCorrect(CodeAnalyzer analyzer, String partialMethod, String partialClass, boolean isDotCompletion) {
         assertEquals("Assert dot completion point correct", isDotCompletion, analyzer.isDotInsertionPoint());
         assertEquals("Assert partial method correct", partialMethod, analyzer.getPartialMethod());
@@ -125,6 +150,10 @@ public final class TestCodeAnalyzer extends TestCase {
 
         public String getLineUpToCaret() {
             return text.substring(0, caret);
+        }
+
+        public String getLineUpToCaretLeftTrimmed() {
+            return null;
         }
 
         public String getText(int start, int length) {

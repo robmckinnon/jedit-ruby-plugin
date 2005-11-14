@@ -109,6 +109,20 @@ public final class Method extends Member {
         return comparison;
     }
 
+    public boolean equals(Object obj) {
+        boolean equal = super.equals(obj);
+
+        if (equal) {
+            return isClassMethod() == ((Method)obj).isClassMethod();
+        } else {
+            return equal;
+        }
+    }
+
+    public int hashCode() {
+        return super.hashCode() + (isClassMethod() ? 1 : 0);
+    }
+
     public final void setName(String name) {
         super.setName(name);
     }

@@ -25,6 +25,10 @@ import org.jedit.ruby.RubyPlugin;
 import java.util.*;
 
 /**
+ * Manages mapping of method name
+ * to cached {@link Method} objects
+ * that have that method name.
+ *
  * @author robmckinnon at users.sourceforge.net
  */
 final class NameToMethods {
