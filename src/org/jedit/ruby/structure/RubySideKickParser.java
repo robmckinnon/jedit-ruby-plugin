@@ -24,13 +24,12 @@ import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
-import org.gjt.sp.jedit.jEdit;
 import org.jruby.lexer.yacc.ISourcePosition;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.RubyPlugin;
-import org.jedit.ruby.utils.ViewWrapper;
+import org.jedit.ruby.utils.EditorView;
 import org.jedit.ruby.completion.CodeCompletor;
 import org.jedit.ruby.completion.RubyCompletion;
 import org.jedit.ruby.completion.CodeAnalyzer;
@@ -47,7 +46,7 @@ public final class RubySideKickParser extends SideKickParser {
     private static final ErrorSource.Error[] EMPTY_ERROR_LIST = new ErrorSource.Error[0];
     private static DefaultErrorSource errorSource;
 
-    private RubyTokenHandler tokenHandler;
+    private final RubyTokenHandler tokenHandler;
 
     public RubySideKickParser() {
         super("ruby");
@@ -101,7 +100,7 @@ public final class RubySideKickParser extends SideKickParser {
      * manually hit the completion shortcut.
      */
     public boolean canCompleteAnywhere() {
-        ViewWrapper view = new ViewWrapper(jEdit.getActiveView());
+        EditorView view = RubyPlugin.getActiveView();
         return CodeAnalyzer.isDotInsertionPoint(view) || RubyCompletion.continueCompleting();
     }
 
@@ -111,7 +110,7 @@ public final class RubySideKickParser extends SideKickParser {
         RubyCompletion completion = null;
 
         if (!ignore(syntaxType)) {
-            CodeCompletor completor = new CodeCompletor(new ViewWrapper(editPane.getView()));
+            CodeCompletor completor = new CodeCompletor(RubyPlugin.getActiveView());
 
             if (completor.isDotInsertionPoint()) {
                 completion = completor.getDotCompletion();
@@ -128,7 +127,7 @@ public final class RubySideKickParser extends SideKickParser {
         return completion;
     }
 
-    private void clearLastCompletion() {
+    private static void clearLastCompletion() {
         CodeAnalyzer.setLastReturnTypes(null);
         CodeAnalyzer.setLastCompleted(null);
     }

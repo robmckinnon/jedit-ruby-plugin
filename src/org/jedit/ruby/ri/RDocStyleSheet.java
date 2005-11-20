@@ -100,7 +100,7 @@ final class RDocStyleSheet extends StyleSheet {
         return getHexColor(color);
     }
 
-    private String getColor(String property) {
+    private static String getColor(String property) {
         Color color = jEdit.getColorProperty(property);
         return getHexColor(color);
     }

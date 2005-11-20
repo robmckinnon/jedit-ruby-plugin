@@ -5,8 +5,8 @@ import org.gjt.sp.jedit.syntax.Token;
 /**
  * @author robmckinnon at users,sourceforge,net
  */
-public class RubyToken extends Token {
-    private Token firstToken;
+public final class RubyToken extends Token {
+    private final Token firstToken;
     private RubyToken previousToken;
     private RubyToken nextToken;
 
@@ -16,7 +16,7 @@ public class RubyToken extends Token {
         this.firstToken = firstToken;
     }
 
-    public RubyToken getPreviousToken() {
+    public final RubyToken getPreviousToken() {
         if (previousToken == null) {
             Token token = firstToken;
             Token previous = null;
@@ -34,22 +34,26 @@ public class RubyToken extends Token {
         return previousToken;
     }
 
-    public RubyToken getNextToken() {
+    public final RubyToken getNextToken() {
         if (nextToken == null) {
             nextToken = next == null ? null : new RubyToken(next, firstToken);
         }
         return nextToken;
     }
 
-    public boolean isNextLiteral() {
+    public final boolean isNextLiteral() {
         return getNextToken() != null && getNextToken().isLiteral();
     }
 
-    public boolean isPreviousLiteral() {
+    public final boolean isPreviousLiteral() {
         return getPreviousToken() != null && getPreviousToken().isLiteral();
     }
 
-    public boolean isLiteral() {
+    public final boolean isOperator() {
+        return id == Token.OPERATOR;
+    }
+
+    public final boolean isLiteral() {
         switch (id) {
             case Token.LITERAL1:
             case Token.LITERAL2:
@@ -61,7 +65,7 @@ public class RubyToken extends Token {
         }
     }
 
-    public boolean isComment() {
+    public final boolean isComment() {
         switch(id) {
             case Token.COMMENT1:
             case Token.COMMENT2:
@@ -73,7 +77,7 @@ public class RubyToken extends Token {
         }
     }
 
-    public String toString() {
+    public final String toString() {
         String id = this.id < Token.TOKEN_TYPES.length ? Token.TOKEN_TYPES[this.id] : String.valueOf(this.id);
         return id + '['+offset+','+(offset+length)+']';
     }

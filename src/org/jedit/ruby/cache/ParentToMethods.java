@@ -32,7 +32,7 @@ final class ParentToMethods {
     private final Map<String, Set<Method>> fullNameToMethods = new HashMap<String, Set<Method>>();
     private final Map<String, Set<Method>> nameToMethods = new HashMap<String, Set<Method>>();
     private NameToParents nameToParents;
-    private List<Method> allMethods;
+    private Set<Method> allMethods;
 
     final void setNameToParents(NameToParents nameToParents) {
         this.nameToParents = nameToParents;
@@ -91,16 +91,16 @@ final class ParentToMethods {
         nameToMethods.clear();
     }
 
-    final List<Method> getAllMethods() {
+    final Set<Method> getAllMethods() {
         if(allMethods == null) {
-            allMethods = new ArrayList<Method>();
+            allMethods = new HashSet<Method>();
 
             for (String parentName : nameToParents.getAllParentNames()) {
                 allMethods.addAll(getMethodList(parentName));
             }
         }
 
-        return allMethods;
+        return new HashSet<Method>(allMethods);
     }
 
     final void resetAllMethodsList() {

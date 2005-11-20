@@ -171,7 +171,7 @@ public final class RubyParser {
             int startOffset = match.startOffset;
             int startOuterOffset = match.startOuterOffset;
             String params = match.params;
-            members.add(matcher.createMember(name, filePath, startOuterOffset, startOffset, params, text));
+            members.add(matcher.createMember(name, filePath, startOffset, params, text));
         }
 
         return members;

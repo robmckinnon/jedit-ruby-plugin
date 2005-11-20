@@ -20,22 +20,35 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.jedit.msg.ViewUpdate;
+import org.gjt.sp.jedit.msg.EditPaneUpdate;
+import org.gjt.sp.jedit.msg.BufferUpdate;
+import org.gjt.sp.jedit.msg.PropertiesChanged;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.util.Log;
 import org.jedit.ruby.parser.JRubyParser;
 import org.jedit.ruby.ri.RiParser;
+import org.jedit.ruby.completion.RubyKeyBindings;
+import org.jedit.ruby.structure.RubyStructureMatcher;
+import org.jedit.ruby.utils.CharCaretListener;
+import org.jedit.ruby.utils.EditorView;
+import org.jedit.ruby.utils.ViewWrapper;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.*;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * @author robmckinnon at users,sourceforge,net
  */
-public final class RubyPlugin extends EditPlugin {
+public final class RubyPlugin extends EBPlugin {
 
     private static final boolean debug = System.getProperty("user.home").equals("/home/b");
+    private static final CharCaretListener CHAR_CARET_LISTENER = new CharCaretListener();
+    private static final Map<View, EditorView> views = new HashMap<View, EditorView>();
 
     public final void start() {
         super.start();
@@ -44,43 +57,76 @@ public final class RubyPlugin extends EditPlugin {
         JRubyParser.setNothingLabel(jEdit.getProperty("ruby.syntax-error.nothing.label"));
 
         RiParser.parseRdoc();
+
+        View view = jEdit.getFirstView();
+        while (view != null) {
+            EditPane[] panes = view.getEditPanes();
+            for (EditPane pane : panes) {
+                addKeyListener(pane.getTextArea());
+            }
+            view = view.getNext();
+        }
     }
 
-//    public void handleMessage(EBMessage message) {
-//        if (message instanceof ViewUpdate) {
-//            handleViewUpdate((ViewUpdate)message);
-//        } else if (message instanceof EditPaneUpdate) {
-//            handleEditUpdate((EditPaneUpdate)message);
-//        } else if (message instanceof BufferUpdate) {
-//            handleBufferUpdate((BufferUpdate) message);
-//        } else if (message instanceof PropertiesChanged) {
+    public void handleMessage(EBMessage message) {
+        if (message instanceof ViewUpdate) {
+            handleViewUpdate((ViewUpdate)message);
+        } else if (message instanceof EditPaneUpdate) {
+            handleEditUpdate((EditPaneUpdate)message);
+        } else if (message instanceof BufferUpdate) {
+            handleBufferUpdate((BufferUpdate)message);
+        } else if (message instanceof PropertiesChanged) {
 //            SideKickActions.propertiesChanged();
-//        }
-//    }
-//
-//    private void handleBufferUpdate(BufferUpdate update) {
-//        if (update.getWhat() == BufferUpdate.CLOSED) {
-////            finishParsingBuffer(update.getBuffer());
-//        }
-//    }
-//
-//    private void handleEditUpdate(EditPaneUpdate update) {
-//        EditPane editPane = update.getEditPane();
-//
-//        if (update.getWhat() == EditPaneUpdate.CREATED) {
-//            addKeyListener(editPane.getTextArea());
-//        } else if (update.getWhat() == EditPaneUpdate.DESTROYED) {
-//            removeKeyListener(editPane.getTextArea());
-//        }
-//    }
-//
-//    private void handleViewUpdate(ViewUpdate update) {
-//        if (update.getWhat() == ViewUpdate.CREATED) {
-////                initView(update.getView());
-//        } else if (update.getWhat() == ViewUpdate.CLOSED) {
-////                uninitView(update.getView());
-//        }
-//    }
+        }
+    }
+
+    private static void handleBufferUpdate(BufferUpdate update) {
+        if (update.getWhat() == BufferUpdate.CLOSED) {
+            views.remove(update.getView());
+        }
+    }
+
+    private void handleEditUpdate(EditPaneUpdate update) {
+        EditPane editPane = update.getEditPane();
+
+        if (update.getWhat() == EditPaneUpdate.CREATED) {
+            addKeyListener(editPane.getTextArea());
+        } else if (update.getWhat() == EditPaneUpdate.DESTROYED) {
+            removeKeyListener(editPane.getTextArea());
+        }
+    }
+
+    private static void addKeyListener(JEditTextArea textArea) {
+        RubyKeyBindings bindings = new RubyKeyBindings(textArea);
+        RubyStructureMatcher structureMatcher = new RubyStructureMatcher();
+
+        textArea.putClientProperty(RubyKeyBindings.class, bindings);
+        textArea.putClientProperty(RubyStructureMatcher.class, structureMatcher);
+
+        textArea.addKeyListener(bindings);
+        textArea.addStructureMatcher(structureMatcher);
+        textArea.addCaretListener(CHAR_CARET_LISTENER);
+    }
+
+    private static void removeKeyListener(JEditTextArea textArea) {
+        RubyKeyBindings bindings = (RubyKeyBindings)textArea.getClientProperty(RubyKeyBindings.class);
+        RubyStructureMatcher structureMatcher = (RubyStructureMatcher)textArea.getClientProperty(RubyStructureMatcher.class);
+
+        textArea.putClientProperty(RubyKeyBindings.class, null);
+        textArea.putClientProperty(RubyStructureMatcher.class, null);
+
+        textArea.removeKeyListener(bindings);
+        textArea.removeStructureMatcher(structureMatcher);
+        textArea.removeCaretListener(CHAR_CARET_LISTENER);
+    }
+
+    private static void handleViewUpdate(ViewUpdate update) {
+        if (update.getWhat() == ViewUpdate.CREATED) {
+//                initView(update.getView());
+        } else if (update.getWhat() == ViewUpdate.CLOSED) {
+//                uninitView(update.getView());
+        }
+    }
 
     public static void log(String message, Class clas) {
         if (debug) {
@@ -102,6 +148,17 @@ public final class RubyPlugin extends EditPlugin {
         error(message, clas);
     }
 
+    public static EditorView getActiveView() {
+        final View view = jEdit.getActiveView();
+
+        if (!views.containsKey(view)) {
+            EditorView editorView = view != null ? new ViewWrapper(view) : EditorView.NULL;
+            views.put(view, editorView);
+        }
+
+        return views.get(view);
+    }
+
     public static void error(String message, Class clas) {
         try {
             Log.log(Log.ERROR, clas, message);
@@ -117,63 +174,19 @@ public final class RubyPlugin extends EditPlugin {
     }
 
     public static int getNonSpaceStartOffset(int line) {
-        int offset = 0;
-        View view = jEdit.getActiveView();
-
-        if (view != null && view.getBuffer() != null) {
-            Buffer buffer = view.getBuffer();
-            offset = buffer.getLineStartOffset(line);
-            int end = buffer.getLineEndOffset(line);
-            String text = buffer.getLineText(line);
-            int length = text.length();
-
-            if (length > 0) {
-                int index = 0;
-                while (index < length
-                        && (text.charAt(index) == ' ' || text.charAt(index) == '\t')
-                        && (offset - index) < end) {
-                    index++;
-                }
-                offset += index;
-            }
-        }
-
-        return offset;
+        return getActiveView().getNonSpaceStartOffset(line);
     }
 
     public static int getEndOffset(int line) {
-        int offset = 0;
-        View view = jEdit.getActiveView();
-        if (view != null) {
-            Buffer buffer = view.getBuffer();
-            if (buffer != null) {
-                offset = buffer.getLineEndOffset(line) - 1;
-            }
-        }
-
-        return offset;
+        return getActiveView().getEndOffset(line);
     }
 
     public static int getStartOffset(int line) {
-        int startOffset = 0;
-        View view = jEdit.getActiveView();
-        if (view != null) {
-            Buffer buffer = view.getBuffer();
-            if (buffer != null) {
-                startOffset = buffer.getLineStartOffset(line);
-            }
-        }
-        return startOffset;
+        return getActiveView().getStartOffset(line);
     }
 
     public static int getEndOfFileOffset() {
-        View view = jEdit.getActiveView();
-        int offset = 0;
-        if (view != null) {
-            Buffer buffer = view.getBuffer();
-            offset = buffer.getLineEndOffset(buffer.getLineCount() - 1);
-        }
-        return offset;
+        return getActiveView().getEndOfFileOffset();
     }
 
     public static String readFile(File file) {
@@ -212,13 +225,21 @@ public final class RubyPlugin extends EditPlugin {
         return new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
     }
 
-    public static boolean isRubyFile(Buffer buffer) {
-        return isRubyFile(new File(buffer.getPath()));
+    public static boolean isRuby(JEditTextArea textArea) {
+        return isRuby(textArea.getBuffer());
     }
 
-    public static boolean isRubyFile(File file) {
-        Mode rubyMode = jEdit.getMode("ruby");
-        return file.isFile() && rubyMode.accept(file.getPath(), "");
+    public static boolean isRuby(Buffer buffer) {
+        boolean isRubyBuffer = buffer.getMode() == rubyMode();
+        return isRubyBuffer || isRuby(new File(buffer.getPath()));
+    }
+
+    public static boolean isRuby(File file) {
+        return file.isFile() && rubyMode().accept(file.getPath(), "");
+    }
+
+    private static Mode rubyMode() {
+        return jEdit.getMode("ruby");
     }
 
     public static void showMessage(String titleKey, String messageKey, View view) {

@@ -31,17 +31,32 @@ import org.jedit.ruby.utils.EditorView;
  */
 public final class CodeCompletor {
 
-    private final CodeAnalyzer analyzer;
-    private final List<Method> methods;
-    private final List<ParentMember> classesAndModules;
-    private final EditorView view;
     private static final ArrayList EMPTY_LIST = new ArrayList();
+    private static final MethodFinderVisitor METHOD_FINDER = new MethodFinderVisitor();
+    private static final Set<Method> kernelMethods = getMethodsOfParentMember("Kernel", false, true);
+    private static final Set<String> kernelMethodsNames = new HashSet<String>();
+
+    static {
+        for (Method method : kernelMethods) {
+            kernelMethodsNames.add(method.getShortName());
+        }
+    }
+
+    private final List<ParentMember> classesAndModules;
+    private final List<Method> methods;
+    private final List<KeywordMember> keywords;
+    private final CodeAnalyzer analyzer;
+    private final EditorView view;
+
+    private boolean foundMethodsFromPosition;
 
     public CodeCompletor(EditorView editorView) {
         RubyPlugin.log("completing", getClass());
+        foundMethodsFromPosition = false;
         view = editorView;
         analyzer = new CodeAnalyzer(editorView);
         methods = findMethods();
+        keywords = findKeywords(foundMethodsFromPosition);
 
         if (isClassComplete()) {
             classesAndModules = findClassesAndModules();
@@ -50,19 +65,32 @@ public final class CodeCompletor {
         }
     }
 
+    private List<KeywordMember> findKeywords(boolean foundMethodsFromPosition) {
+        List<KeywordMember> keywords;
+        if (foundMethodsFromPosition) {
+            String partialName = getPartialMethod() != null ? getPartialMethod() : getPartialClass();
+            keywords = new ArrayList<KeywordMember>();
+
+            for (String keyword : view.getKeywords()) {
+                if (partialName == null || keyword.startsWith(partialName)) {
+                    if (!kernelMethodsNames.contains(keyword)) {
+                        keywords.add(new KeywordMember(keyword));
+                    }
+                }
+            }
+
+            Collections.sort(keywords, new KeywordComparator());
+        } else {
+            keywords = null;
+        }
+        return keywords;
+    }
+
     private boolean isClassComplete() {
         return methods.size() == 0 && getPartialClass() != null;
     }
 
-    public final List<Method> getMethods() {
-        return methods;
-    }
-
-    public final String getRestOfLine() {
-        return analyzer.getRestOfLine();
-    }
-
-    public final String getPartialMethod() {
+    private String getPartialMethod() {
         return analyzer.getPartialMethod();
     }
 
@@ -76,7 +104,7 @@ public final class CodeCompletor {
 
     public boolean hasCompletion() {
         boolean haveMethods = methods.size() > 0 && !analyzer.isLastCompleted();
-        return haveMethods || (classesAndModules != null && classesAndModules.size() > 0);
+        return haveMethods || (classesAndModules != null && classesAndModules.size() > 0) || (keywords != null && keywords.size() > 0);
     }
 
     public RubyCompletion getDotCompletion() {
@@ -93,16 +121,26 @@ public final class CodeCompletor {
     }
 
     public RubyCompletion getCompletion() {
+        List<? extends Member> members;
+
         if (isClassComplete()) {
-            return new RubyCompletion(view, getPartialClass(), getPartialMethod(), classesAndModules);
+            members = classesAndModules;
         } else {
-            return new RubyCompletion(view, getPartialClass(), getPartialMethod(), methods);
+            members = methods;
         }
+
+        if (keywords != null) {
+            List<? extends Member> temp = members;
+            members = keywords;
+            members.addAll((Collection)temp);
+        }
+
+        return new RubyCompletion(view, getPartialClass(), getPartialMethod(), members);
     }
 
     private List<ParentMember> findClassesAndModules() {
         RubyCache cache = RubyCache.instance();
-        List<ParentMember> members = cache.getParentsStartingWith(getPartialClass());
+        List<ParentMember> members = cache.getParentsStartingWith(getPartialClass(), true);
 
         if (members.size() > 0) {
             ParentCompletionComparator.instance.setPartialName(getPartialClass());
@@ -113,22 +151,32 @@ public final class CodeCompletor {
     }
 
     private List<Method> findMethods() {
-//        if (CodeAnalyzer.hasLastReturnTypes()) {
-//            methods = getMethodsOfParents(CodeAnalyzer.getLastReturnTypes());
-//
-//            if (getPartialMethod() != null) {
-//                filterMethods(methods, getPartialMethod());
-//            }
-//        } else if (analyzer.getMethodCalledOnThis() != null) {
         Set<Method> methods;
-        if (analyzer.getMethodCalledOnThis() != null) {
-            methods = findMethodsFromCallee();
 
-        } else if (getPartialClass() == null) {
-            methods = findMethodsFromPosition();
-
+        if (CodeAnalyzer.hasLastReturnTypes()) {
+            methods = getMethodsOfParents(CodeAnalyzer.getLastReturnTypes());
+            methods = filterMethods(methods);
         } else {
-            methods = new HashSet<Method>();
+            String methodCalledOnThis = analyzer.getMethodCalledOnThis();
+            boolean demarkerChar = CodeAnalyzer.isDemarkerChar(methodCalledOnThis);
+
+            if (methodCalledOnThis != null) {
+                if (!demarkerChar) {
+                    if (methodCalledOnThis.indexOf('.') == -1 || CodeAnalyzer.isFloat(methodCalledOnThis)) {
+                        methods = findMethodsFromCallee();
+                    } else {
+                        methods = filterMethods(RubyCache.instance().getAllMethods());
+                    }
+                } else {
+                    methods = new HashSet<Method>();                    
+                }
+
+            } else if (getPartialClass() == null) {
+                methods = findMethodsFromPosition();
+
+            } else {
+                methods = new HashSet<Method>();
+            }
         }
 
         List<Method> methodList = new ArrayList<Method>(methods);
@@ -142,20 +190,23 @@ public final class CodeCompletor {
 
     private Set<Method> findMethodsFromPosition() {
         Member member = view.getMemberAtCaretPosition();
-        Set<Method> methods;
+        Set<Method> methods = null;
 
-        if (member == null) {
-            methods = findMethods("Kernel", false, true);
-        } else {
-            MethodFinderVisitor visitor = new MethodFinderVisitor();
-            member.accept(visitor);
-            methods = visitor.methods;
+        if (member != null) {
+            methods = METHOD_FINDER.getMethods(member, this);
         }
 
         if (methods == null) {
-            methods = findMethods("Kernel", false, true);
+            methods = getKernelMethods();
         }
+
+        foundMethodsFromPosition = true;
+
         return methods;
+    }
+
+    private Set<Method> getKernelMethods() {
+        return filterMethods(new HashSet<Method>(kernelMethods));
     }
 
     public static void setLastCompleted(String partialName, Member member) {
@@ -164,38 +215,13 @@ public final class CodeCompletor {
         CodeAnalyzer.setLastCompleted(member.getName());
     }
 
-    private class MethodFinderVisitor extends MemberVisitorAdapter {
-        Set<Method> methods;
-
-        public void handleModule(Module module) {
-            methods = findMethods(module.getFullName(), true);
-        }
-
-        public void handleClass(ClassMember classMember) {
-            methods = findMethods(classMember.getFullName(), true);
-            String superClass = classMember.getSuperClassName();
-
-            if (superClass != null) {
-                methods.addAll(findMethods(superClass, true));
-            }
-        }
-
-        public void handleMethod(Method method) {
-            methods = findMethods(method.getParentMemberName(), false);
-        }
-
-        public void handleRoot(Root root) {
-            methods = findMethods("Kernel", false, true);
-        }
-    }
-
     private Set<Method> findMethods(String parentName, boolean removeInstanceMethods) {
         return findMethods(parentName, removeInstanceMethods, false);
     }
 
     private Set<Method> findMethods(String parentName, boolean removeInstanceMethods, boolean removeCommonClassMethods) {
         Set<Method> methods = getMethodsOfParentMember(parentName, removeInstanceMethods, removeCommonClassMethods);
-        return filterMethods(methods, getPartialMethod());
+        return filterMethods(methods);
     }
 
     private Set<Method> findMethodsFromCallee() {
@@ -207,13 +233,11 @@ public final class CodeCompletor {
             methods = completeUsingMethods(analyzer.getMethodsCalledOnVariable());
         }
 
-        if (getPartialMethod() != null) {
-            filterMethods(methods, getPartialMethod());
-        }
-        return methods;
+        return filterMethods(methods);
     }
 
-    private Set<Method> filterMethods(Set<Method> methods, String partialMethod) {
+    private Set<Method> filterMethods(Set<Method> methods) {
+        String partialMethod = getPartialMethod();
         if (partialMethod != null) {
             for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
                 Method method = iterator.next();
@@ -227,10 +251,10 @@ public final class CodeCompletor {
         return methods;
     }
 
-    private Set<Method> getMethodsOfParentMember(String parentMember, boolean removeInstanceMethods, boolean removeCommonClassMethods) {
-        RubyPlugin.log("parent: " + parentMember, getClass());
+    private static Set<Method> getMethodsOfParentMember(String parentMember, boolean removeInstanceMethods, boolean removeCommonClassMethods) {
+        RubyPlugin.log("parent: " + parentMember, CodeCompletor.class);
         Set<Method> methods = RubyCache.instance().getMethodsOfMember(parentMember);
-        RubyPlugin.log("methods: " + methods.size(), getClass());
+        RubyPlugin.log("methods: " + methods.size(), CodeCompletor.class);
 
         for (Iterator<Method> iterator = methods.iterator(); iterator.hasNext();) {
             Method method = iterator.next();
@@ -291,6 +315,39 @@ public final class CodeCompletor {
         }
 
         return intersection;
+    }
+
+    private static final class MethodFinderVisitor extends MemberVisitorAdapter {
+        private Set<Method> methods;
+        private CodeCompletor completor;
+
+        public Set<Method> getMethods(Member member, CodeCompletor completor) {
+            this.completor = completor;
+            member.accept(this);
+            return methods;
+        }
+
+        public final void handleModule(Module module) {
+            methods = completor.findMethods(module.getFullName(), true);
+        }
+
+        public final void handleClass(ClassMember classMember) {
+            methods = completor.findMethods(classMember.getFullName(), true);
+            String superClass = classMember.getSuperClassName();
+
+            if (superClass != null) {
+                methods.addAll(completor.findMethods(superClass, true));
+            }
+        }
+
+        public final void handleMethod(Method method) {
+            methods = completor.findMethods(method.getParentMemberName(), false);
+            methods.addAll(completor.getKernelMethods());
+        }
+
+        public final void handleRoot(Root root) {
+            methods = completor.getKernelMethods();
+        }
     }
 
     private static final class ParentCompletionComparator implements Comparator<ParentMember> {
@@ -398,4 +455,18 @@ public final class CodeCompletor {
         }
     }
 
+    private static class KeywordComparator implements Comparator<KeywordMember> {
+        public int compare(KeywordMember keyword, KeywordMember other) {
+            boolean global = keyword.startsWith("$") || keyword.startsWith("_");
+            boolean otherGlobal = other.startsWith("$") || other.startsWith("_");
+
+            if (global && !otherGlobal) {
+                return 1;
+            } else if(!global && otherGlobal) {
+                return -1;
+            } else {
+                return keyword.getLowerCaseName().compareTo(other.getLowerCaseName());
+            }
+        }
+    }
 }

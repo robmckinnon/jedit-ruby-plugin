@@ -38,6 +38,7 @@ public abstract class Member implements Comparable<Member> {
     private List<Member> childMembers;
 
     private final String shortName;
+    private String lowerCaseName;
     private String name;
     private String namespace;
     private String compositeNamespace;
@@ -79,7 +80,7 @@ public abstract class Member implements Comparable<Member> {
         }
     }
 
-    final String getNamespace() {
+    public final String getNamespace() {
         return namespace;
     }
 
@@ -109,7 +110,7 @@ public abstract class Member implements Comparable<Member> {
      * in the form
      * module Www::Xxx or class Yyy::Zzz.
      */
-    public String getCompositeName() {
+    public final String getCompositeName() {
         if (compositeNamespace == null) {
             return name;
         } else {
@@ -140,7 +141,15 @@ public abstract class Member implements Comparable<Member> {
     }
 
     public final String getLowerCaseName() {
-        return name;
+        if (lowerCaseName == null) {
+            String lowerCase = name.toLowerCase();
+            if (name.equals(lowerCase)) {
+                lowerCaseName = name;
+            } else {
+                lowerCaseName = lowerCase;
+            }
+        }
+        return lowerCaseName;
     }
 
     public final int getStartOuterOffset() {
@@ -299,4 +308,5 @@ public abstract class Member implements Comparable<Member> {
     public String getDocumentation() {
         return documentation;
     }
+
 }

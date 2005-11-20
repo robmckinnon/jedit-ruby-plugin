@@ -2,7 +2,7 @@
 plugin.org.jedit.ruby.RubyPlugin.activate=defer
 plugin.org.jedit.ruby.RubyPlugin.name=Ruby Plugin
 plugin.org.jedit.ruby.RubyPlugin.author=Robert McKinnon
-plugin.org.jedit.ruby.RubyPlugin.version=0.7.1
+plugin.org.jedit.ruby.RubyPlugin.version=0.7.4
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.4
 plugin.org.jedit.ruby.RubyPlugin.depend.1=jedit 04.02.99.00
@@ -22,20 +22,23 @@ rdoc-viewer.title=Ruby Docs
 plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
 	ruby.structure-browser \
 	- \
-	ruby.progressive-selection \
+  ruby.complete-code \
+  ruby.progressive-selection \
 	- \
-	rdoc-viewer-toggle \
-	ruby.search-documentation \
-	ruby.find-declaration \
-	- \
+  ruby.previous-edit \
 	ruby.previous-method \
 	ruby.next-method \
-	- \
 	ruby.previous-error \
 	ruby.next-error \
 	- \
+	rdoc-viewer-toggle \
+	ruby.search-documentation \
+	- \
 	ruby.auto-indent-and-insert-end
 
+#	ruby.find-declaration \
+
+ruby.complete-code.label=Complete code
 ruby.file-structure-popup.label=File structure popup
 ruby.structure-browser.label=Structure browser
 
@@ -49,6 +52,8 @@ ruby.next-method.label=Go to next method
 
 ruby.previous-error.label=Go to previous error
 ruby.next-error.label=Go to next error
+
+ruby.previous-edit.label=Go to previous edit location
 
 ruby.auto-indent-and-insert-end.label=Auto indent and insert end
 ruby.complete-method.label=Complete method

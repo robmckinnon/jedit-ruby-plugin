@@ -35,4 +35,6 @@ public interface MemberVisitor {
     void handleError(Error warning);
 
     void handleRoot(Root root);
+
+    void handleKeyword(KeywordMember keywordMember);
 }

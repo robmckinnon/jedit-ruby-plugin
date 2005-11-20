@@ -1,5 +1,5 @@
 /*
- * TopLineBorder.java - 
+ * KeywordMember.java - Ruby file structure member
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -17,33 +17,25 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.jedit.ruby.structure;
-
-import javax.swing.border.LineBorder;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics;
+package org.jedit.ruby.ast;
 
 /**
+ * Not really a member, used to represent
+ * keywords for code completion popup.
+ *
  * @author robmckinnon at users.sourceforge.net
  */
-final class TopLineBorder extends LineBorder {
+public class KeywordMember extends Member {
 
-    public TopLineBorder() {
-        super(Color.GRAY);
+    public KeywordMember(String name) {
+        super(name);
     }
 
-    public final void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-        Color oldColor = g.getColor();
-        int i;
-        g.setColor(lineColor);
-        for (i = 0; i < thickness; i++) {
-            int newWidth = width - i - i - 1;
-            int x1 = x + i;
-            int y1 = y + i;
-            int x2 = x1 + newWidth;
-            g.drawLine(x1, y1, x2, y1);
-        }
-        g.setColor(oldColor);
+    public void accept(MemberVisitor visitor) {
+        visitor.handleKeyword(this);
+    }
+
+    public boolean startsWith(String text) {
+        return getName().startsWith(text);
     }
 }

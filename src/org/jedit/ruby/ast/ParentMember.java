@@ -27,7 +27,7 @@ import java.util.HashSet;
  */
 public abstract class ParentMember extends Member {
 
-    protected ParentMember(String name) {
+    ParentMember(String name) {
         super(name);
     }
 

@@ -22,20 +22,16 @@ package org.jedit.ruby.completion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
-import org.jedit.ruby.ast.Method;
-import org.jedit.ruby.ast.Member;
-import org.jedit.ruby.ast.MemberVisitorAdapter;
+import org.jedit.ruby.ast.*;
+import org.jedit.ruby.ast.Error;
 import org.jedit.ruby.ri.RDocViewer;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.utils.EditorView;
 import sidekick.SideKickCompletion;
 
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
-import javax.swing.JWindow;
+import javax.swing.*;
 import javax.swing.text.html.HTMLEditorKit;
-import java.awt.BorderLayout;
-import java.awt.Frame;
+import java.awt.*;
 import java.util.List;
 import java.util.Set;
 
@@ -44,18 +40,19 @@ import java.util.Set;
  */
 public final class RubyCompletion extends SideKickCompletion {
 
+    private static final CompletionNameRenderer COMPLETION_NAME_RENDERER = new CompletionNameRenderer();
+    private static final CompletorCreatorVisitor COMPLETOR_CREATOR = new CompletorCreatorVisitor();
     private static final String NO_DOT_METHOD_STARTS = "=<>%*-+/|~&^";
-
     private static boolean CONTINUE_COMPLETING = false;
 
-    private final List members;
+    private final List<? extends Member> members;
     private final String partialMethod;
     private final String partialClass;
     private JWindow frame;
-    private EditorView editorView;
+    private final EditorView editorView;
 
-    public RubyCompletion(EditorView view, String partialClass, String partialMethod, List members) {
-        super(view.getView(), partialMethod == null ? "." : "." + partialMethod, members);
+    public RubyCompletion(EditorView view, String partialClass, String partialMethod, List<? extends Member> members) {
+        super(view.getView(), "", members);
         this.members = members;
         this.partialMethod = partialMethod;
         this.partialClass = partialClass;
@@ -65,8 +62,16 @@ public final class RubyCompletion extends SideKickCompletion {
         textPane.setEditorKit(new HTMLEditorKit());
         JScrollPane scroller = new JScrollPane(textPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         frame.getContentPane().add(scroller, BorderLayout.CENTER);
-        frame.setSize(400,400);
+        frame.setSize(400, 400);
         editorView = view;
+    }
+
+    public static boolean continueCompleting() {
+        return CONTINUE_COMPLETING;
+    }
+
+    public ListCellRenderer getRenderer() {
+        return COMPLETION_NAME_RENDERER;
     }
 
     /**
@@ -85,41 +90,54 @@ public final class RubyCompletion extends SideKickCompletion {
 
         } else if (continueCompleting || emptyPopup) {
             textArea.userInput(keyChar);
+
         } else {
-            Member member = (Member)members.get(selectedIndex);
-            Completion completion = insert(member);
-            CompletionVisitor visitor = new CompletionVisitor(dot, space, completion.showDot, textArea);
-            member.accept(visitor);
-            continueCompleting = visitor.continueCompletion;
+            Member member = members.get(selectedIndex);
+            continueCompleting = insert(member, space, dot);
         }
 
-        if(!continueCompleting) {
+        RubyPlugin.log("continue completing: " + continueCompleting, getClass());
+        if (!continueCompleting) {
             CodeAnalyzer.setLastReturnTypes(null);
         }
-        RubyPlugin.log("continue completing: " + continueCompleting, getClass());
 
         CONTINUE_COMPLETING = continueCompleting;
         return continueCompleting;
     }
 
-    public static boolean continueCompleting() {
-        return CONTINUE_COMPLETING;
+    public final void insert(int index) {
+        CONTINUE_COMPLETING = insert(members.get(index), false, false);
+    }
+
+    private boolean insert(Member member, boolean space, boolean dot) {
+        Buffer buffer = view.getBuffer();
+        RubyPlugin.log("insert member: " + member.getName(), getClass());
+        Completor completor = COMPLETOR_CREATOR.getCompletor(partialMethod, partialClass, space, dot, member);
+        super.text = completor.partialName;
+        completor.completeCode(buffer, textArea, dot, space);
+
+        frame.setVisible(false);
+        frame.dispose();
+        frame = null;
+        return completor.continueCompleting;
     }
 
     private boolean handleBackspace() {
         RubyPlugin.log("handle backspace", getClass());
         String text = textArea.getLineText(textArea.getCaretLine());
+        char deletedChar = (char)-1;
         if (text.length() > 0) {
             int caretPosition = textArea.getCaretPosition();
             textArea.selectLine();
-            textArea.setSelectedText(text.substring(0, text.length() - 1));
+            int endIndex = text.length() - 1;
+            deletedChar = text.charAt(endIndex);
+            textArea.setSelectedText(text.substring(0, endIndex));
             textArea.setCaretPosition(caretPosition - 1);
         }
-        return CodeAnalyzer.isDotInsertionPoint(editorView) || CodeAnalyzer.isClassCompletionPoint(editorView);
-    }
-
-    public final void insert(int index) {
-        insert((Member)members.get(index));
+        boolean dotInsertionPoint = CodeAnalyzer.isDotInsertionPoint(editorView) && deletedChar != '.' && deletedChar != ':';
+        boolean classCompletionPoint = CodeAnalyzer.isClassCompletionPoint(editorView);
+        RubyPlugin.log("dot? " + dotInsertionPoint + " class? " + classCompletionPoint + " " + deletedChar, getClass());
+        return dotInsertionPoint || classCompletionPoint;
     }
 
     /**
@@ -127,144 +145,173 @@ public final class RubyCompletion extends SideKickCompletion {
      * to set Ruby docs in Ruby doc viewer
      */
     public final String getCompletionDescription(int index) {
-        RDocViewer.setMemberInViewer((Member)members.get(index));
+        RDocViewer.setMemberInViewer(members.get(index));
         return null;
     }
 
-    private Completion insert(Member member) {
-        Buffer buffer = view.getBuffer();
-        RubyPlugin.log("insert member: " + member.getName(), getClass());
-        int caretPosition = textArea.getCaretPosition();
-        int offset = caretPosition;
+    private static final class CompletorCreatorVisitor extends MemberVisitorAdapter {
+        private String partialMethod;
+        private String partialClass;
+        private Completor completor;
+        private boolean space;
+        private boolean dot;
 
-        CompletionCreatorVisitor completionCreator = new CompletionCreatorVisitor(offset, buffer, partialMethod, partialClass);
-        member.accept(completionCreator);
-        Completion completion = completionCreator.completion;
-        offset = completionCreator.offset;
+        private Completor getCompletor(String partialMethod, String partialClass, boolean space, boolean dot, Member member) {
+            this.partialMethod = partialMethod;
+            this.partialClass = partialClass;
+            this.space = space;
+            this.dot = dot;
+            member.accept(this);
+            return completor;
+        }
 
-        if (!completion.showDot) {
+        public final void handleDefault(Member member) {
+            completor = new Completor(member, member.getFullName(), 0, true, partialClass);
+            CodeCompletor.setLastCompleted(partialClass, member);
+        }
+
+        public void handleKeyword(KeywordMember keyword) {
+            String partial = partialMethod != null ? partialMethod : partialClass;
+            completor = new Completor(keyword, keyword.getFullName(), 0, true, partial);
+            CodeCompletor.setLastCompleted(partial, keyword);
+        }
+
+        public final void handleMethod(Method method) {
+            String name = method.getName();
+
+            if (name.equals("each")) {
+                completor = new Completor(method, "each do ||", -1, true, partialMethod);
+
+            } else if (name.startsWith("[")) {
+                completor = new Completor(method, name, -1, false, partialMethod);
+
+            } else if (NO_DOT_METHOD_STARTS.indexOf(name.charAt(0)) != -1) {
+                completor = new Completor(method, name + " ", 0, false, partialMethod);
+
+            } else if (name.endsWith("=") && name.length() > 1) {
+                name = name.substring(0, name.length() - 1) + " = ";
+                completor = new Completor(method, name, 0, true, partialMethod);
+
+            } else if (name.endsWith("?") && name.length() > 1) {
+                completor = new Completor(method, name + " ", 0, true, partialMethod);
+
+            } else if (!dot && !space && method.hasParameters()) {
+//                completor = new Completor(method, name + "()", -1, true, partialMethod);
+                completor = new Completor(method, name, 0, true, partialMethod);
+
+            } else {
+                completor = new Completor(method, name, 0, true, partialMethod);
+            }
+            CodeCompletor.setLastCompleted(partialMethod, method);
+        }
+
+    }
+
+    private static final class Completor extends MemberVisitorAdapter {
+        final Member member;
+        final String text;
+        final String partialName;
+        final boolean showDot;
+        final int caretAdjustment;
+        boolean continueCompleting;
+
+        public Completor(Member member, String text, int caretPositionAdjustment, boolean showDot, String partialName) {
+            this.caretAdjustment = caretPositionAdjustment;
+            this.member = member;
+            this.text = text;
+            this.showDot = showDot;
+            this.partialName = partialName;
+            continueCompleting = false;
+        }
+
+        public void completeCode(Buffer buffer, JEditTextArea textArea, boolean dot, boolean space) {
+            int caretPosition = textArea.getCaretPosition();
+            int offset = removePartialName(buffer, caretPosition);
+
+            if (!showDot) {
+                offset = removeDot(textArea, offset);
+            }
+
+            buffer.insert(offset, text);
+            textArea.setCaretPosition(textArea.getCaretPosition() + caretAdjustment);
+
+            if (space) {
+                textArea.userInput(' ');
+            } else if (dot) {
+                textArea.userInput('.');
+                member.accept(this);
+            }
+        }
+
+        public void handleMethod(Method method) {
+            this.continueCompleting = true;
+            Set<Member> returnTypes = method.getReturnTypes();
+            CodeAnalyzer.setLastReturnTypes(returnTypes);
+        }
+
+        private int removeDot(JEditTextArea textArea, int offset) {
+            int caretPosition;
             caretPosition = textArea.getCaretPosition();
             Selection.Range range = new Selection.Range(caretPosition - 1, caretPosition);
             textArea.setSelection(range);
-            if (completion.caretAdjustment == 0) {
+            if (caretAdjustment == 0) {
                 textArea.setSelectedText(" ");
             } else {
                 textArea.setSelectedText("");
                 offset--;
             }
-        }
-        buffer.insert(offset, completion.text);
-        RubyPlugin.log("completion text: " + completion.text, getClass());
-        textArea.setCaretPosition(textArea.getCaretPosition() + completion.caretAdjustment);
-        frame.setVisible(false);
-        frame.dispose();
-        frame = null;
-        return completion;
-    }
-
-    private static class CompletionVisitor extends MemberVisitorAdapter {
-        final boolean dot;
-        final boolean space;
-        final boolean showDot;
-        JEditTextArea textArea;
-        boolean continueCompletion;
-
-        public CompletionVisitor(boolean dot, boolean space, boolean showDot, JEditTextArea textArea) {
-            this.dot = dot;
-            this.space = space;
-            this.showDot = showDot;
-            this.textArea = textArea;
+            return offset;
         }
 
-        public void handleDefault(Member member) {
-            if (space) {
-                textArea.userInput(' ');
-            } else if (dot && showDot) {
-                textArea.userInput('.');
-            }
-        }
-
-        public void handleMethod(Method method) {
-            if (space && !method.hasParameters()) {
-                textArea.userInput(' ');
-            } else if (dot && !method.hasParameters() && showDot) {
-                textArea.userInput('.');
-                this.continueCompletion = true;
-                Set<Member> returnTypes = method.getReturnTypes();
-                CodeAnalyzer.setLastReturnTypes(returnTypes);
-            }
-        }
-    }
-
-    private static class CompletionCreatorVisitor extends MemberVisitorAdapter {
-        private final String partialMethod;
-        private final String partialClass;
-        private final Buffer buffer;
-        private Completion completion;
-        private int offset;
-
-        private CompletionCreatorVisitor(int offset, Buffer buffer, String partialMethod, String partialClass) {
-            this.offset = offset;
-            this.buffer = buffer;
-            this.partialMethod = partialMethod;
-            this.partialClass = partialClass;
-        }
-
-        public void handleDefault(Member member) {
-            remove(partialClass);
-            completion = new Completion(member, member.getFullName(), 0, true);
-            CodeCompletor.setLastCompleted(partialClass, completion.member);
-        }
-
-        public void handleMethod(Method method) {
-            remove(partialMethod);
-            String name = method.getName();
-
-            if (name.equals("each")) {
-                completion = new Completion(method, "each do ||", -1, true);
-
-            } else if (name.startsWith("[")) {
-                completion = new Completion(method, name, -1, false);
-
-            } else if (NO_DOT_METHOD_STARTS.indexOf(name.charAt(0)) != -1) {
-                completion = new Completion(method, name + " ", 0, false);
-
-            } else if (name.endsWith("=") && name.length() > 1) {
-                name = name.substring(0, name.length() - 1) + " = ";
-                completion = new Completion(method, name, 0, true);
-
-            } else if (name.endsWith("?") && name.length() > 1) {
-                completion = new Completion(method, name + " ", 0, true);
-
-            } else if (method.hasParameters()) {
-                completion = new Completion(method, name + "()", -1, true);
-
-            } else {
-                completion = new Completion(method, name, 0, true);
-            }
-            CodeCompletor.setLastCompleted(partialMethod, completion.member);
-        }
-
-        private void remove(String partialName) {
+        public int removePartialName(Buffer buffer, int offset) {
             if (partialName != null) {
                 offset -= partialName.length();
                 buffer.remove(offset, partialName.length());
             }
+            return offset;
         }
     }
 
-    private static final class Completion {
-        final Member member;
-        final String text;
-        final int caretAdjustment;
-        final boolean showDot;
+    private static class CompletionNameRenderer extends DefaultListCellRenderer implements MemberVisitor {
+        String text;
 
-        public Completion(Member member, String text, int caretPositionAdjustment, boolean showDot) {
-            this.caretAdjustment = caretPositionAdjustment;
-            this.member = member;
-            this.text = text;
-            this.showDot = showDot;
+        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            if (value instanceof Member) {
+                Member member = (Member)value;
+                member.accept(this);
+            } else {
+                text = String.valueOf(value);
+            }
+            return super.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus);
+        }
+
+        public void handleModule(Module module) {
+            text = module.getFullName();
+        }
+
+        public void handleClass(ClassMember classMember) {
+            text = classMember.getFullName();
+        }
+
+        public void handleMethod(Method method) {
+            if (method.getNamespace() != null) {
+                text = method.getName() + "  (" + method.getNamespace() + ")";
+            } else {
+                text = method.getName();
+            }
+        }
+
+        public void handleKeyword(KeywordMember keywordMember) {
+            text = keywordMember.getName();
+        }
+
+        public void handleWarning(Warning warning) {
+        }
+
+        public void handleError(Error warning) {
+        }
+
+        public void handleRoot(Root root) {
         }
     }
-
 }

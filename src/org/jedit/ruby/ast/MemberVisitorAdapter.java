@@ -55,4 +55,8 @@ public class MemberVisitorAdapter implements MemberVisitor {
     public void handleRoot(Root root) {
         handleDefault(root);
     }
+
+    public void handleKeyword(KeywordMember keyword) {
+        handleDefault(keyword);
+    }
 }

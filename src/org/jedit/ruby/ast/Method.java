@@ -311,13 +311,13 @@ public final class Method extends Member {
         }
     }
 
-    private void addType(String parentMemberName, String begin, String end, Result result, Set<Member> types) {
+    private static void addType(String parentMemberName, String begin, String end, Result result, Set<Member> types) {
         if (result.wrapped(begin, end)) {
             addType(parentMemberName, types);
         }
     }
 
-    private void addType(String parentMemberName, String match, Result result, Set<Member> types) {
+    private static void addType(String parentMemberName, String match, Result result, Set<Member> types) {
         if (result.has(match)) {
             addType(parentMemberName, types);
         }

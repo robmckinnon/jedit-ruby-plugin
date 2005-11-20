@@ -83,7 +83,7 @@ public final class TestAutoIndent extends TestCase {
         assertMatchCorrect(match, "(true)");
     }
 
-    private void assertMatchCorrect(REMatch match, String partMatch) {
+    private static void assertMatchCorrect(REMatch match, String partMatch) {
         assertNotNull("Assert match not null.", match);
         assertEquals("Assert match correct.", "  ", match.toString(1));
         assertEquals("Assert match correct.", "", match.toString(2));
@@ -93,7 +93,7 @@ public final class TestAutoIndent extends TestCase {
         assertEquals("Assert match correct.", partMatch, match.toString(6));
     }
 
-    private boolean hasEnd(String line) {
+    private static boolean hasEnd(String line) {
         return AutoIndentAndInsertEnd.hasEndKeyword(line.trim());
     }
 }

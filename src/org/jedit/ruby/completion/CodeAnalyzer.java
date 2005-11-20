@@ -128,7 +128,26 @@ public final class CodeAnalyzer {
                 + String.valueOf(partialMethod) + " vs. "
                 + String.valueOf(LAST_COMPLETED), CodeAnalyzer.class);
 
-        return methodCalledOnThis != null && !isLastCompleted();
+        boolean insertionPoint = methodCalledOnThis != null && !isLastCompleted();
+        return insertionPoint && !isDemarkerChar(methodCalledOnThis);
+    }
+
+    private static final String MORE_DEMARKERS = "()[]{}<>";
+
+    static boolean isDemarkerChar(String text) {
+        boolean isDemarkerChar = false;
+
+        if (text != null && text.length() == 1) {
+            for (char demarker : DEMARKERS.toCharArray()) {
+                if (isDemarkerChar) break;
+                isDemarkerChar = text.charAt(0) == demarker;
+            }
+            for (char demarker : MORE_DEMARKERS.toCharArray()) {
+                if (isDemarkerChar) break;
+                isDemarkerChar = text.charAt(0) == demarker;
+            }
+        }
+        return isDemarkerChar;
     }
 
     public boolean isLastCompleted() {
@@ -150,16 +169,16 @@ public final class CodeAnalyzer {
     }
 
     final String getClassMethodCalledFrom() {
-        String className;
+        String className = null;
 
         if (isClass()) {
             className = methodCalledOnThis;
-        } else {
-            className = findClassName();
+        } else if (methodCalledOnThis != null) {
+            className = determineClassName(methodCalledOnThis);
         }
 
-        if (className == null && methodCalledOnThis != null && methodCalledOnThis.length() > 0) {
-            className = determineClassName(methodCalledOnThis);
+        if (className == null) {
+            className = findClassName();
         }
 
         return className;
@@ -225,7 +244,7 @@ public final class CodeAnalyzer {
         }
     }
 
-    private static boolean isFloat(String name) {
+    public static boolean isFloat(String name) {
         try {
             Double.parseDouble(name);
             return true;
@@ -234,7 +253,7 @@ public final class CodeAnalyzer {
         }
     }
 
-    private boolean isDemarked(String name, int start) {
+    private static boolean isDemarked(String name, int start) {
         boolean demarked = false;
         if (name.length() >= (start+2)) {
             String rest = name.substring(start);
@@ -271,7 +290,7 @@ public final class CodeAnalyzer {
 
             if (className == null) {
                 String value = findAssignment(text, "(\\S+)");
-                if (value != null) {
+                if (value != null && value.length() > 1) {
                     className = determineClassName(value);
                 }
             }

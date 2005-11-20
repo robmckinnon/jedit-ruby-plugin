@@ -37,6 +37,7 @@ import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 import org.jedit.ruby.cache.*;
 import org.jedit.ruby.ri.*;
 import org.jedit.ruby.utils.CommandUtils;
+import org.jedit.ruby.completion.RubyKeyBindings;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -149,6 +150,10 @@ public final class RubyActions {
         }
     }
 
+    public static void previousEdit(View view) {
+        RubyKeyBindings.gotoPreviousEdit(view);
+    }
+
     public static void nextError(View view) {
         if(isRubyFile(view)) {
             JEditTextArea textArea = view.getTextArea();
@@ -183,6 +188,6 @@ public final class RubyActions {
     }
 
     private static boolean isRubyFile(View view) {
-        return RubyPlugin.isRubyFile(view.getBuffer());
+        return RubyPlugin.isRuby(view.getBuffer());
     }
 }

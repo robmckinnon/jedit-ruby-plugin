@@ -34,7 +34,7 @@ import org.jedit.ruby.parser.RubyParser;
  */
 public final class ProgressiveSelector {
 
-    private static RubyTokenHandler tokenHandler = new RubyTokenHandler();
+    private static final RubyTokenHandler tokenHandler = new RubyTokenHandler();
 
     public static void doProgressiveSelection(View view) {
         JEditTextArea textArea = view.getTextArea();
@@ -174,7 +174,7 @@ public final class ProgressiveSelector {
     }
 
     private static void selectBeyondLine(View view, JEditTextArea textArea, Selection selection) {
-        if (RubyPlugin.isRubyFile(view.getBuffer())) {
+        if (RubyPlugin.isRuby(view.getBuffer())) {
             try {
                 try {
                     RubyMembers members = RubyParser.getMembers(view);

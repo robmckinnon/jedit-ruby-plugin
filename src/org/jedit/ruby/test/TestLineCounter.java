@@ -42,7 +42,7 @@ public final class TestLineCounter extends TestCase {
         assertEquals("Enhance loop values called once", "*", buffer.toString());
     }
 
-    private String[] getJunk(StringBuffer buffer) {
+    private static String[] getJunk(StringBuffer buffer) {
         buffer.append("*");
         return new String[] {"red", "blue", "green"};
     }
@@ -61,7 +61,7 @@ public final class TestLineCounter extends TestCase {
         assertLineAtOffsetCorrect(9, 2, lineCounter);
     }
 
-    private void assertLineAtOffsetCorrect(int offset, int expectedLine, LineCounter lineCounter) {
+    private static void assertLineAtOffsetCorrect(int offset, int expectedLine, LineCounter lineCounter) {
         int line = lineCounter.getLineAtOffset(offset);
         assertEquals("assert line at offset " + offset + " is correct: ", expectedLine, line);
     }
@@ -87,11 +87,11 @@ public final class TestLineCounter extends TestCase {
         checkLine(2, "3 ", lineCounter);
     }
 
-    private void checkLine(int line, String expected, LineCounter lineCounter) {
+    private static void checkLine(int line, String expected, LineCounter lineCounter) {
         assertEquals("Assert line " + line + " correct.", expected, lineCounter.getLine(line));
     }
 
-    private void checkOffset(int line, int expected, char character, LineCounter lineCounter, String text) {
+    private static void checkOffset(int line, int expected, char character, LineCounter lineCounter, String text) {
         int endOffset = lineCounter.getEndOffset(line);
         assertEquals("Assert end offset for " + line + " correct.", expected, endOffset);
         assertEquals("Assert end char for " + line + " correct.", character, text.charAt(endOffset));

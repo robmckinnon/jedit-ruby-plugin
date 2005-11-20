@@ -2,6 +2,11 @@
 
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
+	<ACTION NAME="ruby.complete-code">
+		<CODE>
+    	sidekick.SideKickActions.complete(view,sidekick.SideKickActions.COMPLETE_COMMAND);
+		</CODE>
+	</ACTION>
 	<ACTION NAME="ruby.progressive-selection">
 		<CODE>
 			org.jedit.ruby.RubyActions.progressiveSelection(view);
@@ -51,5 +56,10 @@
 		<CODE>
 			org.jedit.ruby.RubyActions.previousError(view);
  		</CODE>
+	</ACTION>
+	<ACTION NAME="ruby.previous-edit">
+		<CODE>
+			org.jedit.ruby.RubyActions.previousEdit(view);
+		</CODE>
 	</ACTION>
 </ACTIONS>

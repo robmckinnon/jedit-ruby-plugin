@@ -57,7 +57,7 @@ public final class TestJRubyParser extends TestCase {
         }
     }
 
-    private void assertCorrect(ISourcePosition position, String message, int expectedLine, String expectedMessage) {
+    private static void assertCorrect(ISourcePosition position, String message, int expectedLine, String expectedMessage) {
         assertEquals("Error position correct.", expectedLine, position.getEndLine());
         assertEquals("Error message correct.", expectedMessage, message);
     }
@@ -84,7 +84,7 @@ public final class TestJRubyParser extends TestCase {
         return result.getAST();
     }
 
-    private void failTest(String message) {
+    private static void failTest(String message) {
         fail("Unexpected callback: " + message);
     }
 

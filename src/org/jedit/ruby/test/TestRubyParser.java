@@ -186,7 +186,7 @@ public final class TestRubyParser extends TestCase {
         RubyCache.resetCache();
     }
 
-    private void assertNameCorrect(String expected, List<Member> members) {
+    private static void assertNameCorrect(String expected, List<Member> members) {
         assertEquals("Assert method name correct", expected, members.get(0).getName());
     }
 
@@ -295,7 +295,7 @@ public final class TestRubyParser extends TestCase {
         assertCorrect(0, "bark", null, 2, 6, 28, membersAsList);
     }
 
-    public final void testEndOffsets() {
+    public static final void testEndOffsets() {
         RubyMembers members = RubyParser.getMembers(DUCK, getUniquePath());
         Member member = members.getLastMemberBefore(6);
         assertEquals("Member correct.", "Duck", member.getName());
@@ -314,7 +314,7 @@ public final class TestRubyParser extends TestCase {
         assertEquals("Class offset correct.", 35, member.getEndOffset());
     }
 
-    public final void testErrors() {
+    public static final void testErrors() {
         RubyMembers members = RubyParser.getMembers(ERROR_CODE, getUniquePath());
         assertTrue("Assert errors exist", members.containsErrors());
 //        assertEquals("Assert error count correct", 3, members.getProblems().length);
@@ -431,7 +431,7 @@ public final class TestRubyParser extends TestCase {
         assertPreviousMemberCorrect(members, 18, "Ship");
     }
 
-    private void assertPreviousMemberCorrect(RubyMembers members, int caretPosition, String expected) {
+    private static void assertPreviousMemberCorrect(RubyMembers members, int caretPosition, String expected) {
         String name = members.getPreviousMember(caretPosition).getName();
         assertEquals("Assert previous member from "+caretPosition+" correct.", expected, name);
     }
@@ -560,7 +560,7 @@ public final class TestRubyParser extends TestCase {
         assertEquals("assert result size is correct", resultSize, members.size());
     }
 
-    private List<Member> getChildMembers(List<Member> members) {
+    private static List<Member> getChildMembers(List<Member> members) {
         assertTrue("assert has child members", members.get(0).hasChildMembers());
         return members.get(0).getChildMembersAsList();
     }
@@ -597,7 +597,7 @@ public final class TestRubyParser extends TestCase {
         }
     }
 
-    private void assertPreviousMemberCorrect(String text, int caretPosition, String expectedName) {
+    private static void assertPreviousMemberCorrect(String text, int caretPosition, String expectedName) {
         RubyMembers members = RubyParser.getMembers(text, getUniquePath(), new TestListener(), false);
         Member member = members.getLastMemberBefore(caretPosition);
 

@@ -88,7 +88,7 @@ public final class RubyCache {
         return new HashSet<Method>(parentToMethods.getMethodSet(memberName));
     }
 
-    public final synchronized List<Method> getAllMethods() {
+    public final synchronized Set<Method> getAllMethods() {
         return parentToMethods.getAllMethods();
     }
 
@@ -115,7 +115,7 @@ public final class RubyCache {
             });
         }
 
-        List<Method> methods = getAllMethods();
+        Set<Method> methods = getAllMethods();
 
         for (Method method : methods) {
             method.populateReturnTypes();
@@ -251,14 +251,24 @@ public final class RubyCache {
         return methodNames;
     }
 
-    public List<ParentMember> getParentsStartingWith(String partialClass) {
+    public List<ParentMember> getParentsStartingWith(String partialClass, boolean ignoreCase) {
         List<ParentMember> members = new ArrayList<ParentMember>();
-
         List<String> names = nameToParents.getAllParentNames();
+
+        String lowerCasePartial = null;
+        if (ignoreCase && partialClass != null) {
+            lowerCasePartial = partialClass.toLowerCase();
+        }
+
         for (String name : names) {
             if (name.startsWith(partialClass)) {
                 ParentMember member = nameToParents.getMember(name);
                 members.add(member);
+            } else if (ignoreCase && lowerCasePartial != null) {
+                if (name.toLowerCase().startsWith(lowerCasePartial)) {
+                    ParentMember member = nameToParents.getMember(name);
+                    members.add(member);
+                }
             }
         }
 

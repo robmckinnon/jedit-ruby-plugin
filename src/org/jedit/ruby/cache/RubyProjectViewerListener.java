@@ -97,7 +97,7 @@ final class RubyProjectViewerListener implements ProjectViewerListener {
     private static void addFile(String path) {
         File file = new File(path);
 
-        if (RubyPlugin.isRubyFile(file)) {
+        if (RubyPlugin.isRuby(file)) {
             String text = RubyPlugin.readFile(file);
             if (text != null) {
                 RubyCache.instance().addMembers(text, path);

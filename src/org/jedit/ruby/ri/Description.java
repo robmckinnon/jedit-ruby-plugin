@@ -31,6 +31,10 @@ public class Description implements Serializable {
     private String name;
     private String comment;
 
+    public Description() {
+        super();
+    }
+
     public final String getFullName() {
         return fullName;
     }

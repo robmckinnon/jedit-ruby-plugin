@@ -191,10 +191,10 @@ final class RubyNodeVisitor extends AbstractVisitor {
 
         Member method;
         try {
-            method = getMember("def", null, methodIndex, methods, node.getName(), node.getPosition());
+            method = getMember("def", methodIndex, methods, node.getName(), node.getPosition());
         } catch (IndexAdjustmentException e) {
             methodIndex = e.getIndex();
-            method = getMethodNoCheckedException("def", methodIndex, methods, node.getName(), node.getPosition());
+            method = getMethodNoCheckedException(methodIndex, methods, node.getName(), node.getPosition());
         }
         methodIndex++;
         Member parent = currentMember.getLast();
@@ -202,11 +202,11 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
-    private Member getMethodNoCheckedException(String memberType, int index, List<Member> members, String memberName, ISourcePosition position) {
+    private Member getMethodNoCheckedException(int index, List<Member> members, String memberName, ISourcePosition position) {
         try {
-            return getMember(memberType, null, index, members, memberName, position);
+            return getMember("def", index, members, memberName, position);
         } catch (IndexAdjustmentException e) {
-            return throwCantFindException(memberType, memberName, position);
+            return throwCantFindException("def", memberName, position);
         }
     }
 
@@ -256,28 +256,27 @@ final class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    private Member getMember(String memberType, Member member, int index, List<Member> members, String memberName, ISourcePosition position) throws IndexAdjustmentException {
-        if (member == null) {
-            try {
-                member = members.get(index);
-                if (!memberName.equals(member.getShortName())) {
-                    index++;
-                    while(index < members.size()) {
-                        member = members.get(index);
-                        if (memberName.equals(member.getShortName())) {
-                            throw new IndexAdjustmentException(index);
-                        } else {
-                            index++;
-                        }
+    private Member getMember(String memberType, int index, List<Member> members, String memberName, ISourcePosition position) throws IndexAdjustmentException {
+        Member member;
+        try {
+            member = members.get(index);
+            if (!memberName.equals(member.getShortName())) {
+                index++;
+                while(index < members.size()) {
+                    member = members.get(index);
+                    if (memberName.equals(member.getShortName())) {
+                        throw new IndexAdjustmentException(index);
+                    } else {
+                        index++;
                     }
-                    throw new Exception();
                 }
-            } catch (Exception e) {
-                if (e instanceof IndexAdjustmentException) {
-                    throw (IndexAdjustmentException)e;
-                } else {
-                    return throwCantFindException(memberType, memberName, position);
-                }
+                throw new Exception();
+            }
+        } catch (Exception e) {
+            if (e instanceof IndexAdjustmentException) {
+                throw (IndexAdjustmentException)e;
+            } else {
+                return throwCantFindException(memberType, memberName, position);
             }
         }
         return populateOffsets(member, position, memberType);
@@ -388,7 +387,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
     }
 
     private static final class NameVisitor extends AbstractVisitor {
-        private List<String> namespaces;
+        private final List<String> namespaces;
         private String name;
         private int visits;
 

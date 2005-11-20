@@ -43,7 +43,7 @@ public final class FileStructurePopup {
     }
 
     public final void show() {
-        if (RubyPlugin.isRubyFile(view.getBuffer())) {
+        if (RubyPlugin.isRuby(view.getBuffer())) {
             try {
                 log("showing file structure popup");
                 view.showWaitCursor();

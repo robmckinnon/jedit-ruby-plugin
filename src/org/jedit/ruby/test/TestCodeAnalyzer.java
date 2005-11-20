@@ -22,9 +22,6 @@ package org.jedit.ruby.test;
 import junit.framework.TestCase;
 import org.jedit.ruby.completion.CodeAnalyzer;
 import org.jedit.ruby.utils.EditorView;
-import org.jedit.ruby.ast.RubyMembers;
-import org.jedit.ruby.ast.Member;
-import org.gjt.sp.jedit.View;
 
 import java.util.List;
 
@@ -69,7 +66,7 @@ public final class TestCodeAnalyzer extends TestCase {
         assertCorrect(analyzer, method, null, false);
     }
 
-    public final void testDotCompleteMatch() {
+    public static final void testDotCompleteMatch() {
         boolean match = CodeAnalyzer.DotCompleteRegExp.instance.isMatch("ActiveRecord:");
         assertEquals("Assert dot completion match correct.", false, match);
 
@@ -77,7 +74,7 @@ public final class TestCodeAnalyzer extends TestCase {
         assertEquals("Assert dot completion match correct.", true, match);
     }
 
-    public final void testClassMatch() {
+    public static final void testClassMatch() {
         boolean match = CodeAnalyzer.ClassNameRegExp.instance.isMatch("ActiveRecord:");
         assertEquals("Assert class match correct.", true, match);
         match = CodeAnalyzer.ClassNameRegExp.instance.isMatch("ActiveRecord::");
@@ -94,38 +91,38 @@ public final class TestCodeAnalyzer extends TestCase {
         assertCorrect(analyzer, null, text, true);
     }
 
-    private void assertCorrect(CodeAnalyzer analyzer, String partialMethod, String partialClass, boolean isDotCompletion) {
+    private static void assertCorrect(CodeAnalyzer analyzer, String partialMethod, String partialClass, boolean isDotCompletion) {
         assertEquals("Assert dot completion point correct", isDotCompletion, analyzer.isDotInsertionPoint());
         assertEquals("Assert partial method correct", partialMethod, analyzer.getPartialMethod());
         assertEquals("Assert partial class correct", partialClass, analyzer.getPartialClass());
     }
 
-    public final void testFindMethod1() {
+    public static final void testFindMethod1() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(0));
     }
 
-    public final void testFindMethod2() {
+    public static final void testFindMethod2() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(1));
     }
 
-    public final void testFindMethod3() {
+    public static final void testFindMethod3() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(2));
     }
 
-    public final void testFindMethod4() {
+    public static final void testFindMethod4() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to", methods.get(3));
     }
 
-    public final void testClassName() {
+    public static final void testClassName() {
         boolean isClass = CodeAnalyzer.isClass("REXML::Element");
         assertEquals("assert class name recognized", true, isClass);
     }
 
-    public final void testClassName2() {
+    public static final void testClassName2() {
         boolean isClass = CodeAnalyzer.isClass("IO::puts");
         assertEquals("assert class method recognized", false, isClass);
     }
@@ -135,9 +132,9 @@ public final class TestCodeAnalyzer extends TestCase {
 //        assertEquals("assert found method", "[]", methods.get(4));
 //    }
 
-    private static final class MockEditorView implements EditorView {
-        private String text;
-        private int caret;
+    private static final class MockEditorView extends EditorView.NullEditorView {
+        private final String text;
+        private final int caret;
 
         public MockEditorView(String text, int caret) {
             this.text = text;
@@ -152,32 +149,12 @@ public final class TestCodeAnalyzer extends TestCase {
             return text.substring(0, caret);
         }
 
-        public String getLineUpToCaretLeftTrimmed() {
-            return null;
-        }
-
         public String getText(int start, int length) {
             return text.substring(start, start+length);
         }
 
         public int getLength() {
             return text.length();
-        }
-
-        public String getTextWithoutLine() {
-            return null;
-        }
-
-        public View getView() {
-            return null;
-        }
-
-        public RubyMembers getMembers() {
-            return null;
-        }
-
-        public Member getMemberAtCaretPosition() {
-            return null;
         }
     }
 }

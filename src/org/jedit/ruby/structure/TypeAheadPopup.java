@@ -58,7 +58,7 @@ public final class TypeAheadPopup extends JWindow {
     private static final char BACKSPACE_KEY = (char)-1;
     private static final char ESCAPE_KEY = (char)-2;
     private static final int IGNORE = -2;
-    private static final Border TOP_LINE_BORDER = new TopLineBorder(Color.GRAY);
+    private static final Border TOP_LINE_BORDER = new TopLineBorder();
 
     private Member toParentMember;
     private final Member[] members;

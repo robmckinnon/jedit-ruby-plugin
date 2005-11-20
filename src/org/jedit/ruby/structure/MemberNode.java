@@ -30,7 +30,7 @@ import org.jedit.ruby.icons.MemberIcon;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public final class MemberNode extends Asset {
+final class MemberNode extends Asset {
 
     private final Icon icon;
 

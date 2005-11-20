@@ -106,10 +106,10 @@ final class NameToParents {
         this.parentToImmediateMethods = parentToImmediateMethods;
     }
 
-    private static class ClassVisitor extends MemberVisitorAdapter {
+    private static final class ClassVisitor extends MemberVisitorAdapter {
         ClassMember classMember = null;
 
-        public void handleClass(ClassMember clas) {
+        public final void handleClass(ClassMember clas) {
             classMember = clas;
         }
     }

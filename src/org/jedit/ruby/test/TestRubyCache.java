@@ -32,12 +32,12 @@ import junit.framework.TestCase;
  */
 public final class TestRubyCache extends TestCase {
 
-    private void addClassesToCache() {
+    private static void addClassesToCache() {
         RubyCache.instance().addMembers(TestRubyParser.CLASS, "CLASS");
         RubyCache.instance().addMembers(TestRubyParser.ARR_CLASS, "ARR_CLASS");
     }
 
-    private void addModuleToCache() {
+    private static void addModuleToCache() {
         RubyCache.instance().addMembers(TestRubyParser.DEF_IN_MODULE, "DEF_IN_MODULE");
     }
 
@@ -77,13 +77,13 @@ public final class TestRubyCache extends TestCase {
         assertFindByClassCorrect("Blue", 0, "red", 1, "DEF_IN_MODULE");
     }
 
-    private void assertFindByMethodCorrect(String method, int index, String parentName, int parentCount) {
+    private static void assertFindByMethodCorrect(String method, int index, String parentName, int parentCount) {
         List<Member> members = RubyCache.instance().getMembersWithMethodAsList(method);
         assertEquals("Assert parent match correct for: " + method, parentCount, members.size());
         assertEquals("Assert name correct", parentName, members.get(index).getName());
     }
 
-    private void assertFindByClassCorrect(String parentName, int index, String methodName, int methodCount, String filePath) {
+    private static void assertFindByClassCorrect(String parentName, int index, String methodName, int methodCount, String filePath) {
         List<Method> members = RubyCache.instance().getMethodsOfMemberAsList(parentName);
         assertEquals("Assert child match correct", methodCount, members.size());
         assertEquals("Assert name correct", methodName, members.get(index).getName());
