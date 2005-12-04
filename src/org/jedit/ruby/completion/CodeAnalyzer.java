@@ -79,8 +79,8 @@ public final class CodeAnalyzer {
     }
 
     private void lookForClassMatch(String line, boolean setMethod) {
-        REMatch match;
-        match = PartialNameRegExp.instance.getMatch(line);
+        REMatch match = PartialNameRegExp.instance.getMatch(line);
+
         if (match != null) {
             String partialName = match.toString(2);
             if (ClassNameRegExp.instance.isMatch(partialName)) {
@@ -97,8 +97,12 @@ public final class CodeAnalyzer {
     }
 
     public static boolean isClassCompletionPoint(EditorView view) {
-        String lineUpToCaret = view.getLineUpToCaretLeftTrimmed();
-        return ClassNameRegExp.instance.isMatch(lineUpToCaret);
+        String wordUpToCaret = view.getLineUpToCaretLeftTrimmed();
+        int space = wordUpToCaret.lastIndexOf(' ');
+        if (space != -1 && space != wordUpToCaret.length() - 1) {
+            wordUpToCaret = wordUpToCaret.substring(space + 1);
+        }
+        return ClassNameRegExp.instance.isMatch(wordUpToCaret);
     }
 
     public static boolean hasLastReturnTypes() {
@@ -171,10 +175,12 @@ public final class CodeAnalyzer {
     final String getClassMethodCalledFrom() {
         String className = null;
 
-        if (isClass()) {
-            className = methodCalledOnThis;
-        } else if (methodCalledOnThis != null) {
-            className = determineClassName(methodCalledOnThis);
+        if (methodCalledOnThis != null) {
+            if (isClass()) {
+                className = methodCalledOnThis;
+            } else {
+                className = determineClassName(methodCalledOnThis);
+            }
         }
 
         if (className == null) {

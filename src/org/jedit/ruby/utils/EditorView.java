@@ -47,6 +47,10 @@ public interface EditorView {
 
     List<String> getKeywords();
 
+    List<String> getWords(String partialName);
+
+    int getCaretOffsetInLine();
+
     public static class NullEditorView implements EditorView {
 
         public String getLineUpToCaret() {
@@ -114,6 +118,14 @@ public interface EditorView {
         }
 
         public List<String> getKeywords() {
+            return null;
+        }
+
+        public int getCaretOffsetInLine() {
+            return 0;
+        }
+
+        public List<String> getWords(String partialName) {
             return null;
         }
     }

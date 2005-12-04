@@ -21,16 +21,13 @@ package org.jedit.ruby.utils;
 
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.Selection;
-import org.gjt.sp.jedit.Buffer;
-import org.gjt.sp.jedit.View;
+import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.syntax.KeywordMap;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
 
-import java.util.List;
-import java.util.Arrays;
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -93,7 +90,7 @@ public final class ViewWrapper implements EditorView {
         int end = textArea().getLineEndOffset(line);
         StringBuffer text = new StringBuffer();
         text.append(buffer().getText(0, start));
-        if(buffer().getLength() > end) {
+        if (buffer().getLength() > end) {
             text.append(buffer().getText(end, buffer().getLength() - end));
         }
         return text.toString();
@@ -182,6 +179,64 @@ public final class ViewWrapper implements EditorView {
         List<String> list = new ArrayList<String>(Arrays.asList(keywords));
         list.add("defined?");
         return list;
+    }
+
+    public int getCaretOffsetInLine() {
+        return getCaretPosition() - getStartOffset(getLineAtCaret());
+    }
+
+    public List<String> getWords(String partialName) {
+        Set<String> words = new TreeSet<String>(new MiscUtilities.StringCompare());
+        Set buffers = new HashSet();
+        View views = jEdit.getFirstView();
+        while (views != null) {
+            EditPane[] panes = views.getEditPanes();
+            for (EditPane pane : panes) {
+                Buffer buffer = pane.getBuffer();
+
+                if (!buffers.contains(buffer)) {
+                    buffers.add(buffer);
+                    int offset = (buffer == buffer() ? getCaretPosition() : 0);
+                    getCompletions(buffer, partialName, "$@:_", offset, words);
+                }
+            }
+            views = views.getNext();
+        }
+        return new ArrayList<String>(words);
+    }
+
+    private static void getCompletions(Buffer buffer, String partialName, String noWordSep, int caret, Set completions) {
+        for (int i = 0; i < buffer.getLineCount(); i++) {
+            String line = buffer.getLineText(i);
+            int start = buffer.getLineStartOffset(i);
+
+            if (line.startsWith(partialName) && caret != start + partialName.length()) {
+                String word = completeWord(line, 0, noWordSep);
+                if (!completions.contains(word)) {
+                    completions.add(word);
+                }
+            }
+
+            int length = partialName.length();
+            int len = line.length() - partialName.length();
+            for (int j = 0; j < len; j++) {
+                char c = line.charAt(j);
+                if (!Character.isLetterOrDigit(c) && noWordSep.indexOf(c) == -1) {
+                    if (line.regionMatches(j + 1, partialName, 0, length) && caret != start + j + partialName.length() + 1) {
+                        String _word = completeWord(line, j + 1, noWordSep);
+                        if (!completions.contains(_word)) {
+                            completions.add(_word);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static String completeWord(String line, int offset, String noWordSep) {
+        // '+ 1' so that findWordEnd() doesn't pick up the space at the start
+        int wordEnd = TextUtilities.findWordEnd(line, offset + 1, noWordSep);
+        return line.substring(offset, wordEnd);
     }
 
 }

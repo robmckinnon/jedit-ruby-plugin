@@ -23,6 +23,7 @@ package org.jedit.ruby.utils;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.structure.RubyTokenHandler;
 import org.jedit.ruby.structure.RubyToken;
+import org.jedit.ruby.structure.BufferChangeHandler;
 
 import javax.swing.event.CaretListener;
 import javax.swing.event.CaretEvent;
@@ -66,6 +67,9 @@ public final class CharCaretListener implements CaretListener {
     }
 
     public final void caretUpdate(CaretEvent e) {
+        if (!BufferChangeHandler.instance().isGotoPreviousEditAction()) {
+            BufferChangeHandler.instance().resetEditLocationIndex();
+        }
         int mark = e.getMark();
         int dot = e.getDot();
         charLastBehind = charBehind;

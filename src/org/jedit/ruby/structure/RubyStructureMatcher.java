@@ -58,9 +58,9 @@ public final class RubyStructureMatcher extends MemberVisitorAdapter implements 
         int nameEnd = startInner + member.getCompositeName().length();
         int end = member.getEndOffset();
 
-        boolean show = end < view.getTextLength() && view.getText(end - 3, 3).equals("end");
+        boolean endIsPresent = end <= view.getTextLength() && view.getText(end - 3, 3).equals("end");
 
-        if (show) {
+        if (endIsPresent) {
             boolean showStart = position > end - 4;
             boolean showEnd = position >= start && position <= startInner - 1;
 

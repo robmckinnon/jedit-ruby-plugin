@@ -23,6 +23,7 @@ import errorlist.ErrorSource;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Macros;
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.Registers;
 import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Member;
@@ -37,7 +38,6 @@ import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
 import org.jedit.ruby.cache.*;
 import org.jedit.ruby.ri.*;
 import org.jedit.ruby.utils.CommandUtils;
-import org.jedit.ruby.completion.RubyKeyBindings;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +53,92 @@ public final class RubyActions {
 
     public static void progressiveSelection(View view) {
         ProgressiveSelector.doProgressiveSelection(view);
+    }
+
+    public static void pasteLine(View view, JEditTextArea textArea) {
+        if (!view.getBuffer().isReadOnly()) {
+            if (isLineInClipBoard() && textArea.getSelectionCount() == 0) {
+                int lineLength = jEdit.getIntegerProperty("ruby.clipboard-line-length", 0);
+                String clipBoardText = Registers.getRegister('$').toString();
+
+                if (clipBoardText.length() == lineLength) {
+                    int position = textArea.getCaretPosition();
+                    int line = textArea.getCaretLine();
+                    int startOffset = textArea.getLineStartOffset(line);
+                    view.getBuffer().insert(startOffset, clipBoardText);
+                    textArea.setCaretPosition(position + clipBoardText.length());
+                } else {
+                    setLineInClipBoard(false);
+                    pasteFromClipBoard(textArea);
+                }
+            } else {
+                pasteFromClipBoard(textArea);
+            }
+        }
+    }
+
+    public static void copyLine(JEditTextArea textArea) {
+        if (textArea.getSelectionCount() > 0) {
+            copySelectionToClipBoard(textArea);
+        } else {
+            putLineInClipBoard(textArea);
+        }
+    }
+
+    public static void cutLine(JEditTextArea textArea) {
+        if (textArea.getSelectionCount() > 0) {
+            cutSelectionToClipBoard(textArea);
+        } else {
+            putLineInClipBoard(textArea);
+            textArea.deleteLine();
+        }
+    }
+
+    private static void putLineInClipBoard(JEditTextArea textArea) {
+        int line = textArea.getCaretLine();
+        String text = textArea.getLineText(line) + jEdit.getProperty("buffer.lineSeparator");
+        Registers.getRegister('$').setValue(text);
+        jEdit.setProperty("ruby.clipboard-line-length", Integer.toString(text.length()));
+        setLineInClipBoard(true);
+    }
+
+    private static void copySelectionToClipBoard(JEditTextArea textArea) {
+        Registers.copy(textArea, '$');
+        setLineInClipBoard(false);
+    }
+
+    private static void cutSelectionToClipBoard(JEditTextArea textArea) {
+        Registers.cut(textArea, '$');
+        setLineInClipBoard(false);
+    }
+
+    private static void pasteFromClipBoard(JEditTextArea textArea) {
+        Registers.paste(textArea, '$');
+    }
+
+    private static boolean isLineInClipBoard() {
+        return jEdit.getBooleanProperty("ruby.line-in-clipboard", false);
+    }
+
+    private static void setLineInClipBoard(boolean isLine) {
+        jEdit.setProperty("ruby.line-in-clipboard", Boolean.valueOf(isLine).toString());
+    }
+
+    public static void introduceVariable(View view) {
+        String prompt = jEdit.getProperty("ruby.introduce-variable.message");
+        String name = Macros.input(view, prompt);
+
+        if (name != null && name.length() > 0) {
+            JEditTextArea textArea = view.getTextArea();
+            cutSelectionToClipBoard(textArea);
+            textArea.setSelectedText(name);
+            textArea.goToPrevLine(false);
+            textArea.goToEndOfWhiteSpace(false);
+            RubyActions.autoIndentAndInsertEnd(view);
+            textArea.setSelectedText(name + " = ");
+            pasteFromClipBoard(textArea);
+            textArea.goToNextLine(false);
+        }
     }
 
     public static void searchDocumentation(View view) {
@@ -85,7 +171,7 @@ public final class RubyActions {
             Macros.message(textArea, jEdit.getProperty("ruby.find-declaration.no-matches.label"));
         }
     }
-    
+
     public static void fileStructurePopup(View view) {
         FileStructurePopup fileStructurePopup = new FileStructurePopup(view);
         fileStructurePopup.show();
@@ -97,9 +183,9 @@ public final class RubyActions {
     }
 
     public static void autoIndentAndInsertEnd(View view) {
-        if(isRubyFile(view)) {
+        if (isRubyFile(view)) {
 // start = System.currentTimeMillis();
-        AutoIndentAndInsertEnd.performIndent(view);
+            AutoIndentAndInsertEnd.performIndent(view);
 // end = System.currentTimeMillis();
 // Macros.message(view, "" + (end - start));
         } else {
@@ -108,7 +194,7 @@ public final class RubyActions {
     }
 
     public static void nextMethod(View view) {
-        if(isRubyFile(view)) {
+        if (isRubyFile(view)) {
             RubyMembers members = RubyParser.getMembers(view);
 
             if (!members.containsErrors()) {
@@ -128,7 +214,7 @@ public final class RubyActions {
     }
 
     public static void previousMethod(View view) {
-        if(isRubyFile(view)) {
+        if (isRubyFile(view)) {
             RubyMembers members = RubyParser.getMembers(view);
 
             if (!members.containsErrors()) {
@@ -151,11 +237,11 @@ public final class RubyActions {
     }
 
     public static void previousEdit(View view) {
-        RubyKeyBindings.gotoPreviousEdit(view);
+        BufferChangeHandler.instance().gotoPreviousEdit(view);
     }
 
     public static void nextError(View view) {
-        if(isRubyFile(view)) {
+        if (isRubyFile(view)) {
             JEditTextArea textArea = view.getTextArea();
             int caretPosition = textArea.getCaretPosition();
             ErrorSource.Error[] errors = org.jedit.ruby.structure.RubySideKickParser.getErrors();
@@ -171,7 +257,7 @@ public final class RubyActions {
     }
 
     public static void previousError(View view) {
-        if(isRubyFile(view)) {
+        if (isRubyFile(view)) {
             JEditTextArea textArea = view.getTextArea();
             int caretPosition = textArea.getCaretPosition();
             List<ErrorSource.Error> errors = Arrays.asList(RubySideKickParser.getErrors());

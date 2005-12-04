@@ -34,11 +34,16 @@ public final class CodeCompletor {
     private static final ArrayList EMPTY_LIST = new ArrayList();
     private static final MethodFinderVisitor METHOD_FINDER = new MethodFinderVisitor();
     private static final Set<Method> kernelMethods = getMethodsOfParentMember("Kernel", false, true);
+    private static final Set<Method> moduleMethods = getMethodsOfParentMember("Module", false, true);
     private static final Set<String> kernelMethodsNames = new HashSet<String>();
+    private static final Set<String> moduleMethodsNames = new HashSet<String>();
 
     static {
         for (Method method : kernelMethods) {
             kernelMethodsNames.add(method.getShortName());
+        }
+        for (Method method : moduleMethods) {
+            moduleMethodsNames.add(method.getShortName());
         }
     }
 
@@ -58,36 +63,52 @@ public final class CodeCompletor {
         methods = findMethods();
         keywords = findKeywords(foundMethodsFromPosition);
 
-        if (isClassComplete()) {
+//        if (isClassComplete()) {
             classesAndModules = findClassesAndModules();
-        } else {
-            classesAndModules = null;
-        }
+//        } else {
+//            classesAndModules = null;
+//        }
     }
 
     private List<KeywordMember> findKeywords(boolean foundMethodsFromPosition) {
         List<KeywordMember> keywords;
+
         if (foundMethodsFromPosition) {
-            String partialName = getPartialMethod() != null ? getPartialMethod() : getPartialClass();
-            keywords = new ArrayList<KeywordMember>();
-
-            for (String keyword : view.getKeywords()) {
-                if (partialName == null || keyword.startsWith(partialName)) {
-                    if (!kernelMethodsNames.contains(keyword)) {
-                        keywords.add(new KeywordMember(keyword));
-                    }
-                }
-            }
-
+            keywords = getMatchingKeywords();
+            keywords.addAll(getMatchesFromFile());
             Collections.sort(keywords, new KeywordComparator());
         } else {
             keywords = null;
         }
+
         return keywords;
     }
 
-    private boolean isClassComplete() {
-        return methods.size() == 0 && getPartialClass() != null;
+    private List<KeywordMember> getMatchingKeywords() {
+        List<KeywordMember> keywords;
+        keywords = new ArrayList<KeywordMember>();
+        String partialName = getPartialMethod() != null ? getPartialMethod() : getPartialClass();
+        for (String keyword : view.getKeywords()) {
+            if (partialName == null || keyword.startsWith(partialName)) {
+                if (!kernelMethodsNames.contains(keyword) && !moduleMethodsNames.contains(keyword)) {
+                    keywords.add(new KeywordMember(keyword));
+                }
+            }
+        }
+        return keywords;
+    }
+
+    private List<KeywordMember> getMatchesFromFile() {
+        String partialName = getPartialMethod() != null ? getPartialMethod() : getPartialClass();
+        List<KeywordMember> words = new ArrayList<KeywordMember>();
+        if (partialName != null && partialName.length() > 0) {
+            for (String word : view.getWords(partialName)) {
+                if (!kernelMethodsNames.contains(word) && !moduleMethodsNames.contains(word)) {
+                    words.add(new KeywordMember(word));
+                }
+            }
+        }
+        return words;
     }
 
     private String getPartialMethod() {
@@ -113,7 +134,14 @@ public final class CodeCompletor {
             members = new ArrayList(members);
             members.addAll(classesAndModules);
         }
-        return new RubyCompletion(view, getPartialClass(), getPartialMethod(), members);
+
+        if (members.size() == 0 && analyzer.getClassMethodCalledFrom() == null) {
+            members.addAll(getMatchesFromFile());
+            members.addAll(convertToList(filterMethods(RubyCache.instance().getAllMethods())));
+            members.removeAll(getMatchingKeywords());
+        }
+
+        return new RubyCompletion(view, getPartialClassIgnoreCase(), getPartialMethod(), members);
     }
 
     public RubyCompletion getEmptyCompletion() {
@@ -123,7 +151,7 @@ public final class CodeCompletor {
     public RubyCompletion getCompletion() {
         List<? extends Member> members;
 
-        if (isClassComplete()) {
+        if (methods.size() == 0 && classesAndModules != null) {
             members = classesAndModules;
         } else {
             members = methods;
@@ -135,19 +163,35 @@ public final class CodeCompletor {
             members.addAll((Collection)temp);
         }
 
-        return new RubyCompletion(view, getPartialClass(), getPartialMethod(), members);
+        return new RubyCompletion(view, getPartialClassIgnoreCase(), getPartialMethod(), members);
     }
 
     private List<ParentMember> findClassesAndModules() {
         RubyCache cache = RubyCache.instance();
-        List<ParentMember> members = cache.getParentsStartingWith(getPartialClass(), true);
+        String partialName = getPartialClassIgnoreCase();
 
-        if (members.size() > 0) {
-            ParentCompletionComparator.instance.setPartialName(getPartialClass());
-            Collections.sort(members, ParentCompletionComparator.instance);
+        if (partialName != null) {
+            List<ParentMember> members = cache.getParentsStartingWith(partialName, true);
+
+            if (members.size() > 0) {
+                ParentCompletionComparator.instance.setPartialName(getPartialClass());
+                Collections.sort(members, ParentCompletionComparator.instance);
+                return members;
+            } else {
+                return null;
+            }
+        } else {
+            return null;
         }
+    }
 
-        return members;
+    private String getPartialClassIgnoreCase() {
+        String partialName = getPartialClass();
+
+        if (partialName == null && analyzer.getClassMethodCalledFrom() != null) {
+            partialName = analyzer.getClassMethodCalledFrom()+"::"+getPartialMethod();
+        }
+        return partialName;
     }
 
     private List<Method> findMethods() {
@@ -168,7 +212,7 @@ public final class CodeCompletor {
                         methods = filterMethods(RubyCache.instance().getAllMethods());
                     }
                 } else {
-                    methods = new HashSet<Method>();                    
+                    methods = new HashSet<Method>();
                 }
 
             } else if (getPartialClass() == null) {
@@ -179,6 +223,10 @@ public final class CodeCompletor {
             }
         }
 
+        return convertToList(methods);
+    }
+
+    private List<Method> convertToList(Set<Method> methods) {
         List<Method> methodList = new ArrayList<Method>(methods);
 
         if (methods.size() > 0) {
@@ -207,6 +255,10 @@ public final class CodeCompletor {
 
     private Set<Method> getKernelMethods() {
         return filterMethods(new HashSet<Method>(kernelMethods));
+    }
+
+    private Set<Method> getModuleMethods() {
+        return filterMethods(new HashSet<Method>(moduleMethods));
     }
 
     public static void setLastCompleted(String partialName, Member member) {
@@ -329,6 +381,7 @@ public final class CodeCompletor {
 
         public final void handleModule(Module module) {
             methods = completor.findMethods(module.getFullName(), true);
+            methods.addAll(completor.getModuleMethods());
         }
 
         public final void handleClass(ClassMember classMember) {
@@ -338,6 +391,8 @@ public final class CodeCompletor {
             if (superClass != null) {
                 methods.addAll(completor.findMethods(superClass, true));
             }
+
+            methods.addAll(completor.getModuleMethods());
         }
 
         public final void handleMethod(Method method) {

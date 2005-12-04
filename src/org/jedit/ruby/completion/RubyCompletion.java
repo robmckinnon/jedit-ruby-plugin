@@ -66,12 +66,16 @@ public final class RubyCompletion extends SideKickCompletion {
         editorView = view;
     }
 
+    public ListCellRenderer getRenderer() {
+        return COMPLETION_NAME_RENDERER;
+    }
+
     public static boolean continueCompleting() {
         return CONTINUE_COMPLETING;
     }
 
-    public ListCellRenderer getRenderer() {
-        return COMPLETION_NAME_RENDERER;
+    private void setContinueCompleting(boolean continueCompleting) {
+        CONTINUE_COMPLETING = continueCompleting;
     }
 
     /**
@@ -101,12 +105,12 @@ public final class RubyCompletion extends SideKickCompletion {
             CodeAnalyzer.setLastReturnTypes(null);
         }
 
-        CONTINUE_COMPLETING = continueCompleting;
+        setContinueCompleting(continueCompleting);
         return continueCompleting;
     }
 
     public final void insert(int index) {
-        CONTINUE_COMPLETING = insert(members.get(index), false, false);
+        setContinueCompleting(insert(members.get(index), false, false));
     }
 
     private boolean insert(Member member, boolean space, boolean dot) {

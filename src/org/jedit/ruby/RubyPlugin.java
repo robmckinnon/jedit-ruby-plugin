@@ -30,6 +30,7 @@ import org.jedit.ruby.parser.JRubyParser;
 import org.jedit.ruby.ri.RiParser;
 import org.jedit.ruby.completion.RubyKeyBindings;
 import org.jedit.ruby.structure.RubyStructureMatcher;
+import org.jedit.ruby.structure.BufferChangeHandler;
 import org.jedit.ruby.utils.CharCaretListener;
 import org.jedit.ruby.utils.EditorView;
 import org.jedit.ruby.utils.ViewWrapper;
@@ -46,7 +47,7 @@ import java.util.HashMap;
  */
 public final class RubyPlugin extends EBPlugin {
 
-    private static final boolean debug = System.getProperty("user.home").equals("/home/b");
+    private static final boolean debug = System.getProperty("user.home").equals("/home/c");
     private static final CharCaretListener CHAR_CARET_LISTENER = new CharCaretListener();
     private static final Map<View, EditorView> views = new HashMap<View, EditorView>();
 
@@ -80,19 +81,30 @@ public final class RubyPlugin extends EBPlugin {
         }
     }
 
-    private static void handleBufferUpdate(BufferUpdate update) {
-        if (update.getWhat() == BufferUpdate.CLOSED) {
+    private static void handleViewUpdate(ViewUpdate update) {
+        if (ViewUpdate.CREATED == update.getWhat()) {
+            //
+        } else if (ViewUpdate.CLOSED == update.getWhat()) {
             views.remove(update.getView());
         }
     }
 
-    private void handleEditUpdate(EditPaneUpdate update) {
-        EditPane editPane = update.getEditPane();
+    private static void handleBufferUpdate(BufferUpdate update) {
+        if (BufferUpdate.LOADED == update.getWhat()) {
+            update.getBuffer().addBufferChangeListener(BufferChangeHandler.instance());
 
-        if (update.getWhat() == EditPaneUpdate.CREATED) {
-            addKeyListener(editPane.getTextArea());
-        } else if (update.getWhat() == EditPaneUpdate.DESTROYED) {
-            removeKeyListener(editPane.getTextArea());
+        } if (BufferUpdate.CLOSED == update.getWhat()) {
+            update.getBuffer().removeBufferChangeListener(BufferChangeHandler.instance());
+        }
+    }
+
+    private void handleEditUpdate(EditPaneUpdate update) {
+        JEditTextArea textArea = update.getEditPane().getTextArea();
+
+        if (EditPaneUpdate.CREATED == update.getWhat()) {
+            addKeyListener(textArea);
+        } else if (EditPaneUpdate.DESTROYED == update.getWhat()) {
+            removeKeyListener(textArea);
         }
     }
 
@@ -118,14 +130,6 @@ public final class RubyPlugin extends EBPlugin {
         textArea.removeKeyListener(bindings);
         textArea.removeStructureMatcher(structureMatcher);
         textArea.removeCaretListener(CHAR_CARET_LISTENER);
-    }
-
-    private static void handleViewUpdate(ViewUpdate update) {
-        if (update.getWhat() == ViewUpdate.CREATED) {
-//                initView(update.getView());
-        } else if (update.getWhat() == ViewUpdate.CLOSED) {
-//                uninitView(update.getView());
-        }
     }
 
     public static void log(String message, Class clas) {

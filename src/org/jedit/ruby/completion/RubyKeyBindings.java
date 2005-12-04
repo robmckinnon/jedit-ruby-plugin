@@ -20,20 +20,17 @@
 
 package org.jedit.ruby.completion;
 
-import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.gui.KeyEventWorkaround;
-import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.structure.RubyToken;
+import org.jedit.ruby.structure.BufferChangeHandler;
 import org.jedit.ruby.utils.CharCaretListener;
+import org.jedit.ruby.utils.EditorView;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,120 +42,85 @@ public final class RubyKeyBindings extends KeyAdapter {
     private static final List<String> pairs = Arrays.asList(new String[]{"()", "[]", "{}", "''", "\"\"", "//"});
 
     private static final char NIL_CHAR = (char)-1;
-    private static final List<Edit> EDITS = new ArrayList<Edit>();
-    private static int editLocationIndex = 0;
 
     private final JEditTextArea textArea;
-    private static boolean previousEditAction;
 
     public RubyKeyBindings(JEditTextArea textArea) {
         this.textArea = textArea;
     }
 
-    public static void gotoPreviousEdit(View view) {
-        previousEditAction = true;
-        if (!EDITS.isEmpty()) {
-            if (editLocationIndex < EDITS.size()) {
-                int index = (EDITS.size() - 1) - editLocationIndex;
-                editLocationIndex++;
-                final Edit edit = EDITS.get(index);
-
-                JEditTextArea textArea;
-
-                if (!edit.file.equals(view.getBuffer().getPath())) {
-                    Buffer buffer = jEdit.openFile(view, edit.file);
-                    if (buffer != null) {
-                        view.goToBuffer(buffer);
-
-                        EventQueue.invokeLater(new Runnable() {
-                            public void run() {
-                                JEditTextArea textArea = jEdit.getActiveView().getTextArea();
-                                int offset = textArea.getLineStartOffset(edit.line) + edit.offsetInLine;
-                                textArea.setCaretPosition(offset);
-                            }
-                        });
-                    }
-                } else {
-                    textArea = view.getTextArea();
-                    int offset = textArea.getLineStartOffset(edit.line) + edit.offsetInLine;
-                    textArea.setCaretPosition(offset);
-                }
-            }
-        }
-    }
-
     public void keyPressed(KeyEvent e) {
-        if (!previousEditAction) {
-            editLocationIndex = 0;
-        }
+        BufferChangeHandler.instance().setGotoPreviousEdit(false);
     }
 
     public void keyReleased(KeyEvent e) {
-        if (!previousEditAction) {
-            editLocationIndex = 0;
-        }
-        previousEditAction = false;
     }
 
     public final void keyTyped(KeyEvent e) {
-        e = KeyEventWorkaround.processKeyEvent(e);
-
         if (isRuby()) {
-            if (isBackspace(e)) {
-                if (CharCaretListener.hasCharLastBehind() && !ignoreBackspace()) {
-                    boolean done = false;
-                    for (String pair : pairs) {
-                        done = removePair(pair);
-                        if (done) break;
-                    }
-                    if (!done) {
-                        removePair("||");
-                    }
-                }
-            } else if (isCharacter(e)) {
-                boolean done = false;
+            e = KeyEventWorkaround.processKeyEvent(e);
+            keyTypedInRubyText(e);
+        }
+    }
 
-                if (!ignoreCharacter()) {
-                    for (String pair : pairs) {
-                        done = addPair(pair);
-                        if (done) break;
-                    }
-                    if (!done) {
-                        if (lastBehind() == '{' && behind() == '|' && ahead() == '}') {
-                            addPair("||");
+    private void keyTypedInRubyText(KeyEvent e) {
+        if (isBackspace(e)) {
+            handleBackspace();
+        } else if (isCharacter(e)) {
+            handleCharacter();
+        }
+    }
+
+    private void handleBackspace() {
+        if (CharCaretListener.hasCharLastBehind() && !ignoreBackspace()) {
+            boolean done = false;
+            for (String pair : pairs) {
+                done = removePair(pair);
+                if (done) break;
+            }
+            if (!done) {
+                removePair("||");
+            }
+        }
+    }
+
+    private void handleCharacter() {
+        boolean done = false;
+
+        if (!ignoreCharacter()) {
+            for (String pair : pairs) {
+                done = addPair(pair);
+                if (done) break;
+            }
+            if (!done) {
+                if (behind() == '|') {
+                    if (lastBehind() == '{' && ahead() == '}') {
+                        done = addPair("||");
+                    } else {
+                        EditorView view = RubyPlugin.getActiveView();
+                        int doIndex = view.getLineUpToCaret().indexOf(" do ");
+                        if (view.getCaretPosition() == doIndex + 5) {
+                            done = addPair("||");
                         }
-                    }
-                }
-
-                if (!done) {
-                    for (String pair : pairs) {
-                        done = removeExtraEnd(pair);
-                        if (done) break;
                     }
                 }
             }
         }
 
-        if (e != null && !e.isActionKey()) {
-            String file = textArea.getBuffer().getPath();
-            int line = textArea.getCaretLine();
-            int offsetInLine = textArea.getCaretPosition() - textArea.getLineStartOffset(line);
-            Edit edit = new Edit(file, line, offsetInLine);
-            EDITS.remove(edit);
-            EDITS.add(edit);
-        }
-
-        if (!previousEditAction) {
-            editLocationIndex = 0;
+        if (!done) {
+            for (String pair : pairs) {
+                done = removeExtraEnd(pair);
+                if (done) break;
+            }
+            if(!done) {
+                removeExtraEnd("||");
+            }
         }
     }
 
     private boolean removePair(String pair) {
         if (charLastBehind() == pair.charAt(0) && charAhead() == pair.charAt(1)) {
-            int position = textArea.getCaretPosition();
-            Selection.Range range = new Selection.Range(position, position + 1);
-            textArea.setSelection(range);
-            textArea.setSelectedText("");
+            removeNextChar();
             return true;
         } else {
             return false;
@@ -184,16 +146,36 @@ public final class RubyKeyBindings extends KeyAdapter {
     private boolean removeExtraEnd(String pair) {
         char start = pair.charAt(0);
         char end = pair.charAt(1);
+        boolean done = false;
 
-        if (lastBehind() == start && behind() == end && ahead() == end) {
-            int position = textArea.getCaretPosition();
-            Selection.Range range = new Selection.Range(position, position + 1);
-            textArea.setSelection(range);
-            textArea.setSelectedText("");
-            return true;
-        } else {
-            return false;
+        if (behind() == end && ahead() == end) {
+            if (lastBehind() == start) {
+                removeNextChar();
+                done = true;
+            } else if(ahead() == '|') {
+                String line = RubyPlugin.getActiveView().getLineUpToCaret();
+                if(line.indexOf(" do |") != -1 || line.indexOf("{|") != -1 || line.indexOf("{ |") != -1) {
+                    removeNextChar();
+                    done = true;
+                }
+            } else {
+                String line = RubyPlugin.getActiveView().getLineUpToCaret();
+                int startIndex = line.indexOf(start);
+                if (startIndex != -1 && startIndex != (line.length() - 1)) {
+                    removeNextChar();
+                    done = true;
+                }
+            }
         }
+
+        return done;
+    }
+
+    private void removeNextChar() {
+        int position = textArea.getCaretPosition();
+        Selection.Range range = new Selection.Range(position, position + 1);
+        textArea.setSelection(range);
+        textArea.setSelectedText("");
     }
 
     private char lastBehind() {
@@ -249,24 +231,4 @@ public final class RubyKeyBindings extends KeyAdapter {
         return RubyPlugin.isRuby(textArea);
     }
 
-    public static class Edit {
-        String file;
-        int line;
-        int offsetInLine;
-
-        public Edit(String file, int line, int offsetInLine) {
-            this.file = file;
-            this.line = line;
-            this.offsetInLine = offsetInLine;
-        }
-
-        public boolean equals(Object obj) {
-            Edit edit = (Edit)obj;
-            return file.equals(edit.file) && line == edit.line;
-        }
-
-        public int hashCode() {
-            return file.hashCode() + line;
-        }
-    }
 }

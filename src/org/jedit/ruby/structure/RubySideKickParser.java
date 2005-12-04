@@ -114,8 +114,10 @@ public final class RubySideKickParser extends SideKickParser {
 
             if (completor.isDotInsertionPoint()) {
                 completion = completor.getDotCompletion();
+
             } else if (completor.hasCompletion()) {
                 completion = completor.getCompletion();
+
             } else {
                 completion = completor.getEmptyCompletion();
                 clearLastCompletion();
