@@ -196,11 +196,11 @@ public final class ProgressiveSelector {
             selectBeyondLineNonRuby(textArea, selection);
 
         } else {
-            if (insideMember(textArea, member)) {
-                selectParagraphInMember(textArea, member, selection);
-            } else {
+//            if (insideMember(textArea, member)) {
+//                selectParagraphInMember(textArea, member, selection);
+//            } else {
                 selectMemberOrParent(member, textArea, selection);
-            }
+//            }
         }
     }
 

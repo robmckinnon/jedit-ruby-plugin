@@ -131,7 +131,7 @@ public final class RubyKeyBindings extends KeyAdapter {
         char start = pair.charAt(0);
         char end = pair.charAt(1);
 
-        if (behind() == start && ahead() != end && (start != end || lastBehind() != start)) {
+        if (!Character.isLetter(ahead()) && behind() == start && ahead() != end && (start != end || lastBehind() != start)) {
             int position = textArea.getCaretPosition();
             Selection.Range range = new Selection.Range(position - 1, position);
             textArea.setSelection(range);

@@ -162,10 +162,7 @@ public final class RiParser {
 
         addMethods(description.getInstanceMethods(), parent);
         addMethods(description.getClassMethods(), parent);
-        Member[] members = new Member[1];
-        members[0] = parent;
-        RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>(), 0);
-        RubyCache.instance().addMembers(rubyMembers, path);
+        RubyCache.instance().addClass(parent, path);
     }
 
     private static void addMethods(List<MethodDescription> methods, ClassMember parent) {

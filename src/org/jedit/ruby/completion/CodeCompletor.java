@@ -396,7 +396,11 @@ public final class CodeCompletor {
         }
 
         public final void handleMethod(Method method) {
-            methods = completor.findMethods(method.getParentMemberName(), false);
+            if (method.hasParentMember()) {
+                method.getParentMember().accept(this);
+            } else {
+                methods = completor.findMethods(method.getParentMemberName(), false);
+            }
             methods.addAll(completor.getKernelMethods());
         }
 

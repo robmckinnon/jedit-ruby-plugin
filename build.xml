@@ -150,7 +150,7 @@
 	</target>
 
 	<target name="dist15" depends="check-for-retroweaver, compile, jar">
-		<copy file="${install.dir}/${jar.name}" todir="/home/b/.jedit/jars"/>
+		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/>
 	</target>
 
 	<!-- Generate docs with xsltproc tool from www.xmlsoft.org -->

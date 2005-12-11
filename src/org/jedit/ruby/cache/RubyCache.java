@@ -68,6 +68,13 @@ public final class RubyCache {
         }
     }
 
+    public final synchronized void addClass(ClassMember parent, String path) {
+        Member[] members = new Member[1];
+        members[0] = parent;
+        RubyMembers rubyMembers = new RubyMembers(members, new ArrayList<Problem>(), 0);
+        RubyCache.instance().addMembers(rubyMembers, path);
+    }
+
     public final synchronized ClassMember getClass(String className) {
         return nameToParents.getClass(className);
     }
@@ -113,6 +120,22 @@ public final class RubyCache {
                     populateSuperClassMethods(classMember, classMember);
                 }
             });
+        }
+
+        if (nameToParents.getMember("ActionController::Base") != null) {
+            ClassMember appController = new ClassMember("ApplicationController");
+            appController.setSuperClassName("ActionController::Base");
+            appController.setEndOffset(0);
+            appController.setDocumentationComment(
+                    "<p>ApplicationController is the parent of all the controller classes in a Rails application." +
+                    " By default in app/controllers there is a file called application.rb that contains an empty" +
+                    " definition of class ApplicationController.</p>" +
+                    "<p>This class is used to establish a context for the entire application." +
+                    " Filters added to this controller will be run for all controllers in the application." +
+                    " Likewise, all the methods added will be available for all controllers.</p>");
+
+            addClass(appController, "ApplicationController");
+            populateSuperClassMethods(appController, appController);
         }
 
         Set<Method> methods = getAllMethods();

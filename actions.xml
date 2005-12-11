@@ -2,6 +2,26 @@
 
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
+	<ACTION NAME="ruby.copy-line">
+		<CODE>
+    	org.jedit.ruby.RubyActions.copyLine(textArea);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="ruby.cut-line">
+		<CODE>
+    	org.jedit.ruby.RubyActions.cutLine(textArea);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="ruby.paste-line">
+		<CODE>
+    	org.jedit.ruby.RubyActions.pasteLine(view, textArea);
+		</CODE>
+	</ACTION>
+	<ACTION NAME="ruby.introduce-variable">
+		<CODE>
+    	org.jedit.ruby.RubyActions.introduceVariable(view);
+		</CODE>
+	</ACTION>
 	<ACTION NAME="ruby.complete-code">
 		<CODE>
     	sidekick.SideKickActions.complete(view,sidekick.SideKickActions.COMPLETE_COMMAND);
