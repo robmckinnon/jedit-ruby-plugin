@@ -20,6 +20,7 @@
 package org.jedit.ruby;
 
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.msg.ViewUpdate;
 import org.gjt.sp.jedit.msg.EditPaneUpdate;
 import org.gjt.sp.jedit.msg.BufferUpdate;
@@ -231,6 +232,15 @@ public final class RubyPlugin extends EBPlugin {
 
     public static boolean isRuby(JEditTextArea textArea) {
         return isRuby(textArea.getBuffer());
+    }
+
+    private static boolean isRuby(JEditBuffer buffer) {
+        if (buffer instanceof Buffer) {
+//            buffer.getRuleSetAtOffset(0).getModeName();
+            return isRuby((Buffer)buffer);
+        } else {
+            throw new IllegalArgumentException("expecting buffer to be of type Buffer");
+        }
     }
 
     public static boolean isRuby(Buffer buffer) {

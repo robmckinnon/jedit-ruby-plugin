@@ -66,20 +66,20 @@
 		<echo message="To build this plugin you must checkout the Retroweaver plugin from cvs:"/>
 		<echo message=""/>
 		<echo message="cd ../.."/>
-		<echo message="cvs -z3 -d:ext:[username]@cvs.sourceforge.net:/cvsroot/jedit co -P plugins/Retroweaver"/>
+		<echo message="cvs -z3 -d:ext:[username]@jedit.cvs.sourceforge.net:/cvsroot/jedit co -P plugins/Retroweaver"/>
 		<echo message="cd plugins/RubyPlugin"/>
 		<echo message="ant"/>
 		<echo message=""/>
 	</target>
 
 
-	<target name="init" if="retroweaver.present">
+	<target name="init">
 		<mkdir dir="${build.dir}"/>
 		<copy file="${lib.dir}/jruby.jar" todir="${install.dir}"/>
 	</target>
 
 
-	<target name="compile" depends="init" if="retroweaver.present">
+	<target name="compile" depends="init">
 		<javac debug="true"
 			deprecation="on"
 			destdir="${build.dir}"
@@ -109,9 +109,9 @@
 	</target>
 
 	<target name="convert_rdoc" depends="parse_rdoc">
-		<java args="/home/b/apps/versions/jedit/4.2/plugins/RubyPlugin/ri/java-xml /home/b/apps/versions/jedit/4.2/plugins/RubyPlugin/ri/rdoc"
+		<java args="/home/c/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/c/apps/jedit/plugins/RubyPlugin/ri/rdoc"
       classname="org.jedit.ruby.ri.XmlToBinary"
-      classpath="/home/b/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
+      classpath="/home/c/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
 	</target>
 
 	<target name="retroweave" depends="compile" if="retroweaver.present">
@@ -125,7 +125,7 @@
 		</java>
 	</target>
 
-	<target name="jar" if="retroweaver.present">
+	<target name="jar">
 		<mkdir dir="${install.dir}"/>
 		<jar jarfile="${install.dir}/${jar.name}">
 			<fileset dir="${build.dir}"/>
@@ -149,7 +149,7 @@
 		<antcall target="retroweaver-warning"/>
 	</target>
 
-	<target name="dist15" depends="check-for-retroweaver, compile, jar">
+	<target name="dist15" depends="compile, jar">
 		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/>
 	</target>
 

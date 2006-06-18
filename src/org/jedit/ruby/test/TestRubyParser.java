@@ -63,7 +63,7 @@ public final class TestRubyParser extends TestCase {
             DEF +
             "end\n";
 
-    private static final String NESTED_CLASS = "class Greener\n" +
+    private static final String NESTED_CLASS = "class Greener\n" + //14
             EMPTY_CLASS +
             "end\n";
 
@@ -94,7 +94,7 @@ public final class TestRubyParser extends TestCase {
             "end\n" +
             "end end end\n";
 
-    private static final String MODULE_METHOD = "module Blue\n" +
+    private static final String MODULE_METHOD = "module Blue\n" + //12
             "  def Blue.deep\n" +
             "  end\n" +
             "end\n";
@@ -350,7 +350,7 @@ public final class TestRubyParser extends TestCase {
     public final void testEmptyClassInModule() {
         List<Member> members = getMembersList(EMPTY_CLASS_IN_MODULE);
         assertCorrect(0, "Blue", null, 0, 7, 32, members);
-        assertChildrenCorrect(members, "Blue::Green", 12, 18, 28, "Blue");
+        assertChildrenCorrect(members, "Blue::Green", 12, 19, 28, "Blue");
     }
 
     public final void testPreviousMemberBeforeModuleMember() {
@@ -410,7 +410,7 @@ public final class TestRubyParser extends TestCase {
     public final void testParseClassInClass() {
         List<Member> members = getMembersList(NESTED_CLASS);
         assertCorrect(0, "Greener", null, 0, 6, 34, members);
-        assertChildrenCorrect(members, "Greener::Green", 14, 20, 30, "Greener");
+        assertChildrenCorrect(members, "Greener::Green", 14, 21, 30, "Greener");
     }
 
     public final void testParseDefSize() {
@@ -460,7 +460,7 @@ public final class TestRubyParser extends TestCase {
 
     public final void testParseEmptyClass() {
         List<Member> members = getMembersList(EMPTY_CLASS);
-        assertCorrect(0, "Green", null, 0, 6, 16, members);
+        assertCorrect(0, "Green", null, 0, 7, 16, members);
     }
 
     public final void testParseModuleModule() {
@@ -612,13 +612,13 @@ public final class TestRubyParser extends TestCase {
         try {
             Member member = members.get(index);
             assertEquals("Assert name correct", name, member.getFullName());
-            assertEquals("Assert outer offset correct", outerOffset, member.getStartOuterOffset());
-            assertEquals("Assert offset correct", offset, member.getStartOffset());
+            assertEquals("Assert start offset correct", offset, member.getStartOffset());
+            assertEquals("Assert outer start offset correct", outerOffset, member.getStartOuterOffset());
             int end = member.getEndOffset();
+            assertEquals("Assert end offset correct.", endOffset, end);
             assertEquals("End char correct.", 'e', code.charAt(end-3));
             assertEquals("End char correct.", 'n', code.charAt(end-2));
             assertEquals("End char correct.", 'd', code.charAt(end-1));
-            assertEquals("Assert endoffset correct.", endOffset, end);
 
             List<Member> memberPath = member.getMemberPath();
 
@@ -648,8 +648,8 @@ public final class TestRubyParser extends TestCase {
         assertCorrect(0, "initialize", "Test", 76, 80, 95, members.get(1).getChildMembersAsList());
     }
 
-    private static final String globalIfFile = "class File\n" +
-            " if ($debug)\n" +
+    private static final String globalIfFile = "class File\n" + //11
+            " if ($debug)\n" + //24
             "   def File.open(*args)\n" +
             "   end\n" +
             " end\n" +

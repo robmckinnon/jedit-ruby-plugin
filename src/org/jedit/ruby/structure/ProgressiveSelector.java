@@ -40,6 +40,12 @@ public final class ProgressiveSelector {
         JEditTextArea textArea = view.getTextArea();
         String text = textArea.getText();
 
+        if (text.length() > 0) {
+            doProgressiveSelection(textArea, text, view);
+        }
+    }
+
+    private static void doProgressiveSelection(JEditTextArea textArea, String text, View view) {
         int caretPosition = textArea.getCaretPosition();
 
         Selection[] selections = textArea.getSelection();
@@ -49,7 +55,7 @@ public final class ProgressiveSelector {
 
         boolean needToSelectMoreDefault = true;
 
-        if (!matchesLiteralChar(text.charAt(caretPosition))) {
+        if (caretPosition == text.length() || !matchesLiteralChar(text.charAt(caretPosition))) {
             if (!(caretPosition > 0 && matchesLiteralChar(text.charAt(caretPosition - 1)))) {
                 needToSelectMoreDefault = false;
                 selectWord(textArea);
@@ -61,27 +67,31 @@ public final class ProgressiveSelector {
         }
 
         if (needToSelectMore(textArea, selection, needToSelectMoreDefault)) {
-            Buffer buffer = view.getBuffer();
+            selectMore(caretPosition, textArea, selection, view);
+        }
+    }
 
-            try {
-                handleLiteral(buffer, caretPosition, textArea, selection);
+    private static void selectMore(int caretPosition, JEditTextArea textArea, Selection selection, View view) {
+        Buffer buffer = view.getBuffer();
 
-            } catch (Exception e) {
-                e.printStackTrace();
-                RubyPlugin.log(e.getMessage(), ProgressiveSelector.class);
-            }
+        try {
+            handleLiteral(buffer, caretPosition, textArea, selection);
 
-            if (needToSelectMore(textArea, selection)) {
-                selectLineExcludingWhitespace(textArea);
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            RubyPlugin.log(e.getMessage(), ProgressiveSelector.class);
+        }
 
-            if (needToSelectMore(textArea, selection)) {
-                selectLine(textArea);
-            }
+        if (needToSelectMore(textArea, selection)) {
+            selectLineExcludingWhitespace(textArea);
+        }
 
-            if (needToSelectMore(textArea, selection)) {
-                selectBeyondLine(view, textArea, selection);
-            }
+        if (needToSelectMore(textArea, selection)) {
+            selectLine(textArea);
+        }
+
+        if (needToSelectMore(textArea, selection)) {
+            selectBeyondLine(view, textArea, selection);
         }
     }
 
@@ -372,8 +382,8 @@ public final class ProgressiveSelector {
                 end++;
         }
 
-        int selectionStart = textArea.getLineStartOffset(start + 1);
-        int selectionEnd = textArea.getLineEndOffset(end - 1) - 1;
+        int selectionStart = (start != textArea.getLineCount()-1) ? textArea.getLineStartOffset(start + 1) : textArea.getLineEndOffset(start);
+        int selectionEnd = (end - 1 >= 0) ? textArea.getLineEndOffset(end - 1) - 1 : textArea.getLineStartOffset(end);
         if (selectionEnd > selectionStart) {
             Selection s = new Selection.Range(selectionStart, selectionEnd);
             addToSelection(textArea, s);

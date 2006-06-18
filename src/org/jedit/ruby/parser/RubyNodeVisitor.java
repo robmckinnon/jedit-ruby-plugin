@@ -23,7 +23,7 @@ import org.jruby.ast.visitor.AbstractVisitor;
 import org.jruby.ast.*;
 import org.jruby.lexer.yacc.SyntaxException;
 import org.jruby.lexer.yacc.ISourcePosition;
-import org.jruby.evaluator.SingleNodeVisitor;
+import org.jruby.evaluator.Instruction;
 import org.jedit.ruby.ast.*;
 import org.jedit.ruby.RubyPlugin;
 
@@ -37,6 +37,9 @@ import java.util.Iterator;
  */
 final class RubyNodeVisitor extends AbstractVisitor {
 
+    private static final String CLASS = "class";
+    private static final String MODULE = "module";
+
     private final List<String> namespaceNames;
     private final List<String> compositeNamespaceNames;
     private final LinkedList<Member> currentMember;
@@ -46,15 +49,19 @@ final class RubyNodeVisitor extends AbstractVisitor {
     private final List<RubyParser.WarningListener> problemListeners;
     private final LineCounter lineCounter;
     private final NameVisitor nameVisitor;
-    private static final String CLASS = "class";
-    private static final String MODULE = "module";
+    private boolean inIfNode;
+    private boolean underModuleNode;
+    private Root root;
 
     public RubyNodeVisitor(LineCounter lineCounts, List<Member> methodMembers, List<RubyParser.WarningListener> listeners) {
+        inIfNode = false;
+        underModuleNode = false;
         lineCounter = lineCounts;
         namespaceNames = new ArrayList<String>();
         compositeNamespaceNames = new ArrayList<String>();
         currentMember = new LinkedList<Member>();
-        currentMember.add(new Root(RubyPlugin.getEndOfFileOffset()));
+        root = new Root(RubyPlugin.getEndOfFileOffset());
+        currentMember.add(root);
         nameVisitor = new NameVisitor();
         problemListeners = listeners;
         methods = methodMembers;
@@ -65,19 +72,19 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return currentMember.getFirst().getChildMembersAsList();
     }
 
-    protected final SingleNodeVisitor visitNode(Node node) {
-//        if (printNode(node)) {
-//            String name = node.getClass().getName();
-//            int index = name.lastIndexOf('.');
-//            ISourcePosition position = node.getPosition();
-//            if (position != null) {
-//                System.out.print("Line " + position.getStartLine() +"-"+ position.getEndLine() +
-//                        ": " + position.getStartOffset() + "-" + position.getEndOffset() +
-//                        " " + name.substring(index + 1));
-//            } else {
-//                System.out.print("          Node: " + name.substring(index + 1));
-//            }
-//        }
+    protected final Instruction visitNode(Node node) {
+        if (printNode(node)) {
+            String name = node.getClass().getName();
+            int index = name.lastIndexOf('.');
+            ISourcePosition position = node.getPosition();
+            if (position != null) {
+                System.out.println("Line " + position.getStartLine() +"-"+ position.getEndLine() +
+                        ": " + position.getStartOffset() + "-" + position.getEndOffset() +
+                        " " + name.substring(index + 1));
+            } else {
+                System.out.print("          Node: " + name.substring(index + 1));
+            }
+        }
         return null;
     }
 
@@ -96,27 +103,29 @@ final class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    public final SingleNodeVisitor visitBlockNode(BlockNode node) {
+    public final Instruction visitBlockNode(BlockNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         visitNodeIterator(node.iterator());
         return null;
     }
 
-    public final SingleNodeVisitor visitNewlineNode(NewlineNode node) {
+    public final Instruction visitNewlineNode(NewlineNode node) {
         visitNode(node);
         node.getNextNode().accept(this);
         return null;
     }
 
-    public final SingleNodeVisitor visitModuleNode(ModuleNode module) {
+    public final Instruction visitModuleNode(ModuleNode module) {
 //        System.out.print("[");
         addParentNode(MODULE, module, module, module.getBodyNode());
 //        System.out.print("]");
         return null;
     }
 
-    public final SingleNodeVisitor visitClassNode(ClassNode classNode) {
+    public final Instruction visitClassNode(ClassNode classNode) {
+        boolean tempUnderModuleNode = underModuleNode;
+        underModuleNode = false;
         Member member = addParentNode(CLASS, classNode, classNode, classNode.getBodyNode());
         Node superNode = classNode.getSuperNode();
 
@@ -131,6 +140,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
             ((ClassMember)member).setSuperClassName(name.toString());
         }
 
+        underModuleNode = tempUnderModuleNode;
         return null;
     }
 
@@ -147,7 +157,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
             member = new ClassMember(name);
         }
 
-        member = populateOffsets(member, node.getPosition(), memberType);
+        member = populateOffsets(member, scopeNode.getCPath().getPosition(), node.getPosition(), memberType);
 
         int colonNameCount = nameVisitor.namespaces.size();
         for (String namespace : nameVisitor.namespaces) {
@@ -163,7 +173,13 @@ final class RubyNodeVisitor extends AbstractVisitor {
         parent.addChildMember(member);
         currentMember.add(member);
 
+        if (memberType == MODULE) {
+            underModuleNode = true;
+        }
         bodyNode.accept(this);
+        if (memberType == MODULE) {
+            underModuleNode = false;
+        }
 
         namespaceNames.remove(name);
         while (colonNameCount > 0) {
@@ -174,24 +190,24 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return member;
     }
 
-    public SingleNodeVisitor visitArgsCatNode(ArgsCatNode node) {
+    public Instruction visitArgsCatNode(ArgsCatNode node) {
         visitNode(node);
         return null;
     }
 
-    public SingleNodeVisitor visitArgsNode(ArgsNode node) {
+    public Instruction visitArgsNode(ArgsNode node) {
         visitNode(node);
         node.accept(this);
         return null;
     }
 
-    public final SingleNodeVisitor visitDefnNode(DefnNode node) {
+    public final Instruction visitDefnNode(DefnNode node) {
         visitNode(node);
 //        System.out.print(": " + node.getName());
 
         Member method;
         try {
-            method = getMember("def", methodIndex, methods, node.getName(), node.getPosition());
+            method = getMember("def", methodIndex, methods, node.getName(), node.getNameNode().getPosition(), node.getPosition());
         } catch (IndexAdjustmentException e) {
             methodIndex = e.getIndex();
             method = getMethodNoCheckedException(methodIndex, methods, node.getName(), node.getPosition());
@@ -204,19 +220,29 @@ final class RubyNodeVisitor extends AbstractVisitor {
 
     private Member getMethodNoCheckedException(int index, List<Member> members, String memberName, ISourcePosition position) {
         try {
-            return getMember("def", index, members, memberName, position);
+            return getMember("def", index, members, memberName, position, position);
         } catch (IndexAdjustmentException e) {
             return throwCantFindException("def", memberName, position);
         }
     }
 
-    public final SingleNodeVisitor visitDefsNode(DefsNode node) {
+    public final Instruction visitDefsNode(DefsNode node) {
         visitNode(node);
 
         Method method = (Method)methods.get(methodIndex++);
-        method.setStartOffset(getStartOffset(node.getPosition()));
-        method.setEndOffset(getEndOffset(node.getPosition()));
-        method.setStartOuterOffset(getOuterOffset(method, "def "));
+        populateReceiverName(method, node);
+        populateOffsets(method, node.getPosition(), node.getPosition(), "def");
+
+        currentMember.getLast().addChildMember(method);
+        currentMember.add(method);
+
+        node.getBodyNode().accept(this);
+
+        currentMember.removeLast();
+        return null;
+    }
+
+    private void populateReceiverName(Method method, DefsNode node) {
         String methodName = node.getName();
         String receiverName;
         if (node.getReceiverNode() instanceof ConstNode) {
@@ -229,14 +255,6 @@ final class RubyNodeVisitor extends AbstractVisitor {
             receiverName = "";
         }
         RubyPlugin.log(": " + receiverName + methodName, getClass());
-
-        currentMember.getLast().addChildMember(method);
-        currentMember.add(method);
-
-        node.getBodyNode().accept(this);
-
-        currentMember.removeLast();
-        return null;
     }
 
     private void populateNamespace(Member member) {
@@ -256,11 +274,12 @@ final class RubyNodeVisitor extends AbstractVisitor {
         }
     }
 
-    private Member getMember(String memberType, int index, List<Member> members, String memberName, ISourcePosition position) throws IndexAdjustmentException {
+    private Member getMember(String memberType, int index, List<Member> members, String memberName, ISourcePosition startPosition, ISourcePosition endPosition) throws IndexAdjustmentException {
         Member member;
         try {
             member = members.get(index);
-            if (!memberName.equals(member.getShortName())) {
+            String shortName = member.getShortName();
+            if (!memberName.equals(shortName)) {
                 index++;
                 while(index < members.size()) {
                     member = members.get(index);
@@ -276,21 +295,17 @@ final class RubyNodeVisitor extends AbstractVisitor {
             if (e instanceof IndexAdjustmentException) {
                 throw (IndexAdjustmentException)e;
             } else {
-                return throwCantFindException(memberType, memberName, position);
+                return throwCantFindException(memberType, memberName, endPosition);
             }
         }
-        return populateOffsets(member, position, memberType);
+        return populateOffsets(member, startPosition, endPosition, memberType);
     }
 
-    private Member populateOffsets(Member member, ISourcePosition position, String memberType) {
-        member.setStartOffset(getStartOffset(position));
-        member.setEndOffset(getEndOffset(position));
+    private Member populateOffsets(Member member, ISourcePosition position, ISourcePosition endPosition, String memberType) {
+        member.setStartOffset(getStartOffset(position, member));
+        member.setEndOffset(getEndOffset(endPosition));
         member.setStartOuterOffset(getOuterOffset(member, memberType+" "));
         return member;
-    }
-
-    private static int getStartOffset(ISourcePosition position) {
-        return position.getStartOffset() + 1;
     }
 
     private Member throwCantFindException(String memberType, String memberName, ISourcePosition position) {
@@ -301,7 +316,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         throw new SyntaxException(position, message);
     }
 
-    public final SingleNodeVisitor visitScopeNode(ScopeNode node) {
+    public final Instruction visitScopeNode(ScopeNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         if (node.getBodyNode() != null) {
@@ -310,15 +325,17 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
-    public final SingleNodeVisitor visitIfNode(IfNode node) {
+    public final Instruction visitIfNode(IfNode node) {
         visitNode(node);
         if (node.getThenBody() != null) {
+            inIfNode = true;
             node.getThenBody().accept(this);
+            inIfNode = false;
         }
         return null;
     }
 
-    public final SingleNodeVisitor visitIterNode(IterNode node) {
+    public final Instruction visitIterNode(IterNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
         if (node.getBodyNode() != null) {
@@ -327,26 +344,42 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
-    public final SingleNodeVisitor visitFCallNode(FCallNode node) {
+    public final Instruction visitFCallNode(FCallNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
         return null;
     }
 
-    public final SingleNodeVisitor visitClassVarDeclNode(ClassVarDeclNode node) {
+    public final Instruction visitClassVarDeclNode(ClassVarDeclNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
         return null;
     }
 
-    public final SingleNodeVisitor visitClassVarAsgnNode(ClassVarAsgnNode node) {
+    public final Instruction visitClassVarAsgnNode(ClassVarAsgnNode node) {
         visitNode(node);
         RubyPlugin.log(": " + node.getName(), getClass());
         return null;
     }
 
-    private int getOuterOffset(Member clas, String keyword) {
-        int startOffset = clas.getStartOffset();
+    private int getStartOffset(ISourcePosition position, Member member) {
+        if (inIfNode || underModuleNode || (member instanceof Method && currentMember.getLast() == root)) {
+            int startOffset = position.getStartOffset();
+            int index = lineCounter.getLineAtOffset(startOffset);
+            String line = lineCounter.getLine(index);
+            int offset = line.indexOf(member.getShortName());
+            if (offset != -1) {
+                return offset + lineCounter.getStartOffset(index);
+            } else {
+                return position.getStartOffset();
+            }
+        } else {
+            return position.getStartOffset();
+        }
+    }
+
+    private int getOuterOffset(Member member, String keyword) {
+        int startOffset = member.getStartOffset();
         int index = lineCounter.getLineAtOffset(startOffset);
         String line = lineCounter.getLineUpTo(index, startOffset);
         return line.lastIndexOf(keyword) + lineCounter.getStartOffset(index);
@@ -396,11 +429,11 @@ final class RubyNodeVisitor extends AbstractVisitor {
             visits = 0;
         }
 
-        protected final SingleNodeVisitor visitNode(Node node) {
+        protected final Instruction visitNode(Node node) {
             return null;
         }
 
-        public final SingleNodeVisitor visitColon2Node(Colon2Node node) {
+        public final Instruction visitColon2Node(Colon2Node node) {
             visits++;
             if (node.getLeftNode() != null) {
                 node.getLeftNode().accept(this);
@@ -415,7 +448,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
             return null;
         }
 
-        public SingleNodeVisitor visitConstNode(ConstNode node) {
+        public Instruction visitConstNode(ConstNode node) {
             if (visits == 0) {
                 name = node.getName();
             } else {

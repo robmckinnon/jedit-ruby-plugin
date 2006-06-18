@@ -35,6 +35,9 @@ import org.jedit.ruby.RubyPlugin;
  */
 final class RubyProjectViewerListener implements ProjectViewerListener {
 
+    public void nodeSelected(ProjectViewerEvent evt) {
+    }
+
     public final void projectLoaded(ProjectViewerEvent event) {
         VPTProject project = event.getProject();
         RubyPlugin.log("project loaded: " + project.getName(), getClass());
