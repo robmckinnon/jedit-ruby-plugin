@@ -105,30 +105,15 @@ public final class RiParser {
     }
 
     private static List<JarEntry> getEntries() {
-        List<String> rdocExcludePatterns = getRDocExcludePatterns();
         List<JarEntry> entries = new ArrayList<JarEntry>();
         try {
-            File file = getJarFile();
-            log(file.getName());
-            JarInputStream jar = new JarInputStream(new FileInputStream(file));
-            JarEntry entry = jar.getNextJarEntry();
-            while(entry != null) {
-                String name = entry.getName();
-                if(!entry.isDirectory() && name.endsWith(".dat")) {
-                    boolean exclude = false;
-
-                    for (String excludePattern : rdocExcludePatterns) {
-                        if (name.indexOf(excludePattern) != -1) {
-                            exclude = true;
-                            break;
-                        }
-                    }
-
-                    if (!exclude) {
-                        entries.add(entry);
-                    }
+            List<String> rdocExcludePatterns = getRDocExcludePatterns();
+            JarInputStream jar = new JarInputStream(new FileInputStream(getJarFile()));
+            JarEntry entry;
+            while ((entry = jar.getNextJarEntry()) != null) {
+                if (!excludeEntry(rdocExcludePatterns, entry)) {
+                    entries.add(entry);
                 }
-                entry = jar.getNextJarEntry();
             }
         } catch (IOException e) {
             RubyPlugin.error(e, RiParser.class);
@@ -136,11 +121,26 @@ public final class RiParser {
         return entries;
     }
 
+    private static boolean excludeEntry(List<String> rdocExcludePatterns, JarEntry entry) {
+        boolean exclude = entry.isDirectory() || !entry.getName().endsWith(".dat");
+
+        if (!exclude) {
+            for (String excludePattern : rdocExcludePatterns) {
+                if (entry.getName().indexOf(excludePattern) != -1) {
+                    exclude = true;
+                    break;
+                }
+            }
+        }
+        return exclude;
+    }
+
     private static File getJarFile() {
         File file = getJarFile(jEdit.getSettingsDirectory());
         if(!file.exists()) {
             file = getJarFile(jEdit.getJEditHome());
         }
+        log(file.getName());
         return file;
     }
 

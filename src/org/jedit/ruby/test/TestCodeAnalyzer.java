@@ -24,6 +24,9 @@ import org.jedit.ruby.completion.CodeAnalyzer;
 import org.jedit.ruby.utils.EditorView;
 
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.regex.MatchResult;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -66,29 +69,44 @@ public final class TestCodeAnalyzer extends TestCase {
         assertCorrect(analyzer, method, null, false);
     }
 
-    public static final void testDotCompleteMatch() {
+    public final void testDotCompleteMatchFalse() {
         boolean match = CodeAnalyzer.DotCompleteRegExp.instance.isMatch("ActiveRecord:");
         assertEquals("Assert dot completion match correct.", false, match);
+    }
 
-        match = CodeAnalyzer.DotCompleteRegExp.instance.isMatch("ActiveRecord::");
+    public final void testDotCompleteMatch() {
+        boolean match = CodeAnalyzer.DotCompleteRegExp.instance.isMatch("ActiveRecord::");
         assertEquals("Assert dot completion match correct.", true, match);
     }
 
-    public static final void testClassMatch() {
+    public final void testPartialClassPlusColonDotCompleteMatchFalse() {
+        String text = "ActiveRecord:";
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(text, text.length()));
+        assertCorrect(analyzer, null, text, false);
+    }
+
+    public final void testPartialClassPlusColon() {
+        String text = "ActiveRecord::";
+        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(text, text.length()));
+        assertCorrect(analyzer, null, text, true);
+    }
+
+    public final void testClassMatch() {
+        Pattern pattern = Pattern.compile("((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)((?:[^A-Z]\\S*)?)$");
+        Matcher matcher = pattern.matcher("      a.");
+        boolean match = matcher.matches();
+
+
+        match = matcher.find();
+
+        assertEquals("Assert class match correct.", true, match);
+    }
+
+    public final void testClassMatchOld() {
         boolean match = CodeAnalyzer.ClassNameRegExp.instance.isMatch("ActiveRecord:");
         assertEquals("Assert class match correct.", true, match);
         match = CodeAnalyzer.ClassNameRegExp.instance.isMatch("ActiveRecord::");
         assertEquals("Assert class match correct.", true, match);
-    }
-
-    public final void testPartialClassPlusColon() {
-        String text = "ActiveRecord:";
-        CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView(text, text.length()));
-        assertCorrect(analyzer, null, text, false);
-
-        text = "ActiveRecord::";
-        analyzer = new CodeAnalyzer(new MockEditorView(text, text.length()));
-        assertCorrect(analyzer, null, text, true);
     }
 
     private static void assertCorrect(CodeAnalyzer analyzer, String partialMethod, String partialClass, boolean isDotCompletion) {
@@ -97,40 +115,64 @@ public final class TestCodeAnalyzer extends TestCase {
         assertEquals("Assert partial class correct", partialClass, analyzer.getPartialClass());
     }
 
-    public static final void testFindMethod1() {
+    public final void testFindMethod1() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(0));
     }
 
-    public static final void testFindMethod2() {
+    public final void testFindMethod2() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(1));
     }
 
-    public static final void testFindMethod3() {
+    public final void testFindMethod3() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to?", methods.get(2));
     }
 
-    public static final void testFindMethod4() {
+    public final void testFindMethod4() {
         List<String> methods = CodeAnalyzer.getMethodsCalledOnVariable(TEXT, "a");
         assertEquals("assert found method", "respond_to", methods.get(3));
     }
 
-    public static final void testClassName() {
+    public final void testClassName() {
         boolean isClass = CodeAnalyzer.isClass("REXML::Element");
         assertEquals("assert class name recognized", true, isClass);
     }
 
-    public static final void testClassName2() {
+    public final void testClassName2() {
         boolean isClass = CodeAnalyzer.isClass("IO::puts");
         assertEquals("assert class method recognized", false, isClass);
     }
 
-//    public void testFindMethod5() {
-//        List<String> methods = CodeAnalyzer.getMethods(TEXT, "a");
-//        assertEquals("assert found method", "[]", methods.get(4));
-//    }
+    public final void testIsDotInsertionPointWithIfStatement() {
+        assertTrue(CodeAnalyzer.isDotInsertionPoint("if a."));
+    }
+
+    public final void testIsDotInsertionPointWithOpenParenthesis() {
+        assertTrue(CodeAnalyzer.isDotInsertionPoint("(a."));
+    }
+
+    public final void testIsDotInsertionPointWithOpenBrace() {
+        assertTrue(CodeAnalyzer.isDotInsertionPoint("{a."));
+    }
+
+    public final void testIsDotInsertionPointWithOpenBracket() {
+        assertTrue(CodeAnalyzer.isDotInsertionPoint("[a."));
+    }
+
+    public final void testIsDotInsertionPointWithKeyAssignmentOperator() {
+        assertTrue(CodeAnalyzer.isDotInsertionPoint("b=>a."));
+    }
+
+    public final void testIsDotInsertionPointWithArrayComma() {
+        assertTrue(CodeAnalyzer.isDotInsertionPoint("c,a."));
+    }
+
+    public final void testFindMethod() {
+        MatchResult match = CodeAnalyzer.DotCompleteRegExp.instance.lastMatch("        [a.adapter_name,b.", 5);
+        assertEquals("b", match.group(1));
+    }
 
     private static final class MockEditorView extends EditorView.NullEditorView {
         private final String text;

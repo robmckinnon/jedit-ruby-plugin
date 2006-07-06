@@ -21,7 +21,8 @@ package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
 import org.jedit.ruby.structure.AutoIndentAndInsertEnd;
-import gnu.regexp.REMatch;
+
+import java.util.regex.MatchResult;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -74,23 +75,25 @@ public final class TestAutoIndent extends TestCase {
     }
 
     public final void testMatchIf() {
-        REMatch match = AutoIndentAndInsertEnd.MatchRegExp.instance.getMatch("  if true");
-        assertMatchCorrect(match, " true");
+//        REMatch match = AutoIndentAndInsertEnd.MatchRegExp.instance.getMatch("  if true");
+        MatchResult match = AutoIndentAndInsertEnd.MatchRegExp.instance.firstMatch("  if true");
+        assertMatchResultCorrect(match, " true");
     }
 
     public final void testMatchIfWithBracket() {
-        REMatch match = AutoIndentAndInsertEnd.MatchRegExp.instance.getMatch("  if(true)");
-        assertMatchCorrect(match, "(true)");
+//        REMatch match = AutoIndentAndInsertEnd.MatchRegExp.instance.getMatch("  if(true)");
+        MatchResult match = AutoIndentAndInsertEnd.MatchRegExp.instance.firstMatch("  if(true)");
+        assertMatchResultCorrect(match, "(true)");
     }
 
-    private static void assertMatchCorrect(REMatch match, String partMatch) {
+    private static void assertMatchResultCorrect(MatchResult match, String partMatch) {
         assertNotNull("Assert match not null.", match);
-        assertEquals("Assert match correct.", "  ", match.toString(1));
-        assertEquals("Assert match correct.", "", match.toString(2));
-        assertEquals("Assert match correct.", "if"+partMatch, match.toString(3));
-        assertEquals("Assert match correct.", "if"+partMatch, match.toString(4));
-        assertEquals("Assert match correct.", "if", match.toString(5));
-        assertEquals("Assert match correct.", partMatch, match.toString(6));
+        assertEquals("Assert match correct.", "  ", match.group(1));
+        assertEquals("Assert match correct.", "", match.group(2));
+        assertEquals("Assert match correct.", "if"+partMatch, match.group(3));
+        assertEquals("Assert match correct.", "if"+partMatch, match.group(4));
+        assertEquals("Assert match correct.", "if", match.group(5));
+        assertEquals("Assert match correct.", partMatch, match.group(6));
     }
 
     private static boolean hasEnd(String line) {

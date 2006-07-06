@@ -32,10 +32,6 @@ import java.lang.reflect.InvocationTargetException;
  */
 public final class RubyTokenHandler extends DefaultTokenHandler {
 
-//    public RubyToken getTokenAtCaret(Buffer buffer, int caret) {
-//        return getTokenAtCaret((JEditBuffer)buffer, caret);
-//    }
-
     /**
      * In order to work with both jEdit 4.2 and 4.3,
      * this method takes a buffer as an Object parameter.
@@ -47,15 +43,11 @@ public final class RubyTokenHandler extends DefaultTokenHandler {
      * @return token at caret
      */
     public RubyToken getTokenAtCaret(Object buffer, int caret) {
-//    public RubyToken getTokenAtCaret(JEditBuffer buffer, int caret) {
         init(); // reset
         try {
-//            int line = buffer.getLineOfOffset(caret);
             int line = (Integer)invoke(buffer, "getLineOfOffset", new Class[]{Integer.class}, caret);
-//            buffer.markTokens(line, this);
             invoke(buffer, "markTokens", new Class[]{Integer.class, TokenHandler.class}, line, this);
             int offset = caret;
-//            offset -= buffer.getLineStartOffset(line);
             offset -= (Integer)invoke(buffer, "getLineStartOffset", new Class[]{Integer.class}, line);
             if (offset != 0) {
                 offset--;
@@ -68,9 +60,20 @@ public final class RubyTokenHandler extends DefaultTokenHandler {
         }
     }
 
-    private Object invoke(Object buffer, String method, Class[] paramTypes, Object... args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Method getLineOfOffset = buffer.getClass().getMethod(method, paramTypes);
-        return getLineOfOffset.invoke(buffer, args);
+    private Object invoke(Object buffer, String methodName, Class[] paramTypes, Object... args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Method method = null;
+        try {
+            method = buffer.getClass().getMethod(methodName, paramTypes);
+        } catch (Exception e) {
+            Method[] methods = buffer.getClass().getMethods();
+            for (Method m : methods) {
+                if (m.getName().equals(methodName)) {
+                    method = m;
+                }
+            }
+        }
+
+        return method.invoke(buffer, args);
     }
 
 }

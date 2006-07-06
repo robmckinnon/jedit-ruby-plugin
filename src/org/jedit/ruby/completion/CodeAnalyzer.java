@@ -19,9 +19,6 @@
  */
 package org.jedit.ruby.completion;
 
-import gnu.regexp.RE;
-import gnu.regexp.REMatch;
-import gnu.regexp.REException;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.utils.RegularExpression;
 import org.jedit.ruby.utils.EditorView;
@@ -30,6 +27,7 @@ import org.jedit.ruby.ast.Member;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.regex.MatchResult;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -37,6 +35,7 @@ import java.util.Set;
 public final class CodeAnalyzer {
 
     private static final String DEMARKERS = "~`!@#$%^&*-=_+|\\:;\"',.?/";
+    private static final String MORE_DEMARKERS = "()[]{}<>";
 
     private static String LAST_COMPLETED;
     private static Set<Member> LAST_RETURN_TYPES;
@@ -52,12 +51,13 @@ public final class CodeAnalyzer {
         this.view = view;
         String line = view.getLineUpToCaret();
         RubyPlugin.log("line: "+line, getClass());
-        REMatch match = DotCompleteRegExp.instance.getMatch(line);
+
+        MatchResult match = DotCompleteRegExp.instance.lastMatch(line, 5);
 
         if (match != null) {
-            methodCalledOnThis = match.toString(1);
+            methodCalledOnThis = match.group(1);
             RubyPlugin.log("methodCalledOnThis: " + methodCalledOnThis, getClass());
-            restOfLine = match.toString(1) + match.toString(2) + match.toString(3) + match.toString(4);
+            restOfLine = match.group(1) + match.group(2) + match.group(3) + match.group(4);
 
             int parenthesisIndex = methodCalledOnThis.indexOf('(');
 
@@ -66,8 +66,8 @@ public final class CodeAnalyzer {
                 restOfLine = restOfLine.substring(parenthesisIndex + 1);
             }
 
-            if (match.toString(5).length() > 0) {
-                partialMethod = match.toString(5);
+            if (match.group(5).length() > 0) {
+                partialMethod = match.group(5);
             }
         } else {
             lookForClassMatch(line, true);
@@ -79,10 +79,10 @@ public final class CodeAnalyzer {
     }
 
     private void lookForClassMatch(String line, boolean setMethod) {
-        REMatch match = PartialNameRegExp.instance.getMatch(line);
+        MatchResult match = PartialNameRegExp.instance.firstMatch(line);
 
         if (match != null) {
-            String partialName = match.toString(2);
+            String partialName = match.group(2);
             if (ClassNameRegExp.instance.isMatch(partialName)) {
                 partialClass = partialName;
             } else if (setMethod) {
@@ -92,8 +92,12 @@ public final class CodeAnalyzer {
     }
 
     public static boolean isDotInsertionPoint(EditorView view) {
-        String lineUpToCaret = view.getLineUpToCaretLeftTrimmed();
-        return DotCompleteRegExp.instance.isMatch(lineUpToCaret);
+        return isDotInsertionPoint(view.getLineUpToCaretLeftTrimmed());
+    }
+
+    public static boolean isDotInsertionPoint(String lineUpToCaret) {
+        String[] parts = lineUpToCaret.split(" ");
+        return DotCompleteRegExp.instance.hasMatch(parts[parts.length-1]);
     }
 
     public static boolean isClassCompletionPoint(EditorView view) {
@@ -135,8 +139,6 @@ public final class CodeAnalyzer {
         boolean insertionPoint = methodCalledOnThis != null && !isLastCompleted();
         return insertionPoint && !isDemarkerChar(methodCalledOnThis);
     }
-
-    private static final String MORE_DEMARKERS = "()[]{}<>";
 
     static boolean isDemarkerChar(String text) {
         boolean isDemarkerChar = false;
@@ -291,29 +293,25 @@ public final class CodeAnalyzer {
 
     private String findClassName() {
         String text = getTextWithoutLine();
-        try {
-            String className = findAssignment(text, "([A-Z]\\w+(::\\w+)?)((\\.|::)new)");
+        String className = findAssignment(text, "([A-Z]\\w+(::\\w+)?)((\\.|::)new)");
 
-            if (className == null) {
-                String value = findAssignment(text, "(\\S+)");
-                if (value != null && value.length() > 1) {
-                    className = determineClassName(value);
-                }
+        if (className == null) {
+            String value = findAssignment(text, "(\\S+)");
+            if (value != null && value.length() > 1) {
+                className = determineClassName(value);
             }
-
-            return className;
-        } catch (REException e) {
-            e.printStackTrace();
-            return null;
         }
+
+        return className;
     }
 
-    private String findAssignment(String text, String pattern) throws REException {
-        RE expression = new RE("(" + methodCalledOnThis + " *= *)" + pattern);
-        REMatch[] matches = expression.getAllMatches(text);
+    private String findAssignment(String text, String pattern) {
+        RegularExpression expression = new RegularExpression("(" + methodCalledOnThis + " *= *)" + pattern);
+
+        MatchResult[] matches = expression.getAllMatchResults(text);
         int count = matches.length;
-        if(count > 0) {
-            return matches[count - 1].toString(2);
+        if (count > 0) {
+            return matches[count - 1].group(2);
         } else {
             return null;
         }
@@ -339,52 +337,44 @@ public final class CodeAnalyzer {
      * Returns array of methods invoked on the variable
      */
     public static List<String> getMethodsCalledOnVariable(String text, String name) {
-        try {
-            List<String> methods = new ArrayList<String>();
-
-            addMatches(text, methods, "("+name+"(\\.|#))(\\w+\\??)");
-//            addMatches(methodCalledOnThis, text, methods, "("+methodCalledOnThis+"\\.|#)(\\+\\?+)");
-
-            return methods;
-        } catch (REException e) {
-            e.printStackTrace();
-            return null;
-        }
+        List<String> methods = new ArrayList<String>();
+        addMatches(text, methods, "(" + name + "(\\.|#))(\\w+\\??)");
+        return methods;
     }
 
-    private static void addMatches(String text, List<String> methods, String pattern) throws REException {
-        RE expression = new RE(pattern);
-        REMatch[] matches = expression.getAllMatches(text);
+    private static void addMatches(String text, List<String> methods, String pattern) {
+        RegularExpression expression = new RegularExpression(pattern);
+        MatchResult[] matches = expression.getAllMatchResults(text);
 
-        for (REMatch match : matches) {
-            String method = match.toString(3);
+        for (MatchResult match : matches) {
+            String method = match.group(3);
             methods.add(method);
         }
     }
 
     private static final class PartialNameRegExp extends RegularExpression {
-        private static final RE instance = new PartialNameRegExp();
+        private static final RegularExpression instance = new PartialNameRegExp();
         protected final String getPattern() {
             return "(\\s*)(\\S+)$";
         }
     }
 
     public static final class DotCompleteRegExp extends RegularExpression {
-        public static final RE instance = new DotCompleteRegExp();
+        public static final RegularExpression instance = new DotCompleteRegExp();
         protected final String getPattern() {
-            return "((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)((?:[^A-Z]\\S*)?)$";
+            return "((@@|@|$)?\\w+(::\\w+)?)(\\.|::|#)((?:[^A-Z]\\S*)?)$";
         }
     }
 
     private static final class SymbolRegExp extends RegularExpression {
-        private static final RE instance = new SymbolRegExp();
+        private static final RegularExpression instance = new SymbolRegExp();
         protected final String getPattern() {
             return ":\\w+";
         }
     }
 
     public static final class ClassNameRegExp extends RegularExpression {
-        public static final RE instance = new ClassNameRegExp();
+        public static final RegularExpression instance = new ClassNameRegExp();
         protected final String getPattern() {
             return "^([A-Z]\\w*(::)?)+:?";
         }

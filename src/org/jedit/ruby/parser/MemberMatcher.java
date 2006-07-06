@@ -19,23 +19,20 @@
  */
 package org.jedit.ruby.parser;
 
-import gnu.regexp.REException;
-import gnu.regexp.REMatch;
-import gnu.regexp.RE;
-
 import java.util.List;
 import java.util.ArrayList;
+import java.util.regex.MatchResult;
 import java.io.File;
 
 import org.jedit.ruby.ast.*;
-import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.RegularExpression;
 
 /**
  * @author robmckinnon at users.sourceforge.net
  */
 interface MemberMatcher {
 
-    List<Match> getMatches(String text, LineCounter lineCounter) throws REException;
+    List<Match> getMatches(String text, LineCounter lineCounter);
 
     Member createMember(String name, String filePath, int startOffset, String params, String text);
 
@@ -55,40 +52,19 @@ interface MemberMatcher {
         }
     }
 
-    static final class ModuleMatcher extends AbstractMatcher {
-
-        public final List<Match> getMatches(String text, LineCounter lineCounter) throws REException {
-            return getMatchList("([ ]*)(module[ ]+)(\\w+[^;\\s]*)", text);
-        }
-
-        public final Member createMember(String name, String filePath, int startOffset, String params, String text) {
-            return new Module(name);
-        }
-    }
-
-    static final class ClassMatcher extends AbstractMatcher {
-
-        public final List<Match> getMatches(String text, LineCounter lineCounter) throws REException {
-            text = adjustForSingleLine(text, lineCounter, "module");
-            return getMatchList("([ ]*)(class[ ]+)(\\w+[^;\\s]*)", text);
-        }
-
-        public final Member createMember(String name, String filePath, int startOffset, String params, String text) {
-            RubyPlugin.log("class: " + name, getClass());
-            return new ClassMember(name);
-        }
-    }
-
     static final class MethodMatcher extends AbstractMatcher {
 
-        public final List<Match> getMatches(String text, LineCounter lineCounter) throws REException {
-            text = adjustForSingleLine(text, lineCounter, "module");
-            text = adjustForSingleLine(text, lineCounter, "class");
+        private static final RegularExpression moduleRegExp = new RegularExpression("([ ]*)(module[ ]+)(\\w+[^;\\s]*;[ ]*)");
+        private static final RegularExpression classRegExp = new RegularExpression("([ ]*)(class[ ]+)(\\w+[^;\\s]*;[ ]*)");
+
+        public final List<Match> getMatches(String text, LineCounter lineCounter) {
+            text = adjustForSingleLine(text, lineCounter, "module", moduleRegExp);
+            text = adjustForSingleLine(text, lineCounter, "class", classRegExp);
             String paramPattern =
                     "(\\(.*\\))"+
                     "|"+
                     "(.*)";
-            return getMatchList("([ ]*)(def[ ]+)([^;\\(\\s]*)(" + paramPattern + ")?", text);
+            return getMatchList(new RegularExpression("([ ]*)(def[ ]+)([^;\\(\\s]*)(" + paramPattern + ")?"), text);
         }
 
         public final Member createMember(String name, String filePath, int startOffset, String params, String text) {
@@ -160,42 +136,43 @@ interface MemberMatcher {
 
     static abstract class AbstractMatcher implements MemberMatcher {
 
-        private REMatch[] getMatches(String expression, String text) throws REException {
-            RE re = new RE(expression, 0);
-            return re.getAllMatches(text);
-        }
-
-        final List<Match> getMatchList(String pattern, String text) throws REException {
-            REMatch[] matches = getMatches(pattern, text);
+        final List<Match> getMatchList(RegularExpression expression, String text) {
+            MatchResult[] matches = expression.getAllMatchResults(text);
             List<Match> matchList = new ArrayList<Match>();
             int start = 0;
 
-            for (REMatch reMatch : matches) {
-                if (onlySpacesBeforeMatch(reMatch, text, start)) {
-                    String value = reMatch.toString(3).trim();
+            for (MatchResult matchResult : matches) {
+                if (onlySpacesBeforeMatch(matchResult, text, start)) {
+                    String value = matchResult.group(3).trim();
                     int delimiter = value.lastIndexOf("::");
                     if (delimiter != -1) {
                         value = value.substring(delimiter+2);
                     }
-                    int startOuterOffset = reMatch.getStartIndex(1);
-                    int startIndex = reMatch.getStartIndex(3);
-                    int endIndex = reMatch.getEndIndex(3);
-                    String params = reMatch.toString(4);
-                    if (params != null && params.indexOf(';') != -1) {
-                        params = params.substring(0, params.indexOf(';'));
+                    int startOuterOffset = matchResult.start(1);
+                    int startIndex = matchResult.start(3);
+                    int endIndex = matchResult.end(3);
+
+                    String params;
+                    if (matchResult.groupCount() > 3) {
+                        params = matchResult.group(4);
+                        if (params != null && params.indexOf(';') != -1) {
+                            params = params.substring(0, params.indexOf(';'));
+                        }
+                    } else {
+                        params = null;
                     }
 
                     Match match = new Match(value, startOuterOffset, startIndex, endIndex, params);
                     matchList.add(match);
-                    start = text.indexOf(reMatch.toString()) + reMatch.toString().length();
+                    start = text.indexOf(matchResult.toString()) + matchResult.toString().length();
                 }
             }
 
             return matchList;
         }
 
-        private boolean onlySpacesBeforeMatch(REMatch match, String text, int stop) {
-            int index = match.getStartIndex() - 1;
+        private boolean onlySpacesBeforeMatch(MatchResult match, String text, int stop) {
+            int index = match.start() - 1;
             boolean onlySpaces = true;
 
             if(index >= stop) {
@@ -214,8 +191,8 @@ interface MemberMatcher {
 
         static final String SPACES = "                                                     ";
 
-        final String adjustForSingleLine(String text, LineCounter lineCounter, String keyword) throws REException {
-            List<Match> oneLineMatches = getMatchList("([ ]*)("+keyword +"[ ]+)(\\w+[^;\\s]*;[ ]*)", text);
+        final String adjustForSingleLine(String text, LineCounter lineCounter, String keyword, RegularExpression expression) {
+            List<Match> oneLineMatches = getMatchList(expression, text);
 
             if (!oneLineMatches.isEmpty() && keyword.equals("class")) {
                 lineCounter = new LineCounter(text);

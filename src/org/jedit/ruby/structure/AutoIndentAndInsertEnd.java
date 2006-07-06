@@ -24,7 +24,8 @@ import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.utils.RegularExpression;
-import gnu.regexp.*;
+
+import java.util.regex.MatchResult;
 
 /**
  * <p>This action is intended to be executed each time the enter key is pressed.
@@ -166,8 +167,8 @@ public final class AutoIndentAndInsertEnd {
                     break;
 
                 } else if(IfElsifRegExp.instance.isMatch(line)) {
-                    REMatch matches = IfElsifRegExp.instance.getMatch(line);
-                    String indent = matches.toString(1);
+                    MatchResult matches = IfElsifRegExp.instance.firstMatch(line);
+                    String indent = matches.group(1);
                     reIndent(trimLine, indent);
                     area.selectLine();
                     area.setSelectedText(indent + area.getSelectedText().trim());
@@ -185,8 +186,8 @@ public final class AutoIndentAndInsertEnd {
         area.setSelectedText(indent + area.getSelectedText().trim());
         area.shiftIndentRight();
 
-        REMatch matches = TrailingConditionRegExp.instance.getMatch(line);
-        if (matches.toString(3).startsWith("case")) {
+        MatchResult matches = TrailingConditionRegExp.instance.firstMatch(line);
+        if (matches.group(3).startsWith("case")) {
             area.goToPrevLine(false);
             area.shiftIndentRight();
             area.goToNextLine(false);
@@ -210,10 +211,10 @@ public final class AutoIndentAndInsertEnd {
                 index--;
 
                 if (CommentRegExp.instance.isMatch(line)) {
-                    REMatch matches = CommentRegExp.instance.getMatch(line);
-                    String hashes = matches.toString(2);
+                    MatchResult matches = CommentRegExp.instance.firstMatch(line);
+                    String hashes = matches.group(2);
                     if (hashes.equals("##")) {
-                        String indent = matches.toString(1);
+                        String indent = matches.group(1);
                         area.selectLine();
                         String text = area.getSelectedText() == null ? "" : area.getSelectedText();
                         text = text.trim();
@@ -259,9 +260,9 @@ public final class AutoIndentAndInsertEnd {
                             String indent = re.indent(line);
                             reIndent(trimLine, indent);
 
-                            REMatch matches = re.getMatch(line);
+                            MatchResult matches = re.firstMatch(line);
                             area.selectLine();
-                            area.setSelectedText(matches.toString(1));
+                            area.setSelectedText(matches.group(1));
                             break;
                         }
                     }
@@ -397,7 +398,8 @@ public final class AutoIndentAndInsertEnd {
     }
 
     public static int getEndCount(String line) {
-        return SimpleEndRegExp.instance.getAllMatches(line).length;
+//        return SimpleEndRegExp.instance.getAllMatches(line).length;
+        return SimpleEndRegExp.instance.allMatchResults(line);
     }
 
     public static boolean hasEndKeyword(String line) {
@@ -408,17 +410,17 @@ public final class AutoIndentAndInsertEnd {
 
     public static abstract class InsertRegularExpression extends RegularExpression {
         String indent(String line) {
-            return getMatch(line).toString(1);
+            return firstMatch(line).group(1);
         }
     }
 
     private static abstract class IndentRegularExpression extends InsertRegularExpression {
         final String indent(String line) {
-            REMatch match = instance().getMatch(line);
-            StringBuffer indent = new StringBuffer(match.toString(1));
+            MatchResult match = instance().firstMatch(line);
+            StringBuffer indent = new StringBuffer(match.group(1));
 
             if(extraIndent(line)) {
-                for (int i = 0; i < match.toString(2).length(); i++) {
+                for (int i = 0; i < match.group(2).length(); i++) {
                     indent.append(" ");
                 }
             }
@@ -426,7 +428,7 @@ public final class AutoIndentAndInsertEnd {
             return indent.toString();
         }
 
-        protected abstract RE instance();
+        protected abstract RegularExpression instance();
 
         boolean extraIndent(String line) {
             return true;
@@ -441,17 +443,18 @@ public final class AutoIndentAndInsertEnd {
         private static final String indent = "(\\s*)";
         private static final String leadingText = "([^#]*)";
         private static final String trailingSpace = "\\s*";
+        public static final String expression = indent + leadingText
+                + "("
+                + "((if|for|while|until|unless|def|case|class|module)((?:\\s|\\()\\s*\\S+)+)"
+                + "|"
+                + "(begin|loop[ ]do|do)"
+                + ")" + trailingSpace;
 
         protected final String getPattern() {
-            return indent + leadingText
-                    + "("
-                    + "((if|for|while|until|unless|def|case|class|module)((?:\\s|\\()\\s*\\S+)+)"
-                    + "|"
-                    + "(begin|loop[ ]do|do)"
-                    + ")" + trailingSpace;
+            return expression;
         }
 
-        protected final RE instance() {
+        protected final RegularExpression instance() {
             return instance;
         }
 
@@ -464,7 +467,7 @@ public final class AutoIndentAndInsertEnd {
      * matches lines to ignore
      */
     private static final class IgnoreRegExp extends InsertRegularExpression {
-        private static final RE instance = new IgnoreRegExp();
+        private static final RegularExpression instance = new IgnoreRegExp();
         protected final String getPattern() {
             return "((.*)(" +
                     "([[:graph:]]\\s+(if|unless)(\\s+\\S+)+)" +
@@ -487,35 +490,35 @@ public final class AutoIndentAndInsertEnd {
     }
 
     private static final class SimpleEndRegExp extends InsertRegularExpression {
-        private static final RE instance = new SimpleEndRegExp();
+        private static final RegularExpression instance = new SimpleEndRegExp();
         protected final String getPattern() {
             return "end";
         }
     }
 
     private static final class EndRegExp extends InsertRegularExpression {
-        private static final RE instance = new EndRegExp();
+        private static final RegularExpression instance = new EndRegExp();
         protected final String getPattern() {
             return "[^#]*end\\s*";
         }
     }
 
     private static final class EnhancedEndRegExp extends InsertRegularExpression {
-        private static final RE instance = new EnhancedEndRegExp();
+        private static final RegularExpression instance = new EnhancedEndRegExp();
         protected final String getPattern() {
             return "^end(\\s*|(\\s+.*))";
         }
     }
 
     private static final class EnhancedEndRegExp2 extends InsertRegularExpression {
-        private static final RE instance = new EnhancedEndRegExp();
+        private static final RegularExpression instance = new EnhancedEndRegExp();
         protected final String getPattern() {
             return "[^#]*\\s+end(\\s*|(\\s+.*))";
         }
     }
 
     private static final class CommentRegExp extends InsertRegularExpression {
-        private static final RE instance = new CommentRegExp();
+        private static final RegularExpression instance = new CommentRegExp();
         protected final String getPattern() {
             return "(\\s*)(##?)(.*)";
         }
@@ -527,13 +530,13 @@ public final class AutoIndentAndInsertEnd {
             return "(\\s*)([^#]*=\\s*)(((if)|(unless)|(case)).*)";
         }
 
-        protected final RE instance() {
+        protected final RegularExpression instance() {
             return instance;
         }
     }
 
     private static final class IfElsifRegExp extends InsertRegularExpression {
-        private static final RE instance = new IfElsifRegExp();
+        private static final RegularExpression instance = new IfElsifRegExp();
         protected final String getPattern() {
             return "(\\s*)((if)|(elsif))(.*)";
         }

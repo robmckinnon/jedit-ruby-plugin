@@ -19,7 +19,6 @@
  */
 package org.jedit.ruby.parser;
 
-import gnu.regexp.REException;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.Buffer;
 import org.jedit.ruby.RubyPlugin;
@@ -136,20 +135,12 @@ public final class RubyParser {
     }
 
     private synchronized List<Member> createMembersAsList(String text, String filePath, WarningListener listener) {
-        List<Member> members = null;
+        LineCounter lineCounter = new LineCounter(text);
 
-        try {
-            LineCounter lineCounter = new LineCounter(text);
+        List<Member> methods = createMembers(text, filePath, lineCounter, methodMatcher);
+        List<WarningListener> listeners = getListeners(listener);
 
-            List<Member> methods = createMembers(text, filePath, lineCounter, methodMatcher);
-            List<WarningListener> listeners = getListeners(listener);
-
-            members = JRubyParser.getMembers(text, methods, listeners, filePath, lineCounter);
-        } catch (REException e) {
-            e.printStackTrace();
-        }
-
-        return members;
+        return JRubyParser.getMembers(text, methods, listeners, filePath, lineCounter);
     }
 
     private List<WarningListener> getListeners(WarningListener listener) {
@@ -162,14 +153,14 @@ public final class RubyParser {
         return listeners;
     }
 
-    private static List<Member> createMembers(String text, String filePath, LineCounter lineCounter, MemberMatcher matcher) throws REException {
+    private static List<Member> createMembers(String text, String filePath, LineCounter lineCounter, MemberMatcher matcher) {
         List<MemberMatcher.Match> matches = matcher.getMatches(text, lineCounter);
         List<Member> members = new ArrayList<Member>();
 
         for(MemberMatcher.Match match : matches) {
             String name = match.value.trim();
             int startOffset = match.startOffset;
-            int startOuterOffset = match.startOuterOffset;
+//            int startOuterOffset = match.startOuterOffset;
             String params = match.params;
             members.add(matcher.createMember(name, filePath, startOffset, params, text));
         }

@@ -43,7 +43,9 @@ import java.util.List;
 public final class RDocViewer extends JPanel
         implements DefaultFocusComponent, ListSelectionListener, DocumentListener {
 
+    public static final String EXCLUDE_RAILS = "ruby.rdoc-viewer.exclude-rails";
     public static final String INCLUDE_RAILS = "ruby.rdoc-viewer.include-rails";
+    public static final String INCLUDE_RAILS_1_0_0 = "ruby.rdoc-viewer.include-rails-1_0_0";
 
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
 
@@ -70,26 +72,34 @@ public final class RDocViewer extends JPanel
         documentationScrollPane = wrapInScrollPane(documentationPane);
 
         add(initSplitPane(position, searchPanel, documentationScrollPane));
-        add(initRailsPanel(view), BorderLayout.SOUTH);
+        add(initRailsPanel(), BorderLayout.SOUTH);
 
         viewers.put(this, null);
         setListData(RubyCache.instance().getAllImmediateMembers());
     }
 
-    private JPanel initRailsPanel(final View view) {
-        JPanel panel = new JPanel(new BorderLayout());
-        boolean selected = jEdit.getBooleanProperty(INCLUDE_RAILS, true);
+    private JPanel initRailsPanel() {
+        JPanel panel = new JPanel(new GridLayout(2,2));
+        ButtonGroup buttonGroup = new ButtonGroup();
+        populateRadioButton("ruby.rdoc-viewer.include-rails.label", INCLUDE_RAILS, buttonGroup, panel, true);
+        populateRadioButton("ruby.rdoc-viewer.exclude-rails.label", EXCLUDE_RAILS, buttonGroup, panel, false);
+        populateRadioButton("ruby.rdoc-viewer.include-rails-1_0_0.label", INCLUDE_RAILS_1_0_0, buttonGroup, panel, false);
+        return panel;
+    }
 
-        String text = jEdit.getProperty("ruby.rdoc-viewer.include-rails.label");
-        final JCheckBox checkBox = new JCheckBox(text, selected);
-        panel.add(checkBox, BorderLayout.WEST);
-
-        checkBox.addActionListener(new ActionListener() {
+    private void populateRadioButton(String label, String actionCommand, final ButtonGroup buttonGroup, JPanel panel, boolean defaultSelected) {
+        boolean selected = jEdit.getBooleanProperty(actionCommand, defaultSelected);
+        JRadioButton radio = new JRadioButton(jEdit.getProperty(label));
+        radio.setActionCommand(actionCommand);
+        radio.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
                     view.showWaitCursor();
-                    boolean selected = checkBox.isSelected();
-                    jEdit.setBooleanProperty(INCLUDE_RAILS, selected);
+                    Enumeration<AbstractButton> buttons = buttonGroup.getElements();
+                    while (buttons.hasMoreElements()) {
+                        AbstractButton button = buttons.nextElement();
+                        jEdit.setBooleanProperty(button.getActionCommand(), button.isSelected());
+                    }
                     RiParser.parseRdoc();
                     setListData(RubyCache.instance().getAllImmediateMembers());
                 } finally {
@@ -98,8 +108,9 @@ public final class RDocViewer extends JPanel
                 }
             }
         });
-
-        return panel;
+        panel.add(radio);
+        buttonGroup.add(radio);
+        buttonGroup.setSelected(radio.getModel(), selected);
     }
 
     public static void setMemberInViewer(Member member) {
