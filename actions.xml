@@ -1,85 +1,52 @@
 <?xml version="1.0"?>
-
 <!DOCTYPE ACTIONS SYSTEM "actions.dtd">
 <ACTIONS>
 	<ACTION NAME="ruby.copy-line">
-		<CODE>
-    	org.jedit.ruby.RubyActions.copyLine(textArea);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.copyLine(textArea);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.cut-line">
-		<CODE>
-    	org.jedit.ruby.RubyActions.cutLine(textArea);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.cutLine(textArea);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.paste-line">
-		<CODE>
-    	org.jedit.ruby.RubyActions.pasteLine(view, textArea);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.pasteLine(view, textArea);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.introduce-variable">
-		<CODE>
-    	org.jedit.ruby.RubyActions.introduceVariable(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.introduceVariable(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.complete-code">
-		<CODE>
-    	sidekick.SideKickActions.complete(view,sidekick.SideKickActions.COMPLETE_COMMAND);
-		</CODE>
+		<CODE>sidekick.SideKickActions.complete(view,sidekick.SideKickActions.COMPLETE_COMMAND);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.progressive-selection">
-		<CODE>
-			org.jedit.ruby.RubyActions.progressiveSelection(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.progressiveSelection(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.search-documentation">
-		<CODE>
-			org.jedit.ruby.RubyActions.searchDocumentation(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.searchDocumentation(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.find-declaration">
-		<CODE>
-			org.jedit.ruby.RubyActions.findDeclaration(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.findDeclaration(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.file-structure-popup">
-		<CODE>
-			org.jedit.ruby.RubyActions.fileStructurePopup(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.fileStructurePopup(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.structure-browser">
-		<CODE>
-			org.jedit.ruby.RubyActions.structureBrowser(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.structureBrowser(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.auto-indent-and-insert-end">
-		<CODE>
-			org.jedit.ruby.RubyActions.autoIndentAndInsertEnd(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.autoIndentAndInsertEnd(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.next-method">
-		<CODE>
-			org.jedit.ruby.RubyActions.nextMethod(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.nextMethod(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.previous-method">
-		<CODE>
-			org.jedit.ruby.RubyActions.previousMethod(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.previousMethod(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.next-error">
-		<CODE>
-			org.jedit.ruby.RubyActions.nextError(view);
- 		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.nextError(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.previous-error">
-		<CODE>
-			org.jedit.ruby.RubyActions.previousError(view);
- 		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.previousError(view);</CODE>
 	</ACTION>
 	<ACTION NAME="ruby.previous-edit">
-		<CODE>
-			org.jedit.ruby.RubyActions.previousEdit(view);
-		</CODE>
+		<CODE>org.jedit.ruby.RubyActions.previousEdit(view);</CODE>
 	</ACTION>
 </ACTIONS>
