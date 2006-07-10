@@ -7,26 +7,24 @@
      Before running the 'dist' target, you will need to generate the
      documentation using one of these two targets:
 
-     - 'docs-xalan': Creates documentation using the Xalan XSLT processor
-     - 'docs-xsltproc': Creates documentation using the xsltproc tool
 
      To use it for building your own plugin, make these changes:
 
-     - Change definition of 'jar.name' to the name of your plugin's JAR file
      - If necessary, addMembers any dependencies to the 'project.class.path'
        definition
      - If necessary, change the list of files in the 'dist' targtet
-     - If necessary, change the 'docs-xalan' and 'docs-xsltproc' targets
        accordingly.
 -->
 
-<project name="ruby" default="dist" basedir=".">
-
+<project name="RubyPlugin" default="dist" basedir=".">
+	<property file="../build.properties"/>
 	<property file="build.properties"/>
 
-	<property name="jar.name" value="RubyPlugin.jar"/>
-
+	
+    <property name="jar.file"       value="${ant.project.name}.jar" />
+    
 	<property name="ri.dir" value="ri"/>
+    <property name="docs.dir" value="docs" />
 	<property name="rdoc.dir" value="${ri.dir}/rdoc"/>
 	<property name="lib.dir" value="lib"/>
 	<property name="src.dir" value="src"/>
@@ -35,7 +33,9 @@
 	<property name="jedit.install.dir"  value="../.."/>
 	<property name="retroweaver.dir" value="../Retroweaver/lib"/>
 
-	<path id="project.class.path">
+
+	
+    <path id="project.class.path">
 		<pathelement location="${jedit.install.dir}/jedit.jar"/>
 		<pathelement location="${install.dir}/jruby.jar"/>
 		<pathelement location="${install.dir}/SideKick.jar"/>
@@ -143,7 +143,8 @@
 
 	<target name="jar" depends="unjar-rdoc">
 		<mkdir dir="${install.dir}"/>
-		<jar jarfile="${install.dir}/${jar.name}">
+		<jar jarfile="${install.dir}/${jar.file}">
+            <fileset dir="${docs.dir}" />
 			<fileset dir="${build.dir}"/>
 			<fileset dir="${src.dir}">
 				<include name="**/*.png"/>
@@ -166,22 +167,7 @@
 	</target>
 
 	<target name="dist" depends="compile, jar">
-		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/>
-	</target>
-
-	<!-- Generate docs with xsltproc tool from www.xmlsoft.org -->
-	<target name="docs-xsltproc" depends="init">
-		<exec executable="xsltproc">
-			<arg value="--catalogs"/>
-			<arg value="users-guide.xsl"/>
-			<arg value="users-guide.xml"/>
-		</exec>
-	</target>
-
-	<!-- Generate docs with Xalan tool from xml.apache.org -->
-	<target name="docs-xalan" depends="init">
-		<style style="users-guide.xsl"
-				in="users-guide.xml"/>
+		<copy file="${install.dir}/${jar.file}" todir="/home/c/.jedit/jars"/>
 	</target>
 
 	<target name="clean">
