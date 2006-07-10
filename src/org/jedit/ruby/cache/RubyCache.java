@@ -21,6 +21,7 @@ package org.jedit.ruby.cache;
 
 import org.jedit.ruby.ast.*;
 import org.jedit.ruby.parser.RubyParser;
+import org.jedit.ruby.RubyPlugin;
 
 import java.util.*;
 

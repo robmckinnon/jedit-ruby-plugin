@@ -48,7 +48,7 @@ import java.util.HashMap;
  */
 public final class RubyPlugin extends EBPlugin {
 
-    private static final boolean debug = System.getProperty("user.home").equals("/home/");
+    private static final boolean debug = System.getProperty("user.home").equals("/home/c");
     private static final CharCaretListener CHAR_CARET_LISTENER = new CharCaretListener();
     private static final Map<View, EditorView> views = new HashMap<View, EditorView>();
 

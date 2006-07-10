@@ -50,8 +50,14 @@ public final class RiParser {
     private static List<String> getRDocExcludePatterns() {
         List<String> excludePatterns = new ArrayList<String>();
         if (!jEdit.getBooleanProperty(RDocViewer.INCLUDE_RAILS, true)) {
-            excludePatterns.add("gems/Action");
-            excludePatterns.add("gems/Active");
+            excludePatterns.add("rails_1_1_2/Action");
+            excludePatterns.add("rails_1_1_2/Active");
+            excludePatterns.add("rails_1_1_2/Rails");
+        }
+        if (!jEdit.getBooleanProperty(RDocViewer.INCLUDE_RAILS_1_0_0, false)) {
+            excludePatterns.add("rails_1_0_0/Action");
+            excludePatterns.add("rails_1_0_0/Active");
+            excludePatterns.add("rails_1_0_0/Rails");
         }
         return excludePatterns;
     }
@@ -111,7 +117,8 @@ public final class RiParser {
             JarInputStream jar = new JarInputStream(new FileInputStream(getJarFile()));
             JarEntry entry;
             while ((entry = jar.getNextJarEntry()) != null) {
-                if (!excludeEntry(rdocExcludePatterns, entry)) {
+                boolean includeEntry = !excludeEntry(rdocExcludePatterns, entry);
+                if (includeEntry) {
                     entries.add(entry);
                 }
             }

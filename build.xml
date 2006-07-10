@@ -26,6 +26,8 @@
 
 	<property name="jar.name" value="RubyPlugin.jar"/>
 
+	<property name="ri.dir" value="ri"/>
+	<property name="rdoc.dir" value="${ri.dir}/rdoc"/>
 	<property name="lib.dir" value="lib"/>
 	<property name="src.dir" value="src"/>
 	<property name="build.dir" value="build"/>
@@ -125,7 +127,21 @@
 		</java>
 	</target>
 
-	<target name="jar">
+	<target name="jar-rdoc">
+    <delete file="${ri.dir}/rdoc.jar"/>
+		<jar jarfile="${ri.dir}/rdoc.jar">
+			<fileset dir="${rdoc.dir}">
+				<include name="**/*.dat"/>
+			</fileset>
+		</jar>
+	</target>
+
+	<target name="unjar-rdoc">
+    <mkdir dir="${rdoc.dir}"/>
+		<unjar src="${ri.dir}/rdoc.jar" dest="${rdoc.dir}"/>
+	</target>
+
+	<target name="jar" depends="unjar-rdoc">
 		<mkdir dir="${install.dir}"/>
 		<jar jarfile="${install.dir}/${jar.name}">
 			<fileset dir="${build.dir}"/>
@@ -145,11 +161,11 @@
 		</jar>
 	</target>
 
-	<target name="dist" depends="check-for-retroweaver, retroweave, jar">
+	<target name="dist_retroweaver" depends="check-for-retroweaver, retroweave, jar">
 		<antcall target="retroweaver-warning"/>
 	</target>
 
-	<target name="dist15" depends="compile, jar">
+	<target name="dist" depends="compile, jar">
 		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/>
 	</target>
 
