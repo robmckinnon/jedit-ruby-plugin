@@ -20,9 +20,9 @@
 	<property file="../build.properties"/>
 	<property file="build.properties"/>
 
-	
-    <property name="jar.file"       value="${ant.project.name}.jar" />
-    
+
+    <property name="jar.file" value="${ant.project.name}.jar" />
+
 	<property name="ri.dir" value="ri"/>
     <property name="docs.dir" value="docs" />
 	<property name="rdoc.dir" value="${ri.dir}/rdoc"/>
@@ -34,7 +34,7 @@
 	<property name="retroweaver.dir" value="../Retroweaver/lib"/>
 
 
-	
+
     <path id="project.class.path">
 		<pathelement location="${jedit.install.dir}/jedit.jar"/>
 		<pathelement location="${install.dir}/jruby.jar"/>
@@ -167,7 +167,23 @@
 	</target>
 
 	<target name="dist" depends="compile, jar">
-		<copy file="${install.dir}/${jar.file}" todir="/home/c/.jedit/jars"/>
+<!--		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/> -->
+		<copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.2/jars"/>
+	</target>
+
+	<!-- Generate docs with xsltproc tool from www.xmlsoft.org -->
+	<target name="docs-xsltproc" depends="init">
+		<exec executable="xsltproc">
+			<arg value="--catalogs"/>
+			<arg value="users-guide.xsl"/>
+			<arg value="users-guide.xml"/>
+		</exec>
+	</target>
+
+	<!-- Generate docs with Xalan tool from xml.apache.org -->
+	<target name="docs-xalan" depends="init">
+		<style style="users-guide.xsl"
+				in="users-guide.xml"/>
 	</target>
 
 	<target name="clean">
