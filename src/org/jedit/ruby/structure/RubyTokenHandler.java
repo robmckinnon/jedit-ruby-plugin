@@ -20,12 +20,11 @@
 package org.jedit.ruby.structure;
 
 import org.gjt.sp.jedit.TextUtilities;
+import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.syntax.Token;
 import org.gjt.sp.jedit.syntax.TokenHandler;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
+import org.jedit.ruby.utils.CommandUtils;
 
 /**
  * @author robmckinnon at users,sourceforge,net
@@ -45,10 +44,13 @@ public final class RubyTokenHandler extends DefaultTokenHandler {
     public RubyToken getTokenAtCaret(Object buffer, int caret) {
         init(); // reset
         try {
-            int line = (Integer)invoke(buffer, "getLineOfOffset", new Class[]{Integer.class}, caret);
-            invoke(buffer, "markTokens", new Class[]{Integer.class, TokenHandler.class}, line, this);
+            Buffer aBuffer = ((Buffer)buffer);
+            int line = aBuffer.getLineOfOffset(caret);
+            aBuffer.markTokens(line, this);
+//            int line = (Integer)CommandUtils.invoke(buffer, "getLineOfOffset", new Class[]{Integer.class}, caret);
+//            CommandUtils.invoke(buffer, "markTokens", new Class[]{Integer.class, TokenHandler.class}, line, this);
             int offset = caret;
-            offset -= (Integer)invoke(buffer, "getLineStartOffset", new Class[]{Integer.class}, line);
+            offset -= (Integer)CommandUtils.invoke(buffer, "getLineStartOffset", new Class[]{Integer.class}, line);
             if (offset != 0) {
                 offset--;
             }
@@ -58,22 +60,6 @@ public final class RubyTokenHandler extends DefaultTokenHandler {
             e.printStackTrace();
             return null;
         }
-    }
-
-    private Object invoke(Object buffer, String methodName, Class[] paramTypes, Object... args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Method method = null;
-        try {
-            method = buffer.getClass().getMethod(methodName, paramTypes);
-        } catch (Exception e) {
-            Method[] methods = buffer.getClass().getMethods();
-            for (Method m : methods) {
-                if (m.getName().equals(methodName)) {
-                    method = m;
-                }
-            }
-        }
-
-        return method.invoke(buffer, args);
     }
 
 }

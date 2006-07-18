@@ -25,6 +25,7 @@ import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.jedit.ruby.RubyPlugin;
+import org.jedit.ruby.utils.CommandUtils;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.parser.RubyParser;
@@ -340,7 +341,7 @@ public final class ProgressiveSelector {
             return;
 
         String lineText = textArea.getLineText(line);
-        String noWordSep = textArea.getBuffer().getStringProperty("noWordSep");
+        String noWordSep = ((Buffer)CommandUtils.getBuffer(textArea)).getStringProperty("noWordSep");
 
         if (offset == textArea.getLineLength(line))
             offset--;

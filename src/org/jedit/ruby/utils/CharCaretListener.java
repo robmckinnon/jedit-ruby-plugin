@@ -79,7 +79,7 @@ public final class CharCaretListener implements CaretListener {
             JEditTextArea textArea = (JEditTextArea)e.getSource();
             String text = textArea.getText();
             charBehind = text.charAt(dot - 1);
-            currentToken = tokenHandler.getTokenAtCaret(textArea.getBuffer(), dot);
+            currentToken = tokenHandler.getTokenAtCaret(CommandUtils.getBuffer(textArea), dot);
 
             if (text.length() > dot) {
                 charAhead = text.charAt(dot);

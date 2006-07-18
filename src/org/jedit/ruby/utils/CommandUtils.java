@@ -20,10 +20,13 @@
 package org.jedit.ruby.utils;
 
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.RubyPlugin;
 
 import java.io.*;
 import java.util.TimerTask;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * @author robmckinnon at users.sourceforge.net
@@ -144,5 +147,31 @@ public final class CommandUtils {
 
     public static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().indexOf("windows") != -1;
+    }
+
+    public static Object invoke(Object buffer, String methodName, Class[] paramTypes, Object... args) throws IllegalAccessException, InvocationTargetException {
+        Method method = null;
+        try {
+            method = buffer.getClass().getMethod(methodName, paramTypes);
+        } catch (Exception e) {
+            Method[] methods = buffer.getClass().getMethods();
+            for (Method m : methods) {
+                if (m.getName().equals(methodName)) {
+                    method = m;
+                }
+            }
+        }
+
+        return method.invoke(buffer, args);
+    }
+
+    public static Object getBuffer(JEditTextArea textArea) {
+        Object buffer = null;
+        try {
+            buffer = invoke(textArea, "getBuffer", null, (Object[])null);
+        } catch (Exception e) {
+            RubyPlugin.log("error getting buffer " + e.getMessage(), CommandUtils.class);
+        }
+        return buffer;
     }
 }
