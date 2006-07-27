@@ -49,7 +49,7 @@ final class MemberNode extends Asset {
     }
 
     public final String getShortString() {
-        return name;
+        return getName();
     }
 
     public final String getLongString() {
@@ -57,7 +57,7 @@ final class MemberNode extends Asset {
     }
 
     public final String toString() {
-        return name + " " + start + " " + end;
+        return getName() + " " + getStart() + " " + getEnd();
     }
 
 }

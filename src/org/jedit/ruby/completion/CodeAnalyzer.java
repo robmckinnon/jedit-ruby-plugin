@@ -52,10 +52,10 @@ public final class CodeAnalyzer {
         String line = view.getLineUpToCaret();
         RubyPlugin.log("line: "+line, getClass());
 
-        MatchResult match = DotCompleteRegExp.instance.lastMatch(line, 5);
+        MatchResult match = getMatch(line);
+        methodCalledOnThis = getMethodCalledOnThis(match);
 
-        if (match != null) {
-            methodCalledOnThis = match.group(1);
+        if (methodCalledOnThis != null) {
             RubyPlugin.log("methodCalledOnThis: " + methodCalledOnThis, getClass());
             restOfLine = match.group(1) + match.group(2) + match.group(3) + match.group(4);
 
@@ -76,6 +76,14 @@ public final class CodeAnalyzer {
         if (partialClass == null) {
             lookForClassMatch(line, false);
         }
+    }
+
+    public static MatchResult getMatch(String line) {
+        return DotCompleteRegExp.instance.lastMatch(line, 5);
+    }
+
+    public static String getMethodCalledOnThis(MatchResult match) {
+        return match == null ? null : match.group(1);
     }
 
     private void lookForClassMatch(String line, boolean setMethod) {

@@ -40,6 +40,13 @@ public final class TestCodeAnalyzer extends TestCase {
                     "a.[] \n" +
                     "3 \n";
 
+    public final void testMethodCalledOnThis() {
+        String line = "        a.g";
+        MatchResult match = CodeAnalyzer.getMatch(line);
+        String methodCalledOnThis = CodeAnalyzer.getMethodCalledOnThis(match);
+        assertEquals("Assert method called on this correct.", "a", methodCalledOnThis);
+    }
+
     public final void testOutsideMember() {
         CodeAnalyzer analyzer = new CodeAnalyzer(new MockEditorView("", 0));
         assertCorrect(analyzer, null, null, false);
@@ -94,10 +101,7 @@ public final class TestCodeAnalyzer extends TestCase {
     public final void testClassMatch() {
         Pattern pattern = Pattern.compile("((@@|@|$)?\\S+(::\\w+)?)(\\.|::|#)((?:[^A-Z]\\S*)?)$");
         Matcher matcher = pattern.matcher("      a.");
-        boolean match = matcher.matches();
-
-
-        match = matcher.find();
+        boolean match = matcher.find();
 
         assertEquals("Assert class match correct.", true, match);
     }

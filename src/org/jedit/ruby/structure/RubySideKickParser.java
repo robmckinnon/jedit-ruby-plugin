@@ -171,8 +171,8 @@ public final class RubySideKickParser extends SideKickParser {
         if (members != null) {
             for (Member member : members) {
                 MemberNode node = new MemberNode(member);
-                node.start = buffer.createPosition(Math.min(buffer.getLength(), member.getStartOffset()));
-                node.end = buffer.createPosition(Math.min(buffer.getLength(), member.getEndOffset()));
+                node.setStart(buffer.createPosition(Math.min(buffer.getLength(), member.getStartOffset())));
+                node.setEnd(buffer.createPosition(Math.min(buffer.getLength(), member.getEndOffset())));
                 DefaultMutableTreeNode treeNode = node.createTreeNode();
                 if (member.hasChildMembers()) {
                     Member[] childMembers = member.getChildMembers();
