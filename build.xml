@@ -16,26 +16,21 @@
        accordingly.
 -->
 
-<project name="RubyPlugin" default="dist" basedir=".">
+<project name="RubyPlugin" default="jar" basedir=".">
 	<property file="../build.properties"/>
 	<property file="build.properties"/>
 
-
-    <property name="jar.file" value="${ant.project.name}.jar" />
-
+  <property name="jar.file" value="${ant.project.name}.jar"/>
 	<property name="ri.dir" value="ri"/>
-    <property name="docs.dir" value="docs" />
+  <property name="docs.dir" value="docs"/>
 	<property name="rdoc.dir" value="${ri.dir}/rdoc"/>
 	<property name="lib.dir" value="lib"/>
 	<property name="src.dir" value="src"/>
 	<property name="build.dir" value="build"/>
 	<property name="install.dir" value=".."/>
 	<property name="jedit.install.dir"  value="../.."/>
-	<property name="retroweaver.dir" value="../Retroweaver/lib"/>
 
-
-
-    <path id="project.class.path">
+  <path id="project.class.path">
 		<pathelement location="${jedit.install.dir}/jedit.jar"/>
 		<pathelement location="${install.dir}/jruby.jar"/>
 		<pathelement location="${install.dir}/SideKick.jar"/>
@@ -46,40 +41,14 @@
 
 	<path id="test.class.path">
 		<path refid="project.class.path"/>
-		<path refid="retroweaver.class.path"/>
 		<pathelement location="${install.dir}/junit.jar"/>
 		<pathelement location="${build.dir}"/>
 	</path>
-
-	<path id="retroweaver.class.path">
-		<pathelement location="${retroweaver.dir}/asm-1.5.1.jar"/>
-		<pathelement location="${retroweaver.dir}/bcel-5.1.jar"/>
-		<pathelement location="${retroweaver.dir}/jace.jar"/>
-		<pathelement location="${retroweaver.dir}/Regex.jar"/>
-		<pathelement location="${retroweaver.dir}/retroweaver.jar"/>
-	</path>
-
-	<target name="check-for-retroweaver">
-		<available file="${retroweaver.dir}/retroweaver.jar" property="retroweaver.present"/>
-	</target>
-
-	<target name="retroweaver-warning" unless="retroweaver.present">
-		<echo message=""/>
-		<echo message="To build this plugin you must checkout the Retroweaver plugin from cvs:"/>
-		<echo message=""/>
-		<echo message="cd ../.."/>
-		<echo message="cvs -z3 -d:ext:[username]@jedit.cvs.sourceforge.net:/cvsroot/jedit co -P plugins/Retroweaver"/>
-		<echo message="cd plugins/RubyPlugin"/>
-		<echo message="ant"/>
-		<echo message=""/>
-	</target>
-
 
 	<target name="init">
 		<mkdir dir="${build.dir}"/>
 		<copy file="${lib.dir}/jruby.jar" todir="${install.dir}"/>
 	</target>
-
 
 	<target name="compile" depends="init">
 		<javac debug="true"
@@ -91,7 +60,7 @@
 		</javac>
 	</target>
 
-	<target name="test" depends="check-for-retroweaver, compile">
+	<target name="test" depends="compile">
 		<javac debug="true"
 			deprecation="on"
 			destdir="${build.dir}"
@@ -116,17 +85,6 @@
       classpath="/home/c/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
 	</target>
 
-	<target name="retroweave" depends="compile" if="retroweaver.present">
-		<java classname="com.rc.retroweaver.Weaver">
-			<arg value="-source"/>
-			<arg value="${build.dir}"/>
-			<classpath>
-				<path refid="project.class.path"/>
-				<path refid="retroweaver.class.path"/>
-			</classpath>
-		</java>
-	</target>
-
 	<target name="jar-rdoc">
     <delete file="${ri.dir}/rdoc.jar"/>
 		<jar jarfile="${ri.dir}/rdoc.jar">
@@ -141,7 +99,7 @@
 		<unjar src="${ri.dir}/rdoc.jar" dest="${rdoc.dir}"/>
 	</target>
 
-	<target name="jar" depends="unjar-rdoc">
+	<target name="jar" depends="unjar-rdoc, compile">
 		<mkdir dir="${install.dir}"/>
 		<jar jarfile="${install.dir}/${jar.file}">
             <fileset dir="${docs.dir}" />
@@ -162,11 +120,7 @@
 		</jar>
 	</target>
 
-	<target name="dist_retroweaver" depends="check-for-retroweaver, retroweave, jar">
-		<antcall target="retroweaver-warning"/>
-	</target>
-
-	<target name="dist" depends="compile, jar">
+	<target name="dist" depends="jar">
 <!--		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/> -->
 		<copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.2/jars"/>
 	</target>
