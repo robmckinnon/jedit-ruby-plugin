@@ -466,11 +466,12 @@ public final class AutoIndentAndInsertEnd {
     /**
      * matches lines to ignore
      */
-    private static final class IgnoreRegExp extends InsertRegularExpression {
-        private static final RegularExpression instance = new IgnoreRegExp();
+    public static final class IgnoreRegExp extends InsertRegularExpression {
+        public static final RegularExpression instance = new IgnoreRegExp();
         protected final String getPattern() {
             return "((.*)(" +
-                    "([[:graph:]]\\s+(if|unless)(\\s+\\S+)+)" +
+//                    "([[:graph:]]\\s+(if|unless)(\\s+\\S+)+)" +
+                    "([^ \\t\\n\\r\\f\\v]\\s+(if|unless)(\\s+\\S+)+)" +
                     ")\\s*)" +
                     "|" +
                     "([^\"]*(\"|')[^\"]*" +
@@ -524,8 +525,8 @@ public final class AutoIndentAndInsertEnd {
         }
     }
 
-    private static final class TrailingConditionRegExp extends IndentRegularExpression {
-        private static final InsertRegularExpression instance = new TrailingConditionRegExp();
+    public static final class TrailingConditionRegExp extends IndentRegularExpression {
+        public static final InsertRegularExpression instance = new TrailingConditionRegExp();
         protected final String getPattern() {
             return "(\\s*)([^#]*=\\s*)(((if)|(unless)|(case)).*)";
         }

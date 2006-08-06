@@ -29,6 +29,21 @@ import java.util.regex.MatchResult;
  */
 public final class TestAutoIndent extends TestCase {
 
+    public final void testTrailingIfCondition() {
+        boolean match = AutoIndentAndInsertEnd.TrailingConditionRegExp.instance.isMatch("    red if true");
+        assertFalse("Assert doesn't match trailing condition", match);
+    }
+
+    public final void testMatchIgnoreSyntax() {
+        boolean match = AutoIndentAndInsertEnd.IgnoreRegExp.instance.isMatch("   red if true");
+        assertTrue("Assert matchs ignore condition", match);
+    }
+
+    public final void testDoesntMatchIgnoreSyntax() {
+        boolean match = AutoIndentAndInsertEnd.IgnoreRegExp.instance.isMatch("   if true");
+        assertFalse("Assert doesn't match ignore condition", match);
+    }
+
     public final void testEndCount() {
         int endCount = AutoIndentAndInsertEnd.getEndCount("end");
         assertEquals("Assert end count correct.", 1, endCount);
@@ -99,4 +114,5 @@ public final class TestAutoIndent extends TestCase {
     private static boolean hasEnd(String line) {
         return AutoIndentAndInsertEnd.hasEndKeyword(line.trim());
     }
+
 }
