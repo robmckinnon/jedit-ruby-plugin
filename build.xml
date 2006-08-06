@@ -123,6 +123,7 @@
 	<target name="dist" depends="jar">
 <!--		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/> -->
 		<copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.2/jars"/>
+                <copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.3pre5/jars"/>
 	</target>
 
 	<!-- Generate docs with xsltproc tool from www.xmlsoft.org -->
