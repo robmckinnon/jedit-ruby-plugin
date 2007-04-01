@@ -89,7 +89,8 @@ final class RubyNodeVisitor extends AbstractVisitor {
     }
 
     private static boolean printNode(Node node) {
-        return !(node instanceof NewlineNode);
+//        return !(node instanceof NewlineNode);
+        return false;
     }
 
     private void visitNodeIterator(Iterator iterator) {

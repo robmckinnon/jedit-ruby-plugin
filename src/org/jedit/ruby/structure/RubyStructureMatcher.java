@@ -21,7 +21,7 @@
 package org.jedit.ruby.structure;
 
 import org.gjt.sp.jedit.textarea.StructureMatcher;
-import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.gjt.sp.jedit.textarea.TextArea;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.utils.EditorView;
 import org.jedit.ruby.ast.Member;
@@ -35,7 +35,7 @@ public final class RubyStructureMatcher extends MemberVisitorAdapter implements 
 
     private Match match;
 
-    public final Match getMatch(JEditTextArea textArea) {
+    public final Match getMatch(TextArea textArea) {
         if (isRuby(textArea)) {
             match = null;
             EditorView view = RubyPlugin.getActiveView();
@@ -77,13 +77,14 @@ public final class RubyStructureMatcher extends MemberVisitorAdapter implements 
     public final void handleRoot(Root root) {
     }
 
-    public final void selectMatch(JEditTextArea textArea) {
+
+    public final void selectMatch(TextArea textArea) {
         if (isRuby(textArea)) {
             RubyPlugin.log("Select match", getClass());
         }
     }
 
-    private static boolean isRuby(JEditTextArea textArea) {
+    private static boolean isRuby(TextArea textArea) {
         return RubyPlugin.isRuby(textArea);
     }
 }

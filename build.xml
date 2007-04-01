@@ -17,137 +17,137 @@
 -->
 
 <project name="RubyPlugin" default="jar" basedir=".">
-	<property file="../build.properties"/>
-	<property file="build.properties"/>
+  <property file="../build.properties"/>
+  <property file="build.properties"/>
 
   <property name="jar.file" value="${ant.project.name}.jar"/>
-	<property name="ri.dir" value="ri"/>
+  <property name="ri.dir" value="ri"/>
   <property name="docs.dir" value="docs"/>
-	<property name="rdoc.dir" value="${ri.dir}/rdoc"/>
-	<property name="lib.dir" value="lib"/>
-	<property name="src.dir" value="src"/>
-	<property name="build.dir" value="build"/>
-	<property name="install.dir" value=".."/>
-	<property name="jedit.install.dir"  value="../.."/>
+  <property name="rdoc.dir" value="${ri.dir}/rdoc"/>
+  <property name="lib.dir" value="lib"/>
+  <property name="src.dir" value="src"/>
+  <property name="build.dir" value="build"/>
+  <property name="install.dir" value=".."/>
+  <property name="jedit.install.dir"  value="../.."/>
 
   <path id="project.class.path">
-		<pathelement location="${jedit.install.dir}/jedit.jar"/>
-		<pathelement location="${install.dir}/jruby.jar"/>
-		<pathelement location="${install.dir}/SideKick.jar"/>
-		<pathelement location="${install.dir}/ErrorList.jar"/>
-		<pathelement location="${install.dir}/ProjectViewer.jar"/>
-		<pathelement location="."/>
-	</path>
+    <pathelement location="${jedit.install.dir}/jedit.jar"/>
+    <pathelement location="${install.dir}/jruby.jar"/>
+    <pathelement location="${install.dir}/SideKick.jar"/>
+    <pathelement location="${install.dir}/ErrorList.jar"/>
+    <pathelement location="${install.dir}/ProjectViewer.jar"/>
+    <pathelement location="."/>
+  </path>
 
-	<path id="test.class.path">
-		<path refid="project.class.path"/>
-		<pathelement location="${install.dir}/junit.jar"/>
-		<pathelement location="${build.dir}"/>
-	</path>
+  <path id="test.class.path">
+    <path refid="project.class.path"/>
+    <pathelement location="${install.dir}/junit.jar"/>
+    <pathelement location="${build.dir}"/>
+  </path>
 
-	<target name="init">
-		<mkdir dir="${build.dir}"/>
-		<copy file="${lib.dir}/jruby.jar" todir="${install.dir}"/>
-	</target>
+  <target name="init">
+    <mkdir dir="${build.dir}"/>
+    <copy file="${lib.dir}/jruby.jar" todir="${install.dir}"/>
+  </target>
 
-	<target name="compile" depends="init">
-		<javac debug="true"
-			deprecation="on"
-			destdir="${build.dir}"
-			excludes="org/jedit/ruby/test/**"
-			srcdir="${src.dir}">
-			<classpath refid="project.class.path"/>
-		</javac>
-	</target>
+  <target name="compile" depends="init">
+    <javac debug="true"
+      deprecation="on"
+      destdir="${build.dir}"
+      excludes="org/jedit/ruby/test/**"
+      srcdir="${src.dir}">
+      <classpath refid="project.class.path"/>
+    </javac>
+  </target>
 
-	<target name="test" depends="compile">
-		<javac debug="true"
-			deprecation="on"
-			destdir="${build.dir}"
-			includes="org/jedit/ruby/test/**"
-			srcdir="${src.dir}">
-			<classpath refid="test.class.path"/>
-		</javac>
-		<junit>
-			<test name="org.jedit.ruby.test.RubyTestSuite"/>
-			<formatter type="plain" usefile="false"/>
-			<classpath refid="test.class.path"/>
-		</junit>
-	</target>
+  <target name="test" depends="compile">
+    <javac debug="true"
+      deprecation="on"
+      destdir="${build.dir}"
+      includes="org/jedit/ruby/test/**"
+      srcdir="${src.dir}">
+      <classpath refid="test.class.path"/>
+    </javac>
+    <junit>
+      <test name="org.jedit.ruby.test.RubyTestSuite"/>
+      <formatter type="plain" usefile="false"/>
+      <classpath refid="test.class.path"/>
+    </junit>
+  </target>
 
-	<target name="parse_rdoc" depends="compile">
-		<exec dir="ri" executable="ri/convert.sh"/>
-	</target>
+  <target name="parse_rdoc" depends="compile">
+    <exec dir="ri" executable="ri/convert.sh"/>
+  </target>
 
-	<target name="convert_rdoc" depends="parse_rdoc">
-		<java args="/home/c/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/c/apps/jedit/plugins/RubyPlugin/ri/rdoc"
+  <target name="convert_rdoc" depends="parse_rdoc">
+    <java args="/home/c/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/c/apps/jedit/plugins/RubyPlugin/ri/rdoc"
       classname="org.jedit.ruby.ri.XmlToBinary"
       classpath="/home/c/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
-	</target>
+  </target>
 
-	<target name="jar-rdoc">
+  <target name="jar-rdoc">
     <delete file="${ri.dir}/rdoc.jar"/>
-		<jar jarfile="${ri.dir}/rdoc.jar">
-			<fileset dir="${rdoc.dir}">
-				<include name="**/*.dat"/>
-			</fileset>
-		</jar>
-	</target>
+    <jar jarfile="${ri.dir}/rdoc.jar">
+      <fileset dir="${rdoc.dir}">
+        <include name="**/*.dat"/>
+      </fileset>
+    </jar>
+  </target>
 
-	<target name="unjar-rdoc">
+  <target name="unjar-rdoc">
     <mkdir dir="${rdoc.dir}"/>
-		<unjar src="${ri.dir}/rdoc.jar" dest="${rdoc.dir}"/>
-	</target>
+    <unjar src="${ri.dir}/rdoc.jar" dest="${rdoc.dir}"/>
+  </target>
 
-	<target name="jar" depends="unjar-rdoc, compile">
-		<mkdir dir="${install.dir}"/>
-		<jar jarfile="${install.dir}/${jar.file}">
+  <target name="jar" depends="unjar-rdoc, compile">
+    <mkdir dir="${install.dir}"/>
+    <jar jarfile="${install.dir}/${jar.file}">
             <fileset dir="${docs.dir}" />
-			<fileset dir="${build.dir}"/>
-			<fileset dir="${src.dir}">
-				<include name="**/*.png"/>
-			</fileset>
-			<fileset dir=".">
-				<include name="actions.xml"/>
-				<include name="dockables.xml"/>
-				<include name="services.xml"/>
-				<include name="**/*.props"/>
-				<include name="**/*.html"/>
-				<include name="**/*.dat"/>
-				<include name="**/rdoc_to_java.rb"/>
-				<include name="**/cdesc.erb"/>
-			</fileset>
-		</jar>
-	</target>
+      <fileset dir="${build.dir}"/>
+      <fileset dir="${src.dir}">
+        <include name="**/*.png"/>
+      </fileset>
+      <fileset dir=".">
+        <include name="actions.xml"/>
+        <include name="dockables.xml"/>
+        <include name="services.xml"/>
+        <include name="**/*.props"/>
+        <include name="**/*.html"/>
+        <include name="**/*.dat"/>
+        <include name="**/rdoc_to_java.rb"/>
+        <include name="**/cdesc.erb"/>
+      </fileset>
+    </jar>
+  </target>
 
-	<target name="dist" depends="jar">
-<!--		<copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/> -->
-		<copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.2/jars"/>
+  <target name="dist" depends="jar">
+<!--    <copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/> -->
+    <copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.2/jars"/>
                 <copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.3pre5/jars"/>
-	</target>
+  </target>
 
-	<!-- Generate docs with xsltproc tool from www.xmlsoft.org -->
-	<target name="docs-xsltproc" depends="init">
-		<exec executable="xsltproc">
-			<arg value="--catalogs"/>
-			<arg value="users-guide.xsl"/>
-			<arg value="users-guide.xml"/>
-		</exec>
-	</target>
+  <!-- Generate docs with xsltproc tool from www.xmlsoft.org -->
+  <target name="docs-xsltproc" depends="init">
+    <exec executable="xsltproc">
+      <arg value="--catalogs"/>
+      <arg value="users-guide.xsl"/>
+      <arg value="users-guide.xml"/>
+    </exec>
+  </target>
 
-	<!-- Generate docs with Xalan tool from xml.apache.org -->
-	<target name="docs-xalan" depends="init">
-		<style style="users-guide.xsl"
-				in="users-guide.xml"/>
-	</target>
+  <!-- Generate docs with Xalan tool from xml.apache.org -->
+  <target name="docs-xalan" depends="init">
+    <style style="users-guide.xsl"
+        in="users-guide.xml"/>
+  </target>
 
-	<target name="clean">
-		<delete dir="${build.dir}"/>
-		<delete>
-			<fileset dir="." includes="**/*~" defaultexcludes="no"/>
-<!-- 			<fileset dir="." includes="**/*.html" defaultexcludes="no"/>
- -->		
- 		</delete>
-	</target>
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete>
+      <fileset dir="." includes="**/*~" defaultexcludes="no"/>
+<!--       <fileset dir="." includes="**/*.html" defaultexcludes="no"/>
+ -->    
+     </delete>
+  </target>
 
 </project>

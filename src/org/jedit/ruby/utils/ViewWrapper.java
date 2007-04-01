@@ -23,6 +23,7 @@ import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.syntax.KeywordMap;
+import org.gjt.sp.util.StandardUtilities;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
@@ -186,8 +187,12 @@ public final class ViewWrapper implements EditorView {
     }
 
     public List<String> getWords(String partialName) {
-        Set<String> words = new TreeSet<String>(new MiscUtilities.StringCompare());
-        Set buffers = new HashSet();
+        Set<String> words = new TreeSet<String>(new Comparator<String>() {
+            public int compare(String string, String otherString) {
+                return StandardUtilities.compareStrings(string, otherString, false);
+            }
+	    });
+        Set<Buffer> buffers = new HashSet<Buffer>();
         View views = jEdit.getFirstView();
         while (views != null) {
             EditPane[] panes = views.getEditPanes();
@@ -205,7 +210,7 @@ public final class ViewWrapper implements EditorView {
         return new ArrayList<String>(words);
     }
 
-    private static void getCompletions(Buffer buffer, String partialName, String noWordSep, int caret, Set completions) {
+    private static void getCompletions(Buffer buffer, String partialName, String noWordSep, int caret, Set<String> completions) {
         for (int i = 0; i < buffer.getLineCount(); i++) {
             String line = buffer.getLineText(i);
             int start = buffer.getLineStartOffset(i);

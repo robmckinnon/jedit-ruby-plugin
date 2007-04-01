@@ -39,7 +39,7 @@ import java.util.List;
  */
 public final class RubyKeyBindings extends KeyAdapter {
 
-    private static final List<String> pairs = Arrays.asList(new String[]{"()", "[]", "{}", "''", "\"\"", "//"});
+    private static final List<String> pairs = Arrays.asList("()", "[]", "{}", "''", "\"\"", "//");
 
     private static final char NIL_CHAR = (char)-1;
 
@@ -216,7 +216,7 @@ public final class RubyKeyBindings extends KeyAdapter {
     private static boolean ignoreCharacter() {
         RubyToken token = CharCaretListener.getCurrentToken();
         RubyToken lastToken = CharCaretListener.getLastToken();
-        return token.isComment() || (token.isLiteral() && lastToken != null && lastToken.isLiteral());
+        return token == null || token.isComment() || (token.isLiteral() && lastToken != null && lastToken.isLiteral());
     }
 
     private static boolean isCharacter(KeyEvent e) {

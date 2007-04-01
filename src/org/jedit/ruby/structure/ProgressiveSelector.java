@@ -24,6 +24,7 @@ import org.gjt.sp.jedit.TextUtilities;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.textarea.Selection;
+import org.gjt.sp.jedit.textarea.TextArea;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.utils.CommandUtils;
 import org.jedit.ruby.ast.Member;
@@ -332,7 +333,7 @@ public final class ProgressiveSelector {
      *
      * @since jEdit 2.7pre2
      */
-    private static void selectWord(JEditTextArea textArea) {
+    private static void selectWord(TextArea textArea) {
         int line = textArea.getCaretLine();
         int lineStart = textArea.getLineStartOffset(line);
         int offset = textArea.getCaretPosition() - lineStart;
@@ -418,7 +419,7 @@ public final class ProgressiveSelector {
         addToSelection(textArea, s);
     }
 
-    private static void addToSelection(JEditTextArea textArea, Selection s) {
+    private static void addToSelection(TextArea textArea, Selection s) {
         if (textArea.isMultipleSelectionEnabled()) {
             textArea.addToSelection(s);
         } else {

@@ -158,10 +158,10 @@ public final class RubyParser {
         List<Member> members = new ArrayList<Member>();
 
         for(MemberMatcher.Match match : matches) {
-            String name = match.value.trim();
-            int startOffset = match.startOffset;
+            String name = match.value().trim();
+            int startOffset = match.startOffset();
 //            int startOuterOffset = match.startOuterOffset;
-            String params = match.params;
+            String params = match.params();
             members.add(matcher.createMember(name, filePath, startOffset, params, text));
         }
 

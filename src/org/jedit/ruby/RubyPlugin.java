@@ -92,10 +92,10 @@ public final class RubyPlugin extends EBPlugin {
 
     private static void handleBufferUpdate(BufferUpdate update) {
         if (BufferUpdate.LOADED == update.getWhat()) {
-            update.getBuffer().addBufferChangeListener(BufferChangeHandler.instance());
+            update.getBuffer().addBufferListener(BufferChangeHandler.instance());
 
         } if (BufferUpdate.CLOSED == update.getWhat()) {
-            update.getBuffer().removeBufferChangeListener(BufferChangeHandler.instance());
+            update.getBuffer().addBufferListener(BufferChangeHandler.instance());
         }
     }
 
@@ -230,13 +230,12 @@ public final class RubyPlugin extends EBPlugin {
         return new Point(textArea.getSize().width / 3, textArea.getSize().height / 5);
     }
 
-    public static boolean isRuby(JEditTextArea textArea) {
+    public static boolean isRuby(org.gjt.sp.jedit.textarea.TextArea textArea) {
         return isRuby(CommandUtils.getBuffer(textArea));
     }
 
     private static boolean isRuby(Object buffer) {
         if (buffer instanceof Buffer) {
-//            buffer.getRuleSetAtOffset(0).getModeName();
             return isRuby((Buffer)buffer);
         } else {
             throw new IllegalArgumentException("expecting buffer to be of type Buffer");

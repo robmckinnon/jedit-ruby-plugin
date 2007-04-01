@@ -195,6 +195,16 @@ public final class TestCodeAnalyzer extends TestCase {
             return text.substring(0, caret);
         }
 
+        public String getLineAfterCaret() {
+            int start = caret + 1;
+            int end = text.length() - 1;
+            if (end > start) {
+                return text.substring(start, end);
+            } else {
+                return "";
+            }
+        }
+
         public String getText(int start, int length) {
             return text.substring(start, start+length);
         }

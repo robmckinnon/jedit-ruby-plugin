@@ -149,7 +149,7 @@ public final class CodeCompletor {
     }
 
     public RubyCompletion getCompletion() {
-        List<? extends Member> members;
+        Collection<? extends Member> members;
 
         if (methods.size() == 0 && classesAndModules != null) {
             members = classesAndModules;
@@ -158,12 +158,12 @@ public final class CodeCompletor {
         }
 
         if (keywords != null) {
-            List<? extends Member> temp = members;
+            Collection<? extends Member> temp = members;
             members = keywords;
             members.addAll((Collection)temp);
         }
 
-        return new RubyCompletion(view, getPartialClassIgnoreCase(), getPartialMethod(), members);
+        return new RubyCompletion(view, getPartialClassIgnoreCase(), getPartialMethod(), (List<? extends Member>)members);
     }
 
     private List<ParentMember> findClassesAndModules() {

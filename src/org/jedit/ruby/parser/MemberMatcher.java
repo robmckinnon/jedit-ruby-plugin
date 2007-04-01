@@ -37,11 +37,11 @@ interface MemberMatcher {
     Member createMember(String name, String filePath, int startOffset, String params, String text);
 
     static final class Match {
-        final String value;
-        final int startOuterOffset;
-        final int startOffset;
-        final int endOffset;
-        final String params;
+        private final String value;
+        private final int startOuterOffset;
+        private final int startOffset;
+        private final int endOffset;
+        private final String params;
 
         public Match(String value, int startOuterOffset, int startOffset, int endOffset, String params) {
             this.params = params;
@@ -49,6 +49,26 @@ interface MemberMatcher {
             this.endOffset = endOffset;
             this.startOuterOffset = startOuterOffset;
             this.value = value;
+        }
+
+        public String value() {
+            return value;
+        }
+
+        public int startOuterOffset() {
+            return startOuterOffset;
+        }
+
+        public int startOffset() {
+            return startOffset;
+        }
+
+        public int endOffset() {
+            return endOffset;
+        }
+
+        public String params() {
+            return params;
         }
     }
 
@@ -198,14 +218,14 @@ interface MemberMatcher {
                 lineCounter = new LineCounter(text);
             }
             for (Match match : oneLineMatches) {
-                int lineIndex = lineCounter.getLineAtOffset(match.startOffset);
+                int lineIndex = lineCounter.getLineAtOffset(match.startOffset());
                 String line = lineCounter.getLine(lineIndex);
                 int endIndex = line.lastIndexOf("end");
                 if (endIndex != -1) {
                     int classIndex = line.indexOf(keyword);
                     String prefix = line.substring(0, classIndex);
-                    String classBlanks = MethodMatcher.SPACES.substring(0, match.endOffset - (match.startOuterOffset+classIndex));
-                    String contents = line.substring((match.endOffset - match.startOuterOffset), endIndex);
+                    String classBlanks = MethodMatcher.SPACES.substring(0, match.endOffset() - (match.startOuterOffset()+classIndex));
+                    String contents = line.substring((match.endOffset() - match.startOuterOffset()), endIndex);
                     String endBlanks = "   ";
                     String suffix = line.substring(endIndex + 3, line.length());
 

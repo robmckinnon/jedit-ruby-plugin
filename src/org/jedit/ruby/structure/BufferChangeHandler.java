@@ -20,7 +20,7 @@
 
 package org.jedit.ruby.structure;
 
-import org.gjt.sp.jedit.buffer.BufferChangeAdapter;
+import org.gjt.sp.jedit.buffer.BufferAdapter;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
@@ -35,7 +35,7 @@ import java.awt.*;
 /**
  * @author robmckinnon at users.sourceforge.net
  */
-public class BufferChangeHandler extends BufferChangeAdapter {
+public class BufferChangeHandler extends BufferAdapter {
 
     private static final BufferChangeHandler instance = new BufferChangeHandler();
 

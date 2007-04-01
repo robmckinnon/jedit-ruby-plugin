@@ -21,6 +21,7 @@ package org.jedit.ruby.utils;
 
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
+import org.gjt.sp.jedit.textarea.TextArea;
 import org.jedit.ruby.RubyPlugin;
 
 import java.io.*;
@@ -65,7 +66,7 @@ public final class CommandUtils {
     }
 
     /**
-     * Returns string output of execution of the supplied system command.
+     * @return string output of execution of the supplied system command
      */
     public static String getOutput(String command, boolean retryOnFail) throws IOException, InterruptedException {
         return getOutput(command, retryOnFail, 1500);
@@ -165,7 +166,7 @@ public final class CommandUtils {
         return method.invoke(buffer, args);
     }
 
-    public static Object getBuffer(JEditTextArea textArea) {
+    public static Object getBuffer(TextArea textArea) {
         Object buffer = null;
         try {
             buffer = invoke(textArea, "getBuffer", null, (Object[])null);

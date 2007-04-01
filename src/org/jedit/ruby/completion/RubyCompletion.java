@@ -131,12 +131,18 @@ public final class RubyCompletion extends SideKickCompletion {
         String text = textArea.getLineText(textArea.getCaretLine());
         char deletedChar = (char)-1;
         if (text.length() > 0) {
-            int caretPosition = textArea.getCaretPosition();
-            textArea.selectLine();
-            int endIndex = text.length() - 1;
-            deletedChar = text.charAt(endIndex);
-            textArea.setSelectedText(text.substring(0, endIndex));
-            textArea.setCaretPosition(caretPosition - 1);
+            int caretPositionInLine = editorView.getCaretOffsetInLine();
+            deletedChar = text.charAt(caretPositionInLine - 1);
+//            String upToCaret = text.substring(0, caretPositionInLine - 1);
+//            String afterCaret = (caretPositionInLine == text.length()) ? "" : text.substring(caretPositionInLine, text.length());
+//            RubyPlugin.log("text:        " + text,        getClass());
+//            RubyPlugin.log("upToCaret:   " + upToCaret,   getClass());
+//            RubyPlugin.log("deletedChar: " + deletedChar, getClass());
+//            RubyPlugin.log("afterCaret:  " + afterCaret,  getClass());
+//            textArea.selectLine();
+//            textArea.setSelectedText(upToCaret + afterCaret);
+//            textArea.setCaretPosition(textArea.getCaretPosition() - 2);
+            textArea.backspace();
         }
         boolean dotInsertionPoint = CodeAnalyzer.isDotInsertionPoint(editorView) && deletedChar != '.' && deletedChar != ':';
         boolean classCompletionPoint = CodeAnalyzer.isClassCompletionPoint(editorView);
