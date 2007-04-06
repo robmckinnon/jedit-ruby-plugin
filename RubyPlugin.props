@@ -106,7 +106,7 @@ ruby.file-structure-popup.no-structure.label=No structure to show.
 ruby.find-declaration.no-matches.label=No matches found, try adding relevant files to Project Viewer.
 
 ruby.rdoc-viewer.exclude-rails.label=Exclude Rails docs
-ruby.rdoc-viewer.include-rails.label=Include Rails 1.1.2 docs
+ruby.rdoc-viewer.include-rails.label=Include Rails 1.2.3 docs
 ruby.rdoc-viewer.include-rails-1_0_0.label=Include Rails 1.0.0 docs
 ruby.rdoc-viewer.no-description.label=no documentation available...
 

@@ -76,11 +76,11 @@
   </target>
 
   <target name="parse_rdoc" depends="compile">
-    <exec dir="ri" executable="ri/convert.sh"/>
+    <exec dir="ri" executable="convert.sh"/>
   </target>
 
-  <target name="convert_rdoc" depends="parse_rdoc">
-    <java args="/home/c/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/c/apps/jedit/plugins/RubyPlugin/ri/rdoc"
+  <target name="convert_rdoc">
+    <java args="/home/d/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/d/apps/jedit/plugins/RubyPlugin/ri/rdoc"
       classname="org.jedit.ruby.ri.XmlToBinary"
       classpath="/home/c/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
   </target>
