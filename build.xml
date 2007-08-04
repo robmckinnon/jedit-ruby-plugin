@@ -12,7 +12,7 @@
 
      - If necessary, addMembers any dependencies to the 'project.class.path'
        definition
-     - If necessary, change the list of files in the 'dist' targtet
+     - If necessary, change the list of files in the 'dist' target
        accordingly.
 -->
 

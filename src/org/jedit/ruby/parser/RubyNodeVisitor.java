@@ -107,7 +107,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
     public final Instruction visitBlockNode(BlockNode node) {
         visitNode(node);
         RubyPlugin.log("", getClass());
-        visitNodeIterator(node.iterator());
+        visitNodeIterator(node.childNodes().iterator());
         return null;
     }
 
@@ -128,6 +128,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         boolean tempUnderModuleNode = underModuleNode;
         underModuleNode = false;
         Member member = addParentNode(CLASS, classNode, classNode, classNode.getBodyNode());
+        classNode.childNodes();
         Node superNode = classNode.getSuperNode();
 
         if (superNode != null) {
@@ -145,7 +146,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
-    private Member addParentNode(String memberType, Node node, IScopingNode scopeNode, ScopeNode bodyNode) {
+    private Member addParentNode(String memberType, Node node, IScopingNode scopeNode, Node bodyNode) {
         visitNode(node);
         scopeNode.getCPath().accept(nameVisitor);
         String name = nameVisitor.name;
@@ -177,7 +178,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         if (memberType == MODULE) {
             underModuleNode = true;
         }
-        bodyNode.accept(this);
+        tranverseChildren(bodyNode, node);
         if (memberType == MODULE) {
             underModuleNode = false;
         }
@@ -191,6 +192,23 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return member;
     }
 
+    private void tranverseChildren(Node bodyNode, Node node) {
+        if (bodyNode == null) {
+            if (node.childNodes() != null) {
+                for (Object child : node.childNodes()) {
+                    if (child instanceof ArgumentNode) {
+                        // do nothing
+                    } else if (child instanceof Node) {
+                        Node childNode = (Node) (child);
+                        childNode.accept(this);
+                    }
+                }
+            }
+        } else {
+            bodyNode.accept(this);
+        }
+    }
+
     public Instruction visitArgsCatNode(ArgsCatNode node) {
         visitNode(node);
         return null;
@@ -198,7 +216,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
 
     public Instruction visitArgsNode(ArgsNode node) {
         visitNode(node);
-        node.accept(this);
+//        node.accept(this);
         return null;
     }
 
@@ -237,7 +255,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         currentMember.getLast().addChildMember(method);
         currentMember.add(method);
 
-        node.getBodyNode().accept(this);
+        tranverseChildren(node.getBodyNode(), node);
 
         currentMember.removeLast();
         return null;
@@ -317,14 +335,23 @@ final class RubyNodeVisitor extends AbstractVisitor {
         throw new SyntaxException(position, message);
     }
 
-    public final Instruction visitScopeNode(ScopeNode node) {
+    public Instruction visitRootNode(RootNode node) {
         visitNode(node);
-        RubyPlugin.log("", getClass());
+        RubyPlugin.log("",getClass());
         if (node.getBodyNode() != null) {
             node.getBodyNode().accept(this);
         }
         return null;
     }
+
+//    public final Instruction visitScopeNode(ScopeNode node) {
+//        visitNode(node);
+//        RubyPlugin.log("", getClass());
+//        if (node.getBodyNode() != null) {
+//            node.getBodyNode().accept(this);
+//        }
+//        return null;
+//    }
 
     public final Instruction visitIfNode(IfNode node) {
         visitNode(node);
@@ -392,6 +419,11 @@ final class RubyNodeVisitor extends AbstractVisitor {
                 && lineCounter.charAt(end - 2) == 'n'
                 && lineCounter.charAt(end - 1) == 'd') {
             return end;
+        }
+        if (lineCounter.charAt(end - 4) == 'e'
+                && lineCounter.charAt(end - 3) == 'n'
+                && lineCounter.charAt(end - 2) == 'd') {
+            return end - 1;
         }
 
         char endChar = lineCounter.charAt(end);

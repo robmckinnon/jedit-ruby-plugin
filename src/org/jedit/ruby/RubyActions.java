@@ -20,10 +20,7 @@
 package org.jedit.ruby;
 
 import errorlist.ErrorSource;
-import org.gjt.sp.jedit.View;
-import org.gjt.sp.jedit.Macros;
-import org.gjt.sp.jedit.jEdit;
-import org.gjt.sp.jedit.Registers;
+import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.jedit.ruby.ast.Member;
@@ -125,6 +122,8 @@ public final class RubyActions {
     }
 
     public static void introduceVariable(View view) {
+        Debug.DUMP_KEY_EVENTS = true;
+
         String prompt = jEdit.getProperty("ruby.introduce-variable.message");
         String name = Macros.input(view, prompt);
 

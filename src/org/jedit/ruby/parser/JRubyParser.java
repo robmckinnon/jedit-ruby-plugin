@@ -88,9 +88,8 @@ public final class JRubyParser {
         };
 
         parser.setWarnings(warnings);
-        parser.init(config);
-        LexerSource lexerSource = LexerSource.getSource(name, content);
-        RubyParserResult result = parser.parse(lexerSource);
+        LexerSource lexerSource = LexerSource.getSource(name, content, 0);
+        RubyParserResult result = parser.parse(config, lexerSource);
         return result.getAST();
     }
 
