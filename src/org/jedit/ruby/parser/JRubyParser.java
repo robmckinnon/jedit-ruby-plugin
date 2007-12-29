@@ -1,9 +1,9 @@
 package org.jedit.ruby.parser;
 
 import org.jruby.ast.*;
-import org.jruby.lexer.yacc.SourcePosition;
 import org.jruby.lexer.yacc.LexerSource;
 import org.jruby.lexer.yacc.SyntaxException;
+import org.jruby.lexer.yacc.ISourcePosition;
 import org.jruby.parser.RubyParserConfiguration;
 import org.jruby.parser.DefaultRubyParser;
 import org.jruby.parser.RubyParserResult;
@@ -88,7 +88,7 @@ public final class JRubyParser {
         };
 
         parser.setWarnings(warnings);
-        LexerSource lexerSource = LexerSource.getSource(name, content, 0);
+        LexerSource lexerSource = LexerSource.getSource(name, content, 0, true);
         RubyParserResult result = parser.parse(config, lexerSource);
         return result.getAST();
     }
@@ -131,7 +131,7 @@ public final class JRubyParser {
             this.listeners = listeners;
         }
 
-        public final void warn(SourcePosition position, String message) {
+        public final void warn(ISourcePosition position, String message) {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.warn(position, message);
             }
@@ -143,7 +143,7 @@ public final class JRubyParser {
             }
         }
 
-        public final void warning(SourcePosition position, String message) {
+        public final void warning(ISourcePosition position, String message) {
             for (RubyParser.WarningListener listener : listeners) {
                 listener.warning(position, message);
             }

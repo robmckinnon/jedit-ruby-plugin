@@ -173,12 +173,12 @@ public final class TestRubyParser extends TestCase {
             "    puts \"waddling\"\n" +
             "  end";
 
-    private static final String TWO_METHOD_CLASS = "class Here\n"+
-            "  def there\n"+
-            "  end\n"+
-            "  def everywhere\n"+
-            "  end\n"+
-            "end";
+//    private static final String TWO_METHOD_CLASS = "class Here\n"+
+//            "  def there\n"+
+//            "  end\n"+
+//            "  def everywhere\n"+
+//            "  end\n"+
+//            "end";
     
     private String code;
 
@@ -295,7 +295,7 @@ public final class TestRubyParser extends TestCase {
         assertCorrect(0, "bark", null, 2, 6, 28, membersAsList);
     }
 
-    public static final void testEndOffsets() {
+    public final void testEndOffsets() {
         RubyMembers members = RubyParser.getMembers(DUCK, getUniquePath());
         Member member = members.getLastMemberBefore(6);
         assertEquals("Member correct.", "Duck", member.getName());
@@ -314,11 +314,11 @@ public final class TestRubyParser extends TestCase {
         assertEquals("Class offset correct.", 35, member.getEndOffset());
     }
 
-    public static final void testErrors() {
+    public final void testErrors() {
         RubyMembers members = RubyParser.getMembers(ERROR_CODE, getUniquePath());
         assertTrue("Assert errors exist", members.containsErrors());
-//        assertEquals("Assert error count correct", 3, members.getProblems().length);
-        assertEquals("Assert error count correct", 1, members.getProblems().length);
+        assertEquals("Assert error count correct", 3, members.getProblems().length);
+//        assertEquals("Assert error count correct", 1, members.getProblems().length);
     }
 
     private static String getUniquePath() {

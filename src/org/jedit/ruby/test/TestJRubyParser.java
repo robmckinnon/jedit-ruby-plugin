@@ -27,7 +27,6 @@ import org.jruby.parser.DefaultRubyParser;
 import org.jruby.parser.RubyParserResult;
 import org.jruby.lexer.yacc.SyntaxException;
 import org.jruby.lexer.yacc.LexerSource;
-import org.jruby.lexer.yacc.SourcePosition;
 import org.jruby.lexer.yacc.ISourcePosition;
 import org.jruby.common.NullWarnings;
 
@@ -78,7 +77,7 @@ public final class TestJRubyParser extends TestCase {
         };
 
         parser.setWarnings(new Warnings());
-        LexerSource lexerSource = LexerSource.getSource(name, content, 0);
+        LexerSource lexerSource = LexerSource.getSource(name, content, 0, true);
         RubyParserResult result = parser.parse(config, lexerSource);
         return result.getAST();
     }
@@ -92,17 +91,17 @@ public final class TestJRubyParser extends TestCase {
         public Warnings() {
         }
 
-        public final void warn(SourcePosition position, String message) {
-            assertCorrect(position, message, 2, "parenthesize argument(s) for future version");
-        }
+//        public final void warn(SourcePosition position, String message) {
+//            assertCorrect(position, message, 2, "parenthesize argument(s) for future version");
+//        }
 
         public final void warn(String message) {
             failTest(message);
         }
 
-        public final void warning(SourcePosition position, String message) {
-            assertCorrect(position, message, 2, "void value expression");
-        }
+//        public final void warning(SourcePosition position, String message) {
+//            assertCorrect(position, message, 2, "void value expression");
+//        }
 
         public final void warning(String message) {
             failTest(message);
