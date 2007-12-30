@@ -45,7 +45,7 @@ public final class RDocViewer extends JPanel
 
     public static final String EXCLUDE_RAILS = "ruby.rdoc-viewer.exclude-rails";
     public static final String INCLUDE_RAILS = "ruby.rdoc-viewer.include-rails";
-    public static final String INCLUDE_RAILS_1_0_0 = "ruby.rdoc-viewer.include-rails-1_0_0";
+    public static final String INCLUDE_RAILS_1_2 = "ruby.rdoc-viewer.include-rails-1_2";
 
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
 
@@ -81,13 +81,14 @@ public final class RDocViewer extends JPanel
     private JPanel initRailsPanel() {
         JPanel panel = new JPanel(new GridLayout(2,2));
         ButtonGroup buttonGroup = new ButtonGroup();
-        populateRadioButton("ruby.rdoc-viewer.include-rails.label", INCLUDE_RAILS, buttonGroup, panel, true);
-        populateRadioButton("ruby.rdoc-viewer.exclude-rails.label", EXCLUDE_RAILS, buttonGroup, panel, false);
-        populateRadioButton("ruby.rdoc-viewer.include-rails-1_0_0.label", INCLUDE_RAILS_1_0_0, buttonGroup, panel, false);
+        populateRadioButton(INCLUDE_RAILS, buttonGroup, panel, true);
+        populateRadioButton(EXCLUDE_RAILS, buttonGroup, panel, false);
+        populateRadioButton(INCLUDE_RAILS_1_2, buttonGroup, panel, false);
         return panel;
     }
 
-    private void populateRadioButton(String label, String actionCommand, final ButtonGroup buttonGroup, JPanel panel, boolean defaultSelected) {
+    private void populateRadioButton(String actionCommand, final ButtonGroup buttonGroup, JPanel panel, boolean defaultSelected) {
+        String label = actionCommand+".label";
         boolean selected = jEdit.getBooleanProperty(actionCommand, defaultSelected);
         JRadioButton radio = new JRadioButton(jEdit.getProperty(label));
         radio.setActionCommand(actionCommand);

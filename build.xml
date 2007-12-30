@@ -80,9 +80,9 @@
   </target>
 
   <target name="convert_rdoc">
-    <java args="/home/d/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/d/apps/jedit/plugins/RubyPlugin/ri/rdoc"
+    <java args="/home/e/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/e/apps/jedit/plugins/RubyPlugin/ri/rdoc"
       classname="org.jedit.ruby.ri.XmlToBinary"
-      classpath="/home/c/apps/ant/lib/xercesImpl.jar:${build.dir}"/>
+      classpath="/home/e/.jedit/jars/xercesImpl.jar:${build.dir}"/>
   </target>
 
   <target name="jar-rdoc">

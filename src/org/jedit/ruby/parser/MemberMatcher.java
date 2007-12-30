@@ -76,15 +76,15 @@ interface MemberMatcher {
 
         private static final RegularExpression moduleRegExp = new RegularExpression("([ ]*)(module[ ]+)(\\w+[^;\\s]*;[ ]*)");
         private static final RegularExpression classRegExp = new RegularExpression("([ ]*)(class[ ]+)(\\w+[^;\\s]*;[ ]*)");
+        private static final String PARAM_PATTERN = "(\\(.*\\))"+
+                    "|"+
+                    "(.*)";
+        private static final RegularExpression defRegExp = new RegularExpression("([ ]*)(def[ ]+)([^;\\(\\s]*)(" + PARAM_PATTERN + ")?");
 
         public final List<Match> getMatches(String text, LineCounter lineCounter) {
             text = adjustForSingleLine(text, lineCounter, "module", moduleRegExp);
             text = adjustForSingleLine(text, lineCounter, "class", classRegExp);
-            String paramPattern =
-                    "(\\(.*\\))"+
-                    "|"+
-                    "(.*)";
-            return getMatchList(new RegularExpression("([ ]*)(def[ ]+)([^;\\(\\s]*)(" + paramPattern + ")?"), text);
+            return getMatchList(defRegExp, text);
         }
 
         public final Member createMember(String name, String filePath, int startOffset, String params, String text) {
