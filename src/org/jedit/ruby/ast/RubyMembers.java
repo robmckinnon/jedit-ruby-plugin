@@ -54,7 +54,7 @@ public final class RubyMembers {
     }
 
     public final Problem[] getProblems() {
-        return problems.toArray(new Problem[0]);
+        return problems.toArray(new Problem[problems.size()]);
     }
 
     private void populateMemberList(Member[] members, List<Member> list) {
@@ -67,8 +67,8 @@ public final class RubyMembers {
     }
 
     /**
-     *
      * @throws RuntimeException if {@link #containsErrors()} returns true
+     * @return size
      */
     public final int size() {
         return members.length;
@@ -111,6 +111,7 @@ public final class RubyMembers {
      * is outside a Ruby member then the file's {@link Root}
      * member is returned.
      *
+     * @param caretPosition caret position
      * @return {@link Member} at caret or file {@link Root} member
      */
     public final Member getMemberAt(int caretPosition) {

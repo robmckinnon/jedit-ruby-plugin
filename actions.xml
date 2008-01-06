@@ -49,4 +49,7 @@
 	<ACTION NAME="ruby.previous-edit">
 		<CODE>org.jedit.ruby.RubyActions.previousEdit(view);</CODE>
 	</ACTION>
+	<ACTION NAME="ruby.toggle-spec">
+		<CODE>org.jedit.ruby.RubyActions.toggleSpec(view);</CODE>
+	</ACTION>
 </ACTIONS>

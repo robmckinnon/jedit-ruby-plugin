@@ -36,10 +36,10 @@ import org.jedit.ruby.cache.*;
 import org.jedit.ruby.ri.*;
 import org.jedit.ruby.utils.CommandUtils;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.io.IOException;
+import java.io.File;
+import java.io.FilenameFilter;
 
 import sidekick.SideKickActions;
 
@@ -164,7 +164,7 @@ public final class RubyActions {
         RubyPlugin.log("found: " + methods.size(), RubyActions.class);
 
         if (methods.size() > 0) {
-            Member[] displayMembers = methods.toArray(new Member[0]);
+            Member[] displayMembers = methods.toArray(new Member[methods.size()]);
             new TypeAheadPopup(view, displayMembers, displayMembers[0], org.jedit.ruby.structure.TypeAheadPopup.FIND_DECLARATION_POPUP);
         } else {
             Macros.message(textArea, jEdit.getProperty("ruby.find-declaration.no-matches.label"));
@@ -174,6 +174,61 @@ public final class RubyActions {
     public static void fileStructurePopup(View view) {
         FileStructurePopup fileStructurePopup = new FileStructurePopup(view);
         fileStructurePopup.show();
+    }
+
+    private static File getSpecDirectory(File parent) {
+        File specDir = null;
+        while ((parent = parent.getParentFile()) != null) {
+            if (parent.isDirectory()) {
+                String[] files = parent.list(new FilenameFilter() {
+                    public boolean accept(File dir, String name) {
+                        return name.equals("spec");
+                    }
+                });
+                if (files != null && files.length > 0) {
+                    specDir = new File(parent.getPath(), files[0]);
+                }
+            }
+        }
+        return specDir;
+    }
+
+    public static final Map<File, File> SPEC_TO_FILES = new HashMap<File, File>();
+
+    public static void toggleSpec(View view) {
+        Buffer buffer = view.getBuffer();
+        File currentFile = new File(buffer.getDirectory(), buffer.getName());
+        if (buffer.getName().contains("spec")) {
+            if (SPEC_TO_FILES.containsKey(currentFile)) {
+                File file = SPEC_TO_FILES.get(currentFile);
+                jEdit.openFile(view, file.getAbsolutePath());
+            }
+        } else {
+            toggleToSpec(view, buffer, currentFile);
+        }
+    }
+
+    private static void toggleToSpec(View view, Buffer buffer, File currentFile) {
+        File specDir = getSpecDirectory(new File(buffer.getDirectory()));
+
+        if (specDir != null) {
+            String path = buffer.getDirectory().replaceFirst(specDir.getParent(), "");
+            String spec = buffer.getName().replaceFirst("\\.rb$","_spec.rb");
+            File specPath = new File(specDir.getPath(), path);
+            File specFile = new File(specPath, spec);
+
+            if (specFile.exists() && specFile.isFile()) {
+                SPEC_TO_FILES.put(specFile, currentFile);
+                jEdit.openFile(view, specFile.getAbsolutePath());
+            } else {
+                specPath = new File(specDir.getPath(), path.replaceFirst("^/app",""));
+                specFile = new File(specPath, spec);
+                if (specFile.exists() && specFile.isFile()) {
+                    SPEC_TO_FILES.put(specFile, currentFile);
+                    jEdit.openFile(view, specFile.getAbsolutePath());
+                }
+            }
+        }
     }
 
     public static void structureBrowser(View view) {

@@ -37,6 +37,7 @@ plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
 	- \
 	rdoc-viewer-toggle \
 	ruby.search-documentation \
+  ruby.toggle-spec \
 	- \
 	ruby.auto-indent-and-insert-end
 
@@ -66,6 +67,8 @@ ruby.previous-edit.label=Go to previous edit location
 
 ruby.auto-indent-and-insert-end.label=Auto indent and insert end
 ruby.complete-method.label=Complete method
+
+ruby.toggle-spec.label=Toggle RSpec file
 
 
 # Option panes
