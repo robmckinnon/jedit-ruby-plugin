@@ -176,11 +176,7 @@ public abstract class Member implements Comparable<Member> {
             boolean displayNamesEqual = getFullName().equals(member.getFullName());
 
             if (displayNamesEqual) {
-                if (hasParentMember()) {
-                    equal = parentMember.equals(member.parentMember);
-                } else {
-                    equal = true;
-                }
+                equal = !hasParentMember() || parentMember.equals(member.parentMember);
             }
         }
         return equal;
@@ -204,7 +200,7 @@ public abstract class Member implements Comparable<Member> {
 
     public final Member[] getChildMembers() {
         if (hasChildMembers()) {
-            return childMembers.toArray(EMPTY_MEMBER_ARRAY);
+            return childMembers.size() == 0 ? EMPTY_MEMBER_ARRAY : childMembers.toArray(new Member[childMembers.size()]);
         } else {
             return null;
         }

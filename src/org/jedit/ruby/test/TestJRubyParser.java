@@ -87,33 +87,19 @@ public final class TestJRubyParser extends TestCase {
     }
 
     private final class Warnings extends NullWarnings {
-
         public Warnings() {
         }
-
-//        public final void warn(SourcePosition position, String message) {
-//            assertCorrect(position, message, 2, "parenthesize argument(s) for future version");
-//        }
-
         public final void warn(String message) {
             failTest(message);
         }
-
-//        public final void warning(SourcePosition position, String message) {
-//            assertCorrect(position, message, 2, "void value expression");
-//        }
-
         public final void warning(String message) {
             failTest(message);
         }
-
         public void warn(ISourcePosition position, String message) {
             System.out.println(message);
         }
-
         public void warning(ISourcePosition position, String message) {
             System.out.println(message);
         }
     }
-
 }

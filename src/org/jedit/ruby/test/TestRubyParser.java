@@ -27,6 +27,7 @@ import org.jedit.ruby.parser.LineCounter;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.ast.ClassMember;
+import org.jedit.ruby.ast.MethodCallWithSelfAsAnImplicitReceiver;
 import org.jruby.lexer.yacc.ISourcePosition;
 
 import java.util.List;
@@ -179,7 +180,15 @@ public final class TestRubyParser extends TestCase {
 //            "  def everywhere\n"+
 //            "  end\n"+
 //            "end";
-    
+
+    private static final String METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER = "it 'should' do\n" +
+            "  puts 'hi'\n" +
+            "end";
+
+    private static final String NESTED_METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER = "describe Model do\n" +
+            METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER + "\n" +
+            "end";            
+
     private String code;
 
     public void setUp() {
@@ -250,6 +259,23 @@ public final class TestRubyParser extends TestCase {
         } catch (Exception e) {
             fail("Unexpected exception: " + e.getClass().getName());
         }
+    }
+
+    public final void testIt() {
+        List<Member> members = getMembersList(METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
+        Member member = members.get(0);
+        assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
+        assertCorrect(0, "it", null, 0, 3, 30, members);
+    }
+
+    public final void testDescribe() {
+        List<Member> members = getMembersList(NESTED_METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
+        Member member = members.get(0);
+        assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
+        assertCorrect(0, "describe", null, 0, 9, 52, members);
+        Member childMember = member.getChildMembers()[0];
+        assertTrue(childMember instanceof MethodCallWithSelfAsAnImplicitReceiver);
+        assertChildrenCorrect(members, "it", 18, 21, 48, "describe");
     }
 
     public final void testOneLiner() {

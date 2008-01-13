@@ -110,7 +110,7 @@ public final class Method extends Member {
     }
 
     public boolean equals(Object obj) {
-        boolean equal = super.equals(obj);
+        boolean equal = obj instanceof Method && super.equals(obj);
 
         if (equal) {
             return isClassMethod() == ((Method)obj).isClassMethod();

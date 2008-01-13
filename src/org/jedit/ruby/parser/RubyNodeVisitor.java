@@ -128,7 +128,6 @@ final class RubyNodeVisitor extends AbstractVisitor {
         boolean tempUnderModuleNode = underModuleNode;
         underModuleNode = false;
         Member member = addParentNode(CLASS, classNode, classNode, classNode.getBodyNode());
-        classNode.childNodes();
         Node superNode = classNode.getSuperNode();
 
         if (superNode != null) {
@@ -222,8 +221,6 @@ final class RubyNodeVisitor extends AbstractVisitor {
 
     public final Instruction visitDefnNode(DefnNode node) {
         visitNode(node);
-//        System.out.print(": " + node.getName());
-
         Member method;
         try {
             method = getMember("def", methodIndex, methods, node.getName(), node.getNameNode().getPosition(), node.getPosition());
@@ -374,8 +371,36 @@ final class RubyNodeVisitor extends AbstractVisitor {
 
     public final Instruction visitFCallNode(FCallNode node) {
         visitNode(node);
-        RubyPlugin.log(": " + node.getName(), getClass());
+        String name = node.getName();
+        RubyPlugin.log(": " + name, getClass());
+        if (isRspecMethodName(name)) {
+            MethodCallWithSelfAsAnImplicitReceiver methodCall = new MethodCallWithSelfAsAnImplicitReceiver(name);
+            methodCall.setStartOuterOffset(getStartOffset(node.getPosition(), methodCall));
+            methodCall.setStartOffset(methodCall.getStartOuterOffset() + name.length() + 1);
+            methodCall.setEndOffset(getEndOffset(node.getPosition()));
+
+            Member parent = currentMember.getLast();
+            parent.addChildMember(methodCall);
+            currentMember.add(methodCall);            
+            if (node.getIterNode() != null) {
+                node.getIterNode().accept(this);
+            }
+            currentMember.removeLast();
+        }
         return null;
+    }
+
+    private boolean isRspecMethodName(String name) {
+        return name.equals("describe") ||
+                name.equals("it") ||
+                name.equals("before") ||
+                name.equals("after") ||
+                name.equals("shared_examples_for") ||
+                name.equals("it_should_behave_like") ||
+                name.equals("fixtures") ||
+                name.equals("context") ||
+                name.equals("controller_name") ||
+                name.equals("integrate_views");
     }
 
     public final Instruction visitClassVarDeclNode(ClassVarDeclNode node) {
