@@ -53,6 +53,10 @@ public final class MemberIcon extends MemberVisitorAdapter {
         icon = loadIcon("method");
     }
 
+    public void handleMethodCallWithSelfAsAnImplicitReceiver(MethodCallWithSelfAsAnImplicitReceiver methodCall) {
+        icon = loadIcon("method_call_to_self");
+    }
+
     public final void handleWarning(Warning warning) {
         icon = ErrorList.WARNING_ICON;
     }

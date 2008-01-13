@@ -30,6 +30,8 @@ public interface MemberVisitor {
 
     void handleMethod(Method method);
 
+    void handleMethodCallWithSelfAsAnImplicitReceiver(MethodCallWithSelfAsAnImplicitReceiver methodCall);
+
     void handleWarning(Warning warning);
 
     void handleError(Error warning);

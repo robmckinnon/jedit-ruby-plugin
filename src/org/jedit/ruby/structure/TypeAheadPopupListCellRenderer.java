@@ -21,7 +21,6 @@ package org.jedit.ruby.structure;
 
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.icons.MemberIcon;
-import org.jedit.ruby.structure.*;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;

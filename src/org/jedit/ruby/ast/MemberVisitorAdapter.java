@@ -44,6 +44,10 @@ public class MemberVisitorAdapter implements MemberVisitor {
         handleDefault(method);
     }
 
+    public void handleMethodCallWithSelfAsAnImplicitReceiver(MethodCallWithSelfAsAnImplicitReceiver methodCall) {
+        handleDefault(methodCall);
+    }
+
     public void handleWarning(Warning warning) {
         handleDefault(warning);
     }

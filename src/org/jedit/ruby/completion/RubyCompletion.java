@@ -311,6 +311,9 @@ public final class RubyCompletion extends SideKickCompletion {
             }
         }
 
+        public void handleMethodCallWithSelfAsAnImplicitReceiver(MethodCallWithSelfAsAnImplicitReceiver methodCall) {
+        }
+
         public void handleKeyword(KeywordMember keywordMember) {
             text = keywordMember.getName();
         }

@@ -31,5 +31,6 @@ public class MethodCallWithSelfAsAnImplicitReceiver extends Member  {
     }
 
     public void accept(MemberVisitor visitor) {
+        visitor.handleMethodCallWithSelfAsAnImplicitReceiver(this);
     }
 }
