@@ -371,13 +371,17 @@ final class RubyNodeVisitor extends AbstractVisitor {
         visitNode(node);
         String name = node.getName();
         RubyPlugin.log(": " + name, getClass());
-        if (isRspecMethodName(name)) {
+        Member parent = currentMember.getLast();
+
+        if (parent instanceof Root ||
+                parent instanceof ClassMember ||
+                parent instanceof Module ||
+                (isRspecMethodName(parent.getName()) && isRspecMethodName(name)) ) {
             MethodCallWithSelfAsAnImplicitReceiver methodCall = new MethodCallWithSelfAsAnImplicitReceiver(name);
             methodCall.setStartOuterOffset(getStartOffset(node.getPosition(), methodCall));
             methodCall.setStartOffset(methodCall.getStartOuterOffset() + name.length() + 1);
             methodCall.setEndOffset(getEndOffset(node.getPosition()));
 
-            Member parent = currentMember.getLast();
             parent.addChildMember(methodCall);
             currentMember.add(methodCall);            
             if (node.getIterNode() != null) {
@@ -463,7 +467,11 @@ final class RubyNodeVisitor extends AbstractVisitor {
         int start = lineCounter.getStartOffset(endLine);
         int beginIndex = end - start;
         String text = line.substring(beginIndex);
-        return text.indexOf("end") + 3 + beginIndex;
+        if (text.indexOf("end") != -1) {
+            return text.indexOf("end") + 3 + beginIndex;
+        } else {
+            return position.getEndOffset();
+        }
     }
 
     private static final class IndexAdjustmentException extends Exception {

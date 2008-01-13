@@ -182,6 +182,10 @@ public final class TestRubyParser extends TestCase {
             METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER + "\n" +
             "end";            
 
+    private static final String CLASS_WITH_METHOD_WITH_SELF_AS_AN_IMPLICIT_RECEIVER = "class WordTokenizer\n" +
+            "  attr_reader :words\n" +
+            "end";
+
     private static final String CLASS_METHOD_DOT = "class Red\n" +
             "  def Red.hot\n" + // 12, 20
             "  end\n" +
@@ -274,14 +278,15 @@ public final class TestRubyParser extends TestCase {
         }
     }
 
-    public final void testIt() {
+    public final void testRSpecItRecognition() {
         List<Member> members = getMembersList(METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
         Member member = members.get(0);
         assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
         assertCorrect(0, "it", null, 0, 3, 30, members);
+        assertFalse("assert has no child members", members.get(0).hasChildMembers());
     }
 
-    public final void testDescribe() {
+    public final void testRSpecDescribeRecognition() {
         List<Member> members = getMembersList(NESTED_METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
         Member member = members.get(0);
         assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
@@ -289,6 +294,12 @@ public final class TestRubyParser extends TestCase {
         Member childMember = member.getChildMembers()[0];
         assertTrue(childMember instanceof MethodCallWithSelfAsAnImplicitReceiver);
         assertChildrenCorrect(members, "it", 18, 21, 48, "describe");
+    }
+
+    public final void testClassWithMethodWithSelfAsAnImplicitReceiver() {
+        List<Member> members = getMembersList(CLASS_WITH_METHOD_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
+        assertCorrect(0, "WordTokenizer", null, 0, 6, 44, members);
+        assertCorrect(0, "attr_reader", "WordTokenizer", 22, 34, 40, getChildMembers(members), false);
     }
 
     public final void testOneLiner() {
@@ -672,6 +683,10 @@ public final class TestRubyParser extends TestCase {
     }
 
     private void assertCorrect(int index, String name, String parentName, int outerOffset, int offset, int endOffset, List<Member> members) {
+        assertCorrect(index, name, parentName, outerOffset, offset, endOffset, members, true);
+    }
+
+    private void assertCorrect(int index, String name, String parentName, int outerOffset, int offset, int endOffset, List<Member> members, boolean lookForEndKeyword) {
         try {
             Member member = members.get(index);
             assertEquals("Assert name correct", name, member.getFullName());
@@ -679,9 +694,11 @@ public final class TestRubyParser extends TestCase {
             assertEquals("Assert outer start offset correct", outerOffset, member.getStartOuterOffset());
             int end = member.getEndOffset();
             assertEquals("Assert end offset correct.", endOffset, end);
-            assertEquals("End char correct.", 'e', code.charAt(end-3));
-            assertEquals("End char correct.", 'n', code.charAt(end-2));
-            assertEquals("End char correct.", 'd', code.charAt(end-1));
+            if (lookForEndKeyword) {
+                assertEquals("End char correct.", 'e', code.charAt(end-3));
+                assertEquals("End char correct.", 'n', code.charAt(end-2));
+                assertEquals("End char correct.", 'd', code.charAt(end-1));
+            }
 
             List<Member> memberPath = member.getMemberPath();
 
