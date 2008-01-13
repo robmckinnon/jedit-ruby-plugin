@@ -35,7 +35,7 @@ final class MemberNode extends Asset {
     private final Icon icon;
 
     public MemberNode(Member member) {
-        super(member.getCompositeName());
+        super(member.getFullName());
         MemberIcon memberIcon = new MemberIcon(member);
         icon = memberIcon.getIcon();
     }
