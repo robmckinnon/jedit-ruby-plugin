@@ -457,18 +457,22 @@ final class RubyNodeVisitor extends AbstractVisitor {
         }
 
         char endChar = lineCounter.charAt(end);
-        switch (endChar) {
-            case 'd': return end + 1;
-            case 'n': return end + 2;
-            case 'e': return end + 3;
-        }
-        int endLine = position.getEndLine();
-        String line = lineCounter.getLine(endLine);
-        int start = lineCounter.getStartOffset(endLine);
-        int beginIndex = end - start;
-        String text = line.substring(beginIndex);
-        if (text.indexOf("end") != -1) {
-            return text.indexOf("end") + 3 + beginIndex;
+        if (((int)endChar) != 65535) {
+            switch (endChar) {
+                case 'd': return end + 1;
+                case 'n': return end + 2;
+                case 'e': return end + 3;
+            }
+            int endLine = position.getEndLine();
+            String line = lineCounter.getLine(endLine);
+            int start = lineCounter.getStartOffset(endLine);
+            int beginIndex = end - start;
+            String text = line.substring(beginIndex);
+            if (text.indexOf("end") != -1) {
+                return text.indexOf("end") + 3 + beginIndex;
+            } else {
+                return position.getEndOffset();
+            }
         } else {
             return position.getEndOffset();
         }

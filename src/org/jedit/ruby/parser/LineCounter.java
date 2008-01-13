@@ -119,7 +119,11 @@ public final class LineCounter {
     }
 
     public char charAt(int index) {
-        return text.charAt(index);
+      if (index < text.length()) {
+          return text.charAt(index);
+      } else {
+          return (char)-1;
+      }
     }
 
     private int handleNewLine(int line, int index, char[] chars, char character) {

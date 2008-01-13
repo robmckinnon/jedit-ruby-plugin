@@ -206,6 +206,10 @@ public final class TestRubyParser extends TestCase {
             "  end\n" +
             "end";
 
+    private static final String FILE_WITH_REQUIRE_AT_END = "module ActiveResource\n" +
+            "end\n" +
+            "require 'active_resource/formats/json_format'";
+
     private String code;
 
     public void setUp() {
@@ -373,6 +377,12 @@ public final class TestRubyParser extends TestCase {
 
     private static String getUniquePath() {
         return PATH + System.currentTimeMillis();
+    }
+
+    public final void testCodeNotEndingWithEnd() {
+        List<Member> members = getMembersList(FILE_WITH_REQUIRE_AT_END);
+        assertCorrect(0, "ActiveResource", null, 0, 7, 25, members);
+        assertCorrect(1, "require", null, 26, 34, 71, members, false);
     }
 
     public final void testParentOfDef() {
