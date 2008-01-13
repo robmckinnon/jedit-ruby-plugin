@@ -37,7 +37,7 @@ public abstract class Member implements Comparable<Member> {
     private Member parentMember;
     private List<Member> childMembers;
 
-    private final String shortName;
+    private String shortName;
     private String lowerCaseName;
     private String name;
     private String namespace;
@@ -138,6 +138,10 @@ public abstract class Member implements Comparable<Member> {
      */
     public String getShortName() {
         return shortName;
+    }
+
+    protected void setShortName(String name) {
+        shortName = name;
     }
 
     public final String getLowerCaseName() {

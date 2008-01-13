@@ -73,7 +73,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
     }
 
     protected final Instruction visitNode(Node node) {
-        if (printNode(node)) {
+        if (printNode()) {
             String name = node.getClass().getName();
             int index = name.lastIndexOf('.');
             ISourcePosition position = node.getPosition();
@@ -88,7 +88,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
-    private static boolean printNode(Node node) {
+    private static boolean printNode() {
 //        return !(node instanceof NewlineNode);
         return false;
     }
@@ -97,7 +97,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         while (iterator.hasNext()) {
             Node node = (Node) iterator.next();
             visitNode(node);
-            if (printNode(node)) {
+            if (printNode()) {
                 RubyPlugin.log("", getClass());
             }
             node.accept(this);
@@ -416,7 +416,10 @@ final class RubyNodeVisitor extends AbstractVisitor {
     }
 
     private int getStartOffset(ISourcePosition position, Member member) {
-        if (inIfNode || underModuleNode || (member instanceof Method && currentMember.getLast() == root)) {
+        if (inIfNode ||
+                underModuleNode ||
+                (member instanceof Method && currentMember.getLast() == root) ||
+                (member instanceof Method && !member.getName().equals(member.getFullName())) ) {
             int startOffset = position.getStartOffset();
             int index = lineCounter.getLineAtOffset(startOffset);
             String line = lineCounter.getLine(index);

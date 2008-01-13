@@ -174,13 +174,6 @@ public final class TestRubyParser extends TestCase {
             "    puts \"waddling\"\n" +
             "  end";
 
-//    private static final String TWO_METHOD_CLASS = "class Here\n"+
-//            "  def there\n"+
-//            "  end\n"+
-//            "  def everywhere\n"+
-//            "  end\n"+
-//            "end";
-
     private static final String METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER = "it 'should' do\n" +
             "  puts 'hi'\n" +
             "end";
@@ -188,6 +181,26 @@ public final class TestRubyParser extends TestCase {
     private static final String NESTED_METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER = "describe Model do\n" +
             METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER + "\n" +
             "end";            
+
+    private static final String CLASS_METHOD_DOT = "class Red\n" +
+            "  def Red.hot\n" + // 12, 20
+            "  end\n" +
+            "end";
+
+    private static final String CLASS_METHOD_DOUBLE_COLON = "class Red\n" +
+            "  def Red::hot\n" + // 12, 21
+            "  end\n" +
+            "end";
+
+//    private static final String SELF_METHOD_DOT = "class Red\n" +
+//            "  def self.hot\n" + // 12, 22
+//            "  end\n" +
+//            "end";
+//
+//    private static final String SELF_METHOD_DOUBLE_COLON = "class Red\n" +
+//            "  def self::hot\n" + // 12, 22
+//            "  end\n" +
+//            "end";
 
     private String code;
 
@@ -361,7 +374,7 @@ public final class TestRubyParser extends TestCase {
     public final void testParseModuleMethod() {
         List<Member> members = getMembersList(MODULE_METHOD);
         assertCorrect(0, "Blue", null, 0, 7, 37, members);
-        assertChildrenCorrect(members, "Blue::deep", 14, 18, 33, "Blue");
+        assertChildrenCorrect(members, "Blue::deep", 14, 23, 33, "Blue");
     }
 
     public final void testBigFile() {
@@ -548,6 +561,18 @@ public final class TestRubyParser extends TestCase {
         assertChildrenCorrect(members, "red", 12, 16, 23, "Green");
     }
 
+    public final void testParseClassMethod() {
+        List<Member> members = getMembersList(CLASS_METHOD_DOT);
+        assertCorrect(0, "Red", null, 0, 6, 33, members);
+        assertChildrenCorrect(members, "Red::hot", 12, 20, 29, "Red");
+    }
+
+    public final void testParseClassMethodDoubleColon() {
+        List<Member> members = getMembersList(CLASS_METHOD_DOUBLE_COLON);
+        assertCorrect(0, "Red", null, 0, 6, 34, members);
+        assertChildrenCorrect(members, "Red::hot", 12, 21, 30, "Red");
+    }
+
     public final void testParseWinClass() {
         List<Member> members = getMembersList(WIN_CLASS);
         assertCorrect(0, "Green", null, 0, 6, 28, members);
@@ -669,7 +694,7 @@ public final class TestRubyParser extends TestCase {
         String code = globalIfFile;
         List<Member> members = getMembersList(code);
         assertCorrect(0, "File", null, 0, 6, 63, members);
-        assertChildrenCorrect(members, "File::open", 27, 31, 54, "File");
+        assertChildrenCorrect(members, "File::open", 27, 36, 54, "File");
         assertCorrect(1, "Test", null, 64, 70, 99, members);
         assertCorrect(0, "initialize", "Test", 76, 80, 95, members.get(1).getChildMembersAsList());
     }

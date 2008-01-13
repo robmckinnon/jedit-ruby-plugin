@@ -81,6 +81,8 @@ public final class Method extends Member {
     }
 
     public final void setReceiver(String receiverName) {
+        String shortName = getShortName().replace(receiverName, "").replace(".","").replace("::","");
+        setShortName(shortName);
         this.receiverName = receiverName;
     }
 
