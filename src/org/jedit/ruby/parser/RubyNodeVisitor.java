@@ -124,6 +124,11 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
+    public Instruction visitSClassNode(SClassNode selfClassNode) {
+        selfClassNode.getBodyNode().accept(this);
+        return null;
+    }
+
     public final Instruction visitClassNode(ClassNode classNode) {
         boolean tempUnderModuleNode = underModuleNode;
         underModuleNode = false;

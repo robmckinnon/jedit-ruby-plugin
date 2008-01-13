@@ -210,6 +210,13 @@ public final class TestRubyParser extends TestCase {
             "end\n" +
             "require 'active_resource/formats/json_format'";
 
+    private static final String METHOD_TO_CLASS_SELF = "class HttpMock\n" +
+            "  class << self\n" +
+            "    def requests\n" +
+            "    end\n" +
+            "  end\n" +
+            "end";
+    
     private String code;
 
     public void setUp() {
@@ -383,6 +390,12 @@ public final class TestRubyParser extends TestCase {
         List<Member> members = getMembersList(FILE_WITH_REQUIRE_AT_END);
         assertCorrect(0, "ActiveResource", null, 0, 7, 25, members);
         assertCorrect(1, "require", null, 26, 34, 71, members, false);
+    }
+
+    public final void testMethodAddedToClassSelf() {
+        List<Member> members = getMembersList(METHOD_TO_CLASS_SELF);
+        assertCorrect(0, "HttpMock", null, 0, 6, 65, members);
+        assertChildrenCorrect(members, "requests", 35, 39, 55, "HttpMock");
     }
 
     public final void testParentOfDef() {
