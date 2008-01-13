@@ -192,15 +192,15 @@ public final class TestRubyParser extends TestCase {
             "  end\n" +
             "end";
 
-//    private static final String SELF_METHOD_DOT = "class Red\n" +
-//            "  def self.hot\n" + // 12, 22
-//            "  end\n" +
-//            "end";
-//
-//    private static final String SELF_METHOD_DOUBLE_COLON = "class Red\n" +
-//            "  def self::hot\n" + // 12, 22
-//            "  end\n" +
-//            "end";
+    private static final String SELF_METHOD_DOT = "class Red\n" +
+            "  def self.hot\n" + // 12, 21
+            "  end\n" +
+            "end";
+
+    private static final String SELF_METHOD_DOUBLE_COLON = "class Red\n" +
+            "  def self::hot\n" + // 12, 22
+            "  end\n" +
+            "end";
 
     private String code;
 
@@ -571,6 +571,18 @@ public final class TestRubyParser extends TestCase {
         List<Member> members = getMembersList(CLASS_METHOD_DOUBLE_COLON);
         assertCorrect(0, "Red", null, 0, 6, 34, members);
         assertChildrenCorrect(members, "Red::hot", 12, 21, 30, "Red");
+    }
+
+    public final void testParseSelfMethod() {
+        List<Member> members = getMembersList(SELF_METHOD_DOT);
+        assertCorrect(0, "Red", null, 0, 6, 34, members);
+        assertChildrenCorrect(members, "self::hot", 12, 21, 30, "Red");
+    }
+
+    public final void testParseSelfMethodDoubleColon() {
+        List<Member> members = getMembersList(SELF_METHOD_DOUBLE_COLON);
+        assertCorrect(0, "Red", null, 0, 6, 35, members);
+        assertChildrenCorrect(members, "self::hot", 12, 22, 31, "Red");
     }
 
     public final void testParseWinClass() {

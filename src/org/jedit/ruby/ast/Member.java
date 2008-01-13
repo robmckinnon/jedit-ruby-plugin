@@ -28,6 +28,8 @@ import java.util.*;
  */
 public abstract class Member implements Comparable<Member> {
 
+    protected static final String SELF = "self";
+
     private static final Member[] EMPTY_MEMBER_ARRAY = new Member[0];
 
     private List<Member> parentPath;

@@ -260,17 +260,15 @@ final class RubyNodeVisitor extends AbstractVisitor {
 
     private void populateReceiverName(Method method, DefsNode node) {
         String methodName = node.getName();
-        String receiverName;
-        if (node.getReceiverNode() instanceof ConstNode) {
-            ConstNode constNode = (ConstNode) node.getReceiverNode();
-            receiverName = constNode.getName();
-            method.setReceiver(receiverName);
-            method.setName(methodName);
-            method.setClassMethod(true);
-        } else {
-            receiverName = "";
+        Node receiverNode = node.getReceiverNode();
+        
+        if (receiverNode instanceof ConstNode) {
+            ConstNode constNode = (ConstNode)receiverNode;
+            method.setReceiver(constNode.getName(), methodName);
+        } else if (receiverNode instanceof SelfNode) {
+            method.setReceiverToSelf(methodName);
         }
-        RubyPlugin.log(": " + receiverName + methodName, getClass());
+        RubyPlugin.log(": " + method.getFullName(), getClass());
     }
 
     private void populateNamespace(Member member) {

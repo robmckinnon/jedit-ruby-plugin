@@ -183,7 +183,7 @@ public final class RiParser {
             method.setDocumentationComment(methodDescription.getComment());
             method.setParentMemberName(parent.getName());
             method.setParentMember(null);
-            method.setReceiver("");
+            method.setReceiver("", null);
             method.setEndOffset(0);
             parent.addChildMember(method);
         }

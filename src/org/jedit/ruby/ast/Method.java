@@ -80,12 +80,21 @@ public final class Method extends Member {
         }
     }
 
-    public final void setReceiver(String receiverName) {
+    public void setReceiverToSelf(String methodName) {
+        setReceiver(Member.SELF, methodName);
+    }
+
+    public final void setReceiver(String receiverName, String methodName) {
         String shortName = getShortName().replace(receiverName, "").replace(".","").replace("::","");
         setShortName(shortName);
+        if (methodName != null) {
+            setName(methodName);
+        }
+        setClassMethod(true);
         this.receiverName = receiverName;
     }
 
+    
     public final void setClassMethod(boolean classMethod) {
         isClassMethod = classMethod;
     }
