@@ -216,7 +216,10 @@ public final class TestRubyParser extends TestCase {
             "    end\n" +
             "  end\n" +
             "end";
-    
+
+    private static final String RAKE_TASK = "  task :download_hansard => :environment do\n" +
+            "  end";
+
     private String code;
 
     public void setUp() {
@@ -289,11 +292,28 @@ public final class TestRubyParser extends TestCase {
         }
     }
 
+    public final void testRakeTask() {
+        Member member = getMembersList(RAKE_TASK).get(0);
+        assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
+        MethodCallWithSelfAsAnImplicitReceiver call = (MethodCallWithSelfAsAnImplicitReceiver) member;
+        assertEquals(":download_hansard", call.getFirstArgument());        
+    }
+
+    public final void testClassWithMethodWithSelfAsAnImplicitReceiver() {
+        List<Member> members = getMembersList(CLASS_WITH_METHOD_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
+        assertCorrect(0, "WordTokenizer", null, 0, 6, 44, members);
+        assertCorrect(0, "attr_reader", "WordTokenizer", 22, 34, 40, getChildMembers(members), false);
+        MethodCallWithSelfAsAnImplicitReceiver call = (MethodCallWithSelfAsAnImplicitReceiver) getChildMembers(members).get(0);
+        assertEquals(":words", call.getFirstArgument());
+    }
+
     public final void testRSpecItRecognition() {
         List<Member> members = getMembersList(METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
         Member member = members.get(0);
         assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
         assertCorrect(0, "it", null, 0, 3, 30, members);
+        MethodCallWithSelfAsAnImplicitReceiver call = (MethodCallWithSelfAsAnImplicitReceiver) member;
+        assertEquals("'should'", call.getFirstArgument());
         assertFalse("assert has no child members", members.get(0).hasChildMembers());
     }
 
@@ -301,16 +321,12 @@ public final class TestRubyParser extends TestCase {
         List<Member> members = getMembersList(NESTED_METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
         Member member = members.get(0);
         assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
+        MethodCallWithSelfAsAnImplicitReceiver call = (MethodCallWithSelfAsAnImplicitReceiver) member;
+        assertEquals("Model", call.getFirstArgument());
         assertCorrect(0, "describe", null, 0, 9, 52, members);
         Member childMember = member.getChildMembers()[0];
         assertTrue(childMember instanceof MethodCallWithSelfAsAnImplicitReceiver);
         assertChildrenCorrect(members, "it", 18, 21, 48, "describe");
-    }
-
-    public final void testClassWithMethodWithSelfAsAnImplicitReceiver() {
-        List<Member> members = getMembersList(CLASS_WITH_METHOD_WITH_SELF_AS_AN_IMPLICIT_RECEIVER);
-        assertCorrect(0, "WordTokenizer", null, 0, 6, 44, members);
-        assertCorrect(0, "attr_reader", "WordTokenizer", 22, 34, 40, getChildMembers(members), false);
     }
 
     public final void testOneLiner() {

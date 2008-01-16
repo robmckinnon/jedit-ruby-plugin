@@ -55,14 +55,14 @@ final class TypeAheadPopupListCellRenderer extends DefaultListCellRenderer {
                 for (int i = 0; i < member.getParentCount(); i++) {
                     buffer.append("  ");
                 }
-                buffer.append(member.getFullName());
+                buffer.append(member.getDisplayName());
             } else {
-                buffer.append(member.getFullName());
+                buffer.append(member.getDisplayName());
             }
 
             if (allHaveSameName && member.hasParentMember()) {
-                String fullName = member.getParentMember().getFullName();
-                buffer.append(" (").append(fullName).append(")");
+                String diplayName = member.getParentMember().getDisplayName();
+                buffer.append(" (").append(diplayName).append(")");
             }
         }
 

@@ -106,6 +106,10 @@ public abstract class Member implements Comparable<Member> {
         }
     }
 
+    public String getDisplayName() {
+        return getFullName();
+    }
+
     /**
      * Returns composite name for members
      * that have been defined in code

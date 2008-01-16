@@ -49,6 +49,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
     private final List<RubyParser.WarningListener> problemListeners;
     private final LineCounter lineCounter;
     private final NameVisitor nameVisitor;
+    private MethodCallWithSelfAsAnImplicitReceiver methodCall;
     private boolean inIfNode;
     private boolean underModuleNode;
     private Root root;
@@ -65,6 +66,7 @@ final class RubyNodeVisitor extends AbstractVisitor {
         nameVisitor = new NameVisitor();
         problemListeners = listeners;
         methods = methodMembers;
+        methodCall = null;
         methodIndex = 0;
     }
 
@@ -154,7 +156,6 @@ final class RubyNodeVisitor extends AbstractVisitor {
         visitNode(node);
         scopeNode.getCPath().accept(nameVisitor);
         String name = nameVisitor.name;
-//        System.out.print(": " + name);
 
         Member member;
         if (memberType == MODULE) {
@@ -344,15 +345,6 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
-//    public final Instruction visitScopeNode(ScopeNode node) {
-//        visitNode(node);
-//        RubyPlugin.log("", getClass());
-//        if (node.getBodyNode() != null) {
-//            node.getBodyNode().accept(this);
-//        }
-//        return null;
-//    }
-
     public final Instruction visitIfNode(IfNode node) {
         visitNode(node);
         if (node.getThenBody() != null) {
@@ -372,6 +364,45 @@ final class RubyNodeVisitor extends AbstractVisitor {
         return null;
     }
 
+    public Instruction visitArrayNode(ArrayNode node) {
+        if (callFirstArgumentEmpty()) {
+            node.get(0).accept(this);
+        }
+        return null;
+    }
+
+    private boolean callFirstArgumentEmpty() {
+        return methodCall != null && methodCall.getFirstArgument() == null;
+    }
+
+    public Instruction visitConstNode(ConstNode node) {
+        if (callFirstArgumentEmpty()) {
+            methodCall.setFirstArgument(node.getName());
+        }
+        return null;
+    }
+
+    public Instruction visitSymbolNode(SymbolNode node) {
+        if (callFirstArgumentEmpty()) {
+            methodCall.setFirstArgument(":" + node.getName());
+        }
+        return null;
+    }
+
+    public Instruction visitStrNode(StrNode node) {
+        if (callFirstArgumentEmpty()) {
+            methodCall.setFirstArgument("'" + node.getValue().toString() + "'");
+        }
+        return null;
+    }
+
+    public Instruction visitHashNode(HashNode node) {
+        if (callFirstArgumentEmpty()) {
+            node.getListNode().accept(this);
+        }
+        return null;
+    }
+
     public final Instruction visitFCallNode(FCallNode node) {
         visitNode(node);
         String name = node.getName();
@@ -381,20 +412,38 @@ final class RubyNodeVisitor extends AbstractVisitor {
         if (parent instanceof Root ||
                 parent instanceof ClassMember ||
                 parent instanceof Module ||
-                (isRspecMethodName(parent.getName()) && isRspecMethodName(name)) ) {
-            MethodCallWithSelfAsAnImplicitReceiver methodCall = new MethodCallWithSelfAsAnImplicitReceiver(name);
-            methodCall.setStartOuterOffset(getStartOffset(node.getPosition(), methodCall));
-            methodCall.setStartOffset(methodCall.getStartOuterOffset() + name.length() + 1);
-            methodCall.setEndOffset(getEndOffset(node.getPosition()));
+                (isRspecMethodName(parent.getName()) && isRspecMethodName(name)) ||
+                (isRakeMethodName(parent.getName()) && isRakeMethodName(name)) ) {
+            MethodCallWithSelfAsAnImplicitReceiver call = new MethodCallWithSelfAsAnImplicitReceiver(name);
+            call.setStartOuterOffset(getStartOffset(node.getPosition(), call));
+            call.setStartOffset(call.getStartOuterOffset() + name.length() + 1);
+            call.setEndOffset(getEndOffset(node.getPosition()));
 
-            parent.addChildMember(methodCall);
-            currentMember.add(methodCall);            
+            parent.addChildMember(call);
+            currentMember.add(call);
+            methodCall = call;
+            if (node.getArgsNode() != null) {
+                node.getArgsNode().accept(this);
+            }
             if (node.getIterNode() != null) {
                 node.getIterNode().accept(this);
             }
+            methodCall = null;
             currentMember.removeLast();
         }
         return null;
+    }
+
+    private boolean isRakeMethodName(String name) {
+        // ignore 'desc' as always next to something else
+        return name.equals("directory") ||
+                name.equals("file") ||
+                name.equals("file_create") ||
+                name.equals("import") ||
+                name.equals("multitask") ||
+                name.equals("namespace") ||
+                name.equals("rule") ||
+                name.equals("task");
     }
 
     private boolean isRspecMethodName(String name) {

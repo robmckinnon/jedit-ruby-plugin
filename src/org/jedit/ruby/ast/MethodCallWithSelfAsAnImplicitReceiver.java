@@ -26,6 +26,8 @@ package org.jedit.ruby.ast;
  */
 public class MethodCallWithSelfAsAnImplicitReceiver extends Member  {
 
+    private String firstArgument;
+
     public MethodCallWithSelfAsAnImplicitReceiver(String name) {
         super(name);
     }
@@ -33,4 +35,25 @@ public class MethodCallWithSelfAsAnImplicitReceiver extends Member  {
     public void accept(MemberVisitor visitor) {
         visitor.handleMethodCallWithSelfAsAnImplicitReceiver(this);
     }
+
+    public String getFirstArgument() {
+        return firstArgument;
+    }
+
+    public void setFirstArgument(String argument) {
+        firstArgument = argument;
+    }
+
+    public String getDisplayName() {
+        if (firstArgument != null) {
+            if (firstArgument.length() > 73) {
+                return super.getDisplayName() + " " + firstArgument.substring(0,70) + "...";
+            } else {
+                return super.getDisplayName() + " " + firstArgument;
+            }
+        } else {
+            return super.getDisplayName();
+        }
+    }
+
 }
