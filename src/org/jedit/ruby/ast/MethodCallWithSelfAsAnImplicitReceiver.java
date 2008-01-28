@@ -19,6 +19,9 @@
  */
 package org.jedit.ruby.ast;
 
+import java.util.List;
+import java.util.ArrayList;
+
 /**
  * Ruby file structure member
  *
@@ -26,30 +29,45 @@ package org.jedit.ruby.ast;
  */
 public class MethodCallWithSelfAsAnImplicitReceiver extends Member  {
 
-    private String firstArgument;
+    private List<String> arguments;
 
     public MethodCallWithSelfAsAnImplicitReceiver(String name) {
         super(name);
+        arguments = new ArrayList<String>();
     }
 
     public void accept(MemberVisitor visitor) {
         visitor.handleMethodCallWithSelfAsAnImplicitReceiver(this);
     }
 
-    public String getFirstArgument() {
-        return firstArgument;
+    public String getArgument(int index) {
+        return arguments.get(index);
     }
 
-    public void setFirstArgument(String argument) {
-        firstArgument = argument;
+    public String getFirstArgument() {
+        if (arguments.size() > 0) {
+            return arguments.get(0);
+        } else {
+            return null;
+        }
+    }
+
+    public void addArgument(String argument) {
+        arguments.add(argument);
     }
 
     public String getDisplayName() {
-        if (firstArgument != null) {
-            if (firstArgument.length() > 73) {
-                return super.getDisplayName() + " " + firstArgument.substring(0,70) + "...";
+        if (getFirstArgument() != null) {
+            if (getFirstArgument().length() > 73) {
+                return super.getDisplayName() + " " + getFirstArgument().substring(0,70) + "...";
+            } else if (arguments.size() > 1) {
+                if (getFirstArgument().length() + getArgument(1).length() > 73) {            
+                    return super.getDisplayName() + " " + getFirstArgument() + ", " + getArgument(1).substring(0, 69 - getFirstArgument().length());
+                } else {
+                    return super.getDisplayName() + " " + getFirstArgument() + ", " + getArgument(1);                    
+                }
             } else {
-                return super.getDisplayName() + " " + firstArgument;
+                return super.getDisplayName() + " " + getFirstArgument();
             }
         } else {
             return super.getDisplayName();

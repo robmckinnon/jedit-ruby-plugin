@@ -178,7 +178,7 @@ public final class TestRubyParser extends TestCase {
             "  puts 'hi'\n" +
             "end";
 
-    private static final String NESTED_METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER = "describe Model do\n" +
+    private static final String NESTED_METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER = "describe Model, 'when' do\n" +
             METHOD_CALL_WITH_SELF_AS_AN_IMPLICIT_RECEIVER + "\n" +
             "end";            
 
@@ -323,10 +323,11 @@ public final class TestRubyParser extends TestCase {
         assertTrue(member instanceof MethodCallWithSelfAsAnImplicitReceiver);
         MethodCallWithSelfAsAnImplicitReceiver call = (MethodCallWithSelfAsAnImplicitReceiver) member;
         assertEquals("Model", call.getFirstArgument());
-        assertCorrect(0, "describe", null, 0, 9, 52, members);
+        assertEquals("'when'", call.getArgument(1));
+        assertCorrect(0, "describe", null, 0, 9, 60, members);
         Member childMember = member.getChildMembers()[0];
         assertTrue(childMember instanceof MethodCallWithSelfAsAnImplicitReceiver);
-        assertChildrenCorrect(members, "it", 18, 21, 48, "describe");
+        assertChildrenCorrect(members, "it", 26, 29, 56, "describe");
     }
 
     public final void testOneLiner() {

@@ -365,39 +365,41 @@ final class RubyNodeVisitor extends AbstractVisitor {
     }
 
     public Instruction visitArrayNode(ArrayNode node) {
-        if (callFirstArgumentEmpty()) {
-            node.get(0).accept(this);
+        if (isMethodCall()) {
+            for (int i = 0; i < node.size(); i++) {
+                node.get(i).accept(this);
+            }   
         }
         return null;
     }
 
-    private boolean callFirstArgumentEmpty() {
-        return methodCall != null && methodCall.getFirstArgument() == null;
+    private boolean isMethodCall() {
+        return methodCall != null;
     }
 
     public Instruction visitConstNode(ConstNode node) {
-        if (callFirstArgumentEmpty()) {
-            methodCall.setFirstArgument(node.getName());
+        if (isMethodCall()) {
+            methodCall.addArgument(node.getName());
         }
         return null;
     }
 
     public Instruction visitSymbolNode(SymbolNode node) {
-        if (callFirstArgumentEmpty()) {
-            methodCall.setFirstArgument(":" + node.getName());
+        if (isMethodCall()) {
+            methodCall.addArgument(":" + node.getName());
         }
         return null;
     }
 
     public Instruction visitStrNode(StrNode node) {
-        if (callFirstArgumentEmpty()) {
-            methodCall.setFirstArgument("'" + node.getValue().toString() + "'");
+        if (isMethodCall()) {
+            methodCall.addArgument("'" + node.getValue().toString() + "'");
         }
         return null;
     }
 
     public Instruction visitHashNode(HashNode node) {
-        if (callFirstArgumentEmpty()) {
+        if (isMethodCall()) {
             node.getListNode().accept(this);
         }
         return null;
