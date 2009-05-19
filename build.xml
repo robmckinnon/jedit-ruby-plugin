@@ -80,9 +80,11 @@
   </target>
 
   <target name="convert_rdoc">
-    <java args="/home/e/apps/jedit/plugins/RubyPlugin/ri/java-xml /home/e/apps/jedit/plugins/RubyPlugin/ri/rdoc"
-      classname="org.jedit.ruby.ri.XmlToBinary"
-      classpath="/home/e/.jedit/jars/xercesImpl.jar:${build.dir}"/>
+    <java classname="org.jedit.ruby.ri.XmlToBinary"
+      classpath="${build.dir}">
+        <arg path="/Users/x/apps/jedit/plugins/RubyPlugin/ri/java-xml"/>
+        <arg path="/Users/x/apps/jedit/plugins/RubyPlugin/ri/rdoc"/>
+    </java>
   </target>
 
   <target name="jar-rdoc">
@@ -99,7 +101,7 @@
     <unjar src="${ri.dir}/rdoc.jar" dest="${rdoc.dir}"/>
   </target>
 
-  <target name="jar" depends="unjar-rdoc, compile">
+  <target name="jar" depends="compile">
     <mkdir dir="${install.dir}"/>
     <jar jarfile="${install.dir}/${jar.file}">
             <fileset dir="${docs.dir}" />
@@ -121,9 +123,7 @@
   </target>
 
   <target name="dist" depends="jar">
-<!--    <copy file="${install.dir}/${jar.name}" todir="/home/c/.jedit/jars"/> -->
-    <copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.2/jars"/>
-                <copy file="${install.dir}/${jar.file}" todir="/home/c/apps/jedit/4.3pre5/jars"/>
+    <copy file="${install.dir}/${jar.file}" todir="/Users/x/.jedit/jars"/>
   </target>
 
   <!-- Generate docs with xsltproc tool from www.xmlsoft.org -->
@@ -146,7 +146,7 @@
     <delete>
       <fileset dir="." includes="**/*~" defaultexcludes="no"/>
 <!--       <fileset dir="." includes="**/*.html" defaultexcludes="no"/>
- -->    
+ -->
      </delete>
   </target>
 

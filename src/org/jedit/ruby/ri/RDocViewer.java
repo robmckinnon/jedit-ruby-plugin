@@ -25,6 +25,7 @@ import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.jEdit;
 import org.jedit.ruby.cache.RubyCache;
 import org.jedit.ruby.ast.*;
+import org.jedit.ruby.RubyPlugin;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -45,7 +46,7 @@ public final class RDocViewer extends JPanel
 
     public static final String EXCLUDE_RAILS = "ruby.rdoc-viewer.exclude-rails";
     public static final String INCLUDE_RAILS = "ruby.rdoc-viewer.include-rails";
-    public static final String INCLUDE_RAILS_1_2 = "ruby.rdoc-viewer.include-rails-1_2";
+    public static final String INCLUDE_RAILS_2_0 = "ruby.rdoc-viewer.include-rails-2_0";
 
     private static final int MAX_MISMATCHED_CHARACTERS = 3;
 
@@ -83,7 +84,7 @@ public final class RDocViewer extends JPanel
         ButtonGroup buttonGroup = new ButtonGroup();
         populateRadioButton(INCLUDE_RAILS, buttonGroup, panel, true);
         populateRadioButton(EXCLUDE_RAILS, buttonGroup, panel, false);
-        populateRadioButton(INCLUDE_RAILS_1_2, buttonGroup, panel, false);
+        populateRadioButton(INCLUDE_RAILS_2_0, buttonGroup, panel, false);
         return panel;
     }
 
@@ -102,7 +103,8 @@ public final class RDocViewer extends JPanel
                         jEdit.setBooleanProperty(button.getActionCommand(), button.isSelected());
                     }
                     RiParser.parseRdoc();
-                    setListData(RubyCache.instance().getAllImmediateMembers());
+                    List<Member> members = RubyCache.instance().getAllImmediateMembers();
+                    setListData(members);
                 } finally {
                     view.hideWaitCursor();
                     documentationPane.setText(jEdit.getProperty(""));
@@ -122,8 +124,13 @@ public final class RDocViewer extends JPanel
         }
     }
 
+    private static void log(String message) {
+        RubyPlugin.log(message, RDocViewer.class);
+    }
+
     private void setMember(Member member) {
-        setListData(RubyCache.instance().getAllImmediateMembers());
+        List<Member> members = RubyCache.instance().getAllImmediateMembers();
+        setListData(members);
         resultList.setSelectedValue(member, true);
         handleSelection();
     }
@@ -136,6 +143,7 @@ public final class RDocViewer extends JPanel
                     public Object getElementAt(int i) { return members.get(i); }
                 }
             );
+            resultList.updateUI();
         }
     }
 

@@ -50,14 +50,14 @@ public final class RiParser {
     private static List<String> getRDocExcludePatterns() {
         List<String> excludePatterns = new ArrayList<String>();
         if (!jEdit.getBooleanProperty(RDocViewer.INCLUDE_RAILS, true)) {
+            excludePatterns.add("rails_2_3_2/Action");
+            excludePatterns.add("rails_2_3_2/Active");
+            excludePatterns.add("rails_2_3_2/Hpricot");
+        }
+        if (!jEdit.getBooleanProperty(RDocViewer.INCLUDE_RAILS_2_0, false)) {
             excludePatterns.add("rails_2_0_2/Action");
             excludePatterns.add("rails_2_0_2/Active");
             excludePatterns.add("rails_2_0_2/Hpricot");
-        }
-        if (!jEdit.getBooleanProperty(RDocViewer.INCLUDE_RAILS_1_2, false)) {
-            excludePatterns.add("rails_1_2_3/Action");
-            excludePatterns.add("rails_1_2_3/Active");
-            excludePatterns.add("rails_1_2_3/Rails");
         }
         return excludePatterns;
     }

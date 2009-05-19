@@ -211,7 +211,13 @@ public final class RubyActions {
                 }
             }
         } else {
-            SideKickActions.goToNextAsset(view);
+            try {
+                SideKickActions.goToNextAsset(view);
+            } catch (IllegalArgumentException e) {
+                // bug in SideKick
+                JEditTextArea textArea = view.getTextArea();
+                textArea.goToNextLine(false);
+            }
         }
     }
 
@@ -234,7 +240,11 @@ public final class RubyActions {
                 }
             }
         } else {
-            SideKickActions.goToPrevAsset(view);
+            try {
+                SideKickActions.goToPrevAsset(view);
+            } catch (NullPointerException e) {
+                // bug in SideKick, do nothing
+            }
         }
     }
 

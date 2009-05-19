@@ -1,5 +1,5 @@
 /*
- * RiParser.java - 
+ * RiParser.java -
  *
  * Copyright 2005 Robert McKinnon
  *
@@ -303,8 +303,14 @@ public final class XmlToBinary {
 //            "superclass: ";
 
     public static void main(String[] args) {
+      if (args.length < 2) {
+        throw new RuntimeException("shit");
+      } else {
+        System.out.println(args[0]);
+        System.out.println(args[1]);
         XmlToBinary parser = new XmlToBinary();
         parser.convertXmlToBinary(args[0], args[1]);
+      }
     }
 
 }

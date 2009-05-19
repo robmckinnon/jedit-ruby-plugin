@@ -2,7 +2,7 @@
 plugin.org.jedit.ruby.RubyPlugin.activate=defer
 plugin.org.jedit.ruby.RubyPlugin.name=RubyPlugin
 plugin.org.jedit.ruby.RubyPlugin.author=Rob McKinnon
-plugin.org.jedit.ruby.RubyPlugin.version=0.9.2
+plugin.org.jedit.ruby.RubyPlugin.version=0.9.3
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.5
 plugin.org.jedit.ruby.RubyPlugin.depend.1=jedit 04.03.12.00
@@ -19,27 +19,27 @@ rdoc-viewer.title=Ruby Docs
 
 # Menu
 plugin.org.jedit.ruby.RubyPlugin.menu=ruby.file-structure-popup \
-	ruby.structure-browser \
-	- \
+  ruby.structure-browser \
+  - \
   ruby.complete-code \
   ruby.progressive-selection \
   ruby.introduce-variable \
-	- \
+  - \
   ruby.copy-line \
   ruby.cut-line \
   ruby.paste-line \
   - \
   ruby.previous-edit \
-	ruby.previous-method \
-	ruby.next-method \
-	ruby.previous-error \
-	ruby.next-error \
-	- \
-	rdoc-viewer-toggle \
-	ruby.search-documentation \
+  ruby.previous-method \
+  ruby.next-method \
+  ruby.previous-error \
+  ruby.next-error \
+  - \
+  rdoc-viewer-toggle \
+  ruby.search-documentation \
   ruby.toggle-spec \
-	- \
-	ruby.auto-indent-and-insert-end
+  - \
+  ruby.auto-indent-and-insert-end
 
 #	ruby.find-declaration \
 
@@ -109,8 +109,8 @@ ruby.file-structure-popup.no-structure.label=No structure to show.
 ruby.find-declaration.no-matches.label=No matches found, try adding relevant files to Project Viewer.
 
 ruby.rdoc-viewer.exclude-rails.label=Exclude Rails docs
-ruby.rdoc-viewer.include-rails.label=Include Rails 2.0.2 docs
-ruby.rdoc-viewer.include-rails-1_2.label=Include Rails 1.2.3 docs
+ruby.rdoc-viewer.include-rails.label=Include Rails 2.3.2 docs
+ruby.rdoc-viewer.include-rails-2_0.label=Include Rails 2.0.2 docs
 ruby.rdoc-viewer.no-description.label=no documentation available...
 
 ruby.search-documentation.error=Error:\nri An error has occurred, see the Activity Log for details.

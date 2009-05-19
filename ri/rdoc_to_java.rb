@@ -16,7 +16,7 @@ class JavaXmlSerializer
     @template_dir = template_dir
     @result_dir = result_dir
   end
-  
+
   def convert_dir(base_dir, dir)
     @base_dir = base_dir
     dir = dir.gsub(%[\\], %[/])
@@ -40,11 +40,11 @@ class JavaXmlSerializer
         end
       end
     end
-    
+
     list.flatten!
     list
   end
-  
+
   def convert(file)
     d = YAML.load_file(file.path)
     d.namespace = get_namespace(file.dir)
@@ -53,7 +53,7 @@ class JavaXmlSerializer
     erb = ERB.new(IO.read(@template_dir + "cdesc.erb"))
     result = erb.result(binding)
     result_dir = create_dirs(file)
-      
+
     File.open(%Q[#{result_dir}/#{file.type}.xml], "w") do |file|
       file.puts result
     end
@@ -63,7 +63,7 @@ class JavaXmlSerializer
     text.gsub!('&lt;', '|lt;')
     REXML::Text.normalize(text)
   end
-  
+
   def get_method_description(description, dir, method, type)
     name = ''
     index = 0
@@ -75,10 +75,10 @@ class JavaXmlSerializer
       end
       index = index + 1
     end
-    
+
     d = YAML.load_file(%Q[#{dir}/#{name}-#{type}.yaml])
     d.html_comment = convert_comment(d.comment)
-  
+
     d.full_name = normalize(d.full_name)
     d.namespace = if description.namespace
                     description.namespace + "::" + description.name
@@ -91,10 +91,10 @@ class JavaXmlSerializer
     d.aliases.each do |a|
       a.name = normalize(a.name)
     end if d.aliases
-  
+
     d
   end
-  
+
   def convert_element(html,part)
       if part.instance_of? SM::Flow::P
         html << %Q[<p>#{part.body}</p>]
@@ -116,7 +116,7 @@ class JavaXmlSerializer
         html << '</ul>'
       end
   end
-  
+
   def convert_comment(comment)
     html = ""
     comment.each do |part|
@@ -124,7 +124,7 @@ class JavaXmlSerializer
     end if comment
     normalize(html)
   end
-  
+
   def add_method_descriptions(dir, description)
     description.i_methods = description.instance_methods.collect do |method|
                               get_method_description(description, dir, method, 'i')
@@ -133,25 +133,25 @@ class JavaXmlSerializer
                               get_method_description(description, dir, method, 'c')
                             end
     description.html_comment = convert_comment(description.comment)
-  
+
     description.attributes.each do |a|
       a.html_comment = convert_comment(a.comment)
     end if description.attributes
-    
+
     description.constants.each do |c|
       c.html_comment = convert_comment(c.comment)
-      c.value = normalize(c.value).gsub('©','')
+      c.value = normalize(c.value).gsub('ï¿½','')
     end if description.constants
-  
+
     description
   end
-  
+
   def create_dir(dir)
     if !File.exist? dir
       Dir.mkdir(dir)
     end
   end
-  
+
   def create_dirs(file)
     dir = @result_dir
     create_dir(dir)
@@ -161,7 +161,7 @@ class JavaXmlSerializer
     end
     dir
   end
-  
+
   def get_namespace(dir)
     parts = dir.split('/')
     if parts.size > 3
