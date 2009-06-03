@@ -104,7 +104,7 @@
   <target name="jar" depends="compile">
     <mkdir dir="${install.dir}"/>
     <jar jarfile="${install.dir}/${jar.file}">
-            <fileset dir="${docs.dir}" />
+      <fileset dir="${docs.dir}" />
       <fileset dir="${build.dir}"/>
       <fileset dir="${src.dir}">
         <include name="**/*.png"/>
@@ -122,7 +122,10 @@
     </jar>
   </target>
 
-  <target name="dist" depends="jar">
+  <target name="dist" depends="unjar-rdoc, jar">
+  </target>
+
+  <target name="dist-dev" depends="jar">
     <copy file="${install.dir}/${jar.file}" todir="/Users/x/.jedit/jars"/>
   </target>
 
