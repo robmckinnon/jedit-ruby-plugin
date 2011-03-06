@@ -35,7 +35,6 @@
     <pathelement location="${install.dir}/jruby.jar"/>
     <pathelement location="${install.dir}/SideKick.jar"/>
     <pathelement location="${install.dir}/ErrorList.jar"/>
-    <pathelement location="${install.dir}/ProjectViewer.jar"/>
     <pathelement location="."/>
   </path>
 

@@ -37,6 +37,7 @@ import org.jedit.ruby.ri.*;
 import org.jedit.ruby.utils.CommandUtils;
 
 import java.util.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 
 import sidekick.SideKickActions;
@@ -92,7 +93,7 @@ public final class RubyActions {
     private static void putLineInClipBoard(JEditTextArea textArea) {
         int line = textArea.getCaretLine();
         String text = textArea.getLineText(line) + jEdit.getProperty("buffer.lineSeparator");
-        Registers.getRegister('$').setValue(text);
+        Registers.getRegister('$').setTransferable( new StringSelection(text) );
         jEdit.setProperty("ruby.clipboard-line-length", Integer.toString(text.length()));
         setLineInClipBoard(true);
     }
