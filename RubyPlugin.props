@@ -2,7 +2,7 @@
 plugin.org.jedit.ruby.RubyPlugin.activate=defer
 plugin.org.jedit.ruby.RubyPlugin.name=RubyPlugin
 plugin.org.jedit.ruby.RubyPlugin.author=Rob McKinnon
-plugin.org.jedit.ruby.RubyPlugin.version=0.9.4
+plugin.org.jedit.ruby.RubyPlugin.version=0.9.5
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.5
 plugin.org.jedit.ruby.RubyPlugin.depend.1=jedit 04.03.12.00
