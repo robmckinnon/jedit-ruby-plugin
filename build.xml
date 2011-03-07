@@ -29,12 +29,13 @@
   <property name="build.dir" value="build"/>
   <property name="install.dir" value=".."/>
   <property name="jedit.install.dir"  value="../.."/>
+  <property name="jedit.plugins.dir" value="${install.dir}" />
 
   <path id="project.class.path">
     <pathelement location="${jedit.install.dir}/jedit.jar"/>
-    <pathelement location="${install.dir}/jruby.jar"/>
-    <pathelement location="${install.dir}/SideKick.jar"/>
-    <pathelement location="${install.dir}/ErrorList.jar"/>
+    <pathelement location="${jedit.plugins.dir}/jruby.jar"/>
+    <pathelement location="${jedit.plugins.dir}/SideKick.jar"/>
+    <pathelement location="${jedit.plugins.dir}/ErrorList.jar"/>
     <pathelement location="."/>
   </path>
 

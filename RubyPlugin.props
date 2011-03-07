@@ -5,7 +5,7 @@ plugin.org.jedit.ruby.RubyPlugin.author=Rob McKinnon
 plugin.org.jedit.ruby.RubyPlugin.version=0.9.5
 plugin.org.jedit.ruby.RubyPlugin.docs=index.html
 plugin.org.jedit.ruby.RubyPlugin.depend.0=jdk 1.5
-plugin.org.jedit.ruby.RubyPlugin.depend.1=jedit 04.03.12.00
+plugin.org.jedit.ruby.RubyPlugin.depend.1=jedit 04.04.01.00
 plugin.org.jedit.ruby.RubyPlugin.depend.2=plugin sidekick.SideKickPlugin 0.7.3
 # JRuby 1.0.3 - jruby.jar is committed in plugin's svn /lib directory
 plugin.org.jedit.ruby.RubyPlugin.jars=jruby.jar
