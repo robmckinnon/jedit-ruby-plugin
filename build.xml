@@ -33,7 +33,7 @@
 
   <path id="project.class.path">
     <pathelement location="${jedit.install.dir}/jedit.jar"/>
-    <pathelement location="${jedit.plugins.dir}/jruby.jar"/>
+    <pathelement location="${lib.dir}/jruby.jar"/>
     <pathelement location="${jedit.plugins.dir}/SideKick.jar"/>
     <pathelement location="${jedit.plugins.dir}/ErrorList.jar"/>
     <pathelement location="."/>
