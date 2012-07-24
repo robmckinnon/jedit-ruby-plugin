@@ -396,8 +396,7 @@ public final class TestRubyParser extends TestCase {
     public final void testErrors() {
         RubyMembers members = RubyParser.getMembers(ERROR_CODE, getUniquePath());
         assertTrue("Assert errors exist", members.containsErrors());
-        assertEquals("Assert error count correct", 3, members.getProblems().length);
-//        assertEquals("Assert error count correct", 1, members.getProblems().length);
+        assertEquals("Assert error count correct", 1, members.getProblems().length);
     }
 
     private static String getUniquePath() {
