@@ -19,12 +19,12 @@
  */
 package org.jedit.ruby.structure;
 
+import org.jrubyparser.SourcePosition;
 import sidekick.SideKickParser;
 import sidekick.SideKickParsedData;
 import sidekick.SideKickCompletion;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.EditPane;
-import org.jruby.lexer.yacc.ISourcePosition;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.parser.RubyParser;
 import org.jedit.ruby.ast.RubyMembers;
@@ -144,18 +144,26 @@ public final class RubySideKickParser extends SideKickParser {
         }
     }
 
-    private void addWarning(String message, ISourcePosition position, DefaultErrorSource errorSource) {
-        addToErrorList(ErrorSource.WARNING, position, errorSource, message);
+    private void addWarning(String message, DefaultErrorSource errorSource, SourcePosition position) {
+        addToErrorList(ErrorSource.WARNING, errorSource, message, position);
     }
 
-    private void addError(String message, ISourcePosition position, DefaultErrorSource errorSource) {
-        addToErrorList(ErrorSource.ERROR, position, errorSource, message);
+    private void addWarning(String message, DefaultErrorSource errorSource, int lineNumber, String fileName) {
+        addToErrorList(ErrorSource.WARNING, errorSource, message, lineNumber, fileName);
     }
 
-    private void addToErrorList(int type, ISourcePosition position, DefaultErrorSource errorSource, String message) {
+    private void addError(String message, DefaultErrorSource errorSource, SourcePosition position) {
+        addToErrorList(ErrorSource.ERROR, errorSource, message, position);
+    }
+
+    private void addToErrorList(int type, DefaultErrorSource errorSource, String message, SourcePosition position) {
         int line = position == null ? 0 : position.getEndLine();
         String file = position == null ? null : position.getFile();
 
+        addToErrorList(type, errorSource, message, line, file);
+    }
+
+    private void addToErrorList(int type, DefaultErrorSource errorSource, String message, int line, String file) {
         int startOffset = RubyPlugin.getStartOffset(line);
         int nonSpaceStartOffset = RubyPlugin.getNonSpaceStartOffset(line);
         int endOffset = RubyPlugin.getEndOffset(line);
@@ -195,27 +203,42 @@ public final class RubySideKickParser extends SideKickParser {
             return false;
         }
 
-        public final void warn(ISourcePosition position, String message) {
-            addWarning(message, position, errorSource);
+        @Override
+        public void warn(ID id, SourcePosition position, String message, Object... data) {
+            addWarning(message, errorSource, position);
         }
 
-        public final void warn(String message) {
-            addWarning(message, null, errorSource);
+        @Override
+        public void warn(ID id, String fileName, int lineNumber, String message, Object... data) {
+            addWarning(message, errorSource, lineNumber, fileName);
         }
 
-        public final void warning(ISourcePosition position, String message) {
-            addWarning(message, position, errorSource);
+        @Override
+        public void warn(ID id, String message, Object... data) {
+            addWarning(message, errorSource, null);
         }
 
-        public final void warning(String message) {
-            addWarning(message, null, errorSource);
+        @Override
+        public void warning(ID id, String message, Object... data) {
+            addWarning(message, errorSource, null);
         }
 
-        public final void error(ISourcePosition position, String message) {
-            addError(message, position, errorSource);
+        @Override
+        public void warning(ID id, SourcePosition position, String message, Object... data) {
+            addWarning(message, errorSource, position);
+        }
+
+        @Override
+        public void warning(ID id, String fileName, int lineNumber, String message, Object... data) {
+            addWarning(message, errorSource, lineNumber, fileName);
+        }
+
+        public final void error(SourcePosition position, String message) {
+            addError(message, errorSource, position);
         }
 
         public final void clear() {
         }
     }
+
 }

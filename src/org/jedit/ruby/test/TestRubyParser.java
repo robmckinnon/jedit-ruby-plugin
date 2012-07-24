@@ -28,7 +28,8 @@ import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.ast.ClassMember;
 import org.jedit.ruby.ast.MethodCallWithSelfAsAnImplicitReceiver;
-import org.jruby.lexer.yacc.ISourcePosition;
+import org.jrubyparser.IRubyWarnings;
+import org.jrubyparser.SourcePosition;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -680,26 +681,38 @@ public final class TestRubyParser extends TestCase {
     }
 
     private static final class TestListener implements RubyParser.WarningListener {
-//        public final void warn(SourcePosition position, String message) {
-        public void warn(ISourcePosition position, String message) {
+
+        @Override
+        public void warn(ID id, SourcePosition position, String message, Object... data) {
             RubyPlugin.log(message, getClass());
         }
 
-        public final void warn(String message) {
+        @Override
+        public void warn(ID id, String fileName, int lineNumber, String message, Object... data) {
             RubyPlugin.log(message, getClass());
         }
 
-//        public final void warning(SourcePosition position, String message) {
-        public final void warning(ISourcePosition position, String message) {
+        @Override
+        public void warn(ID id, String message, Object... data) {
             RubyPlugin.log(message, getClass());
         }
 
-        public final void warning(String message) {
+        @Override
+        public void warning(ID id, String message, Object... data) {
             RubyPlugin.log(message, getClass());
         }
 
-//        public final void error(SourcePosition position, String message) {
-        public final void error(ISourcePosition position, String message) {
+        @Override
+        public void warning(ID id, SourcePosition position, String message, Object... data) {
+            RubyPlugin.log(message, getClass());
+        }
+
+        @Override
+        public void warning(ID id, String fileName, int lineNumber, String message, Object... data) {
+            RubyPlugin.log(message, getClass());
+        }
+
+        public final void error(SourcePosition position, String message) {
             RubyPlugin.log(message, getClass());
         }
 

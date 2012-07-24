@@ -1,17 +1,21 @@
 package org.jedit.ruby.parser;
 
-import org.jruby.ast.*;
-import org.jruby.lexer.yacc.LexerSource;
-import org.jruby.lexer.yacc.SyntaxException;
-import org.jruby.lexer.yacc.ISourcePosition;
-import org.jruby.parser.RubyParserConfiguration;
-import org.jruby.parser.DefaultRubyParser;
-import org.jruby.parser.RubyParserResult;
-import org.jruby.common.NullWarnings;
-import org.jruby.common.IRubyWarnings;
+import org.jrubyparser.SourcePosition;
+import org.jrubyparser.ast.*;
+//import org.jruby.lexer.yacc.LexerSource;
+import org.jrubyparser.lexer.LexerSource;
+import org.jrubyparser.lexer.SyntaxException;
+//import org.jruby.parser.DefaultRubyParser;
+//import org.jruby.parser.RubyParserResult;
+import org.jrubyparser.parser.ParserConfiguration;
+import org.jrubyparser.Parser.NullWarnings;
+import org.jrubyparser.IRubyWarnings;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.RubyPlugin;
+import org.jrubyparser.parser.ParserResult;
+import org.jrubyparser.parser.Ruby19Parser;
 
+import java.io.IOException;
 import java.util.List;
 import java.io.StringReader;
 import java.io.Reader;
@@ -53,11 +57,11 @@ public final class JRubyParser {
         this.warnings = new Warnings(listeners);
 
         Reader content = new StringReader(text);
-        RubyNodeVisitor visitor = new RubyNodeVisitor(lineCounter, methodMembers, listeners);
+        RubyNodeRubyVisitor visitor = new RubyNodeRubyVisitor(lineCounter, methodMembers, listeners);
         List<Member> members;
 
         try {
-            Node node = parse(filePath, content, new RubyParserConfiguration());
+            Node node = parse(filePath, content, new ParserConfiguration());
             if (node != null) {
                 node.accept(visitor);
             }
@@ -69,27 +73,31 @@ public final class JRubyParser {
             String message = e.getPosition().getEndLine() + ": " + e.getMessage();
             RubyPlugin.log(message, getClass());
             members = null;
+       } catch (IOException e) {
+            RubyPlugin.log(e.getMessage(), getClass());
+            members = null;
         }
 
         return members;
     }
 
-    private Node parse(String name, Reader content, RubyParserConfiguration config) {
-        DefaultRubyParser parser = new DefaultRubyParser() {
-            /** Hack to ensure we get original error message */
-            public void yyerror(String message, String[] expected, String found) {
-                try {
-                    super.yyerror(message, expected, found);
-                } catch (SyntaxException e) {
-                    String errorMessage = formatErrorMessage(message, expected, found);
-                    throw new SyntaxException(e.getPosition(), errorMessage);
-                }
-            }
-        };
+    private Node parse(String name, Reader content, ParserConfiguration config) throws IOException {
+//        DefaultRubyParser parser = new DefaultRubyParser() {
+//            /** Hack to ensure we get original error message */
+//            public void yyerror(String message, String[] expected, String found) {
+//                try {
+//                    super.yyerror(message, expected, found);
+//                } catch (SyntaxException e) {
+//                    String errorMessage = formatErrorMessage(message, expected, found);
+//                    throw new SyntaxException(e.getPosition(), errorMessage);
+//                }
+//            }
+//        };
 
+        Ruby19Parser parser = new Ruby19Parser();
         parser.setWarnings(warnings);
-        LexerSource lexerSource = LexerSource.getSource(name, content, 0, true);
-        RubyParserResult result = parser.parse(config, lexerSource);
+        LexerSource lexerSource = LexerSource.getSource(name, content, config);
+        ParserResult result = parser.parse(config, lexerSource);
         return result.getAST();
     }
 
@@ -124,36 +132,60 @@ public final class JRubyParser {
         return value;
     }
 
-    private static final class Warnings extends NullWarnings {
+    private static final class Warnings implements IRubyWarnings {
         private final List<RubyParser.WarningListener> listeners;
 
         public Warnings(List<RubyParser.WarningListener> listeners) {
             this.listeners = listeners;
         }
 
-        public final void warn(ISourcePosition position, String message) {
+        @Override
+        public void warn(ID id, SourcePosition position, String message, Object... data) {
             for (RubyParser.WarningListener listener : listeners) {
-                listener.warn(position, message);
+                listener.warn(id, position, message);
             }
         }
 
-        public final void warn(String message) {
+        @Override
+        public void warn(ID id, String fileName, int lineNumber, String message, Object... data) {
             for (RubyParser.WarningListener listener : listeners) {
-                listener.warn(message);
+                listener.warn(id, fileName, lineNumber, message, data);
             }
         }
 
-        public final void warning(ISourcePosition position, String message) {
+        @Override
+        public boolean isVerbose() {
+            return false;  //To change body of implemented methods use File | Settings | File Templates.
+        }
+
+        @Override
+        public void warn(ID id, String message, Object... data) {
             for (RubyParser.WarningListener listener : listeners) {
-                listener.warning(position, message);
+                listener.warn(id, message, data);
             }
         }
 
-        public final void warning(String message) {
+        @Override
+        public void warning(ID id, String message, Object... data) {
             for (RubyParser.WarningListener listener : listeners) {
-                listener.warning(message);
+                listener.warning(id, message, data);
             }
         }
+
+        @Override
+        public void warning(ID id, SourcePosition position, String message, Object... data) {
+            for (RubyParser.WarningListener listener : listeners) {
+                listener.warning(id, position, message, data);
+            }
+        }
+
+        @Override
+        public void warning(ID id, String fileName, int lineNumber, String message, Object... data) {
+            for (RubyParser.WarningListener listener : listeners) {
+                listener.warning(id, fileName, lineNumber, message, data);
+            }
+        }
+
     }
 
 }
