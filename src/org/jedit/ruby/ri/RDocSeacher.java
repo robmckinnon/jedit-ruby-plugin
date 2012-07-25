@@ -1,5 +1,5 @@
 /*
- * RDocSeacher.java - 
+ * RDocSeacher.java -
  *
  * Copyright 2005 Robert McKinnon
  *

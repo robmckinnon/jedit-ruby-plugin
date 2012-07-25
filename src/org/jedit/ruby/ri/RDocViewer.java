@@ -25,16 +25,12 @@ import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.jEdit;
 import org.jedit.ruby.cache.RubyCache;
 import org.jedit.ruby.ast.*;
-import org.jedit.ruby.RubyPlugin;
 
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.html.HTMLEditorKit;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
+import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
@@ -124,10 +120,6 @@ public final class RDocViewer extends JPanel
         }
     }
 
-    private static void log(String message) {
-        RubyPlugin.log(message, RDocViewer.class);
-    }
-
     private void setMember(Member member) {
         List<Member> members = RubyCache.instance().getAllImmediateMembers();
         setListData(members);
@@ -177,7 +169,7 @@ public final class RDocViewer extends JPanel
         final JTextField textField = new JTextField();
         textField.addKeyListener(keyHandler);
         textField.getDocument().addDocumentListener(this);
-        configureAppearence(textField);
+        configureAppearance(textField);
         textField.setCaretColor(textField.getForeground());
         return textField;
     }
@@ -293,7 +285,7 @@ public final class RDocViewer extends JPanel
                 searchField.requestFocusInWindow();
             }
         });
-        configureAppearence(list);
+        configureAppearance(list);
         return list;
     }
 
@@ -303,11 +295,13 @@ public final class RDocViewer extends JPanel
         JTextPane pane = new JTextPane();
         pane.setEditable(false);
         pane.setEditorKit(kit);
-        configureAppearence(pane);
+
+        configureAppearance(pane);
+
         return pane;
     }
 
-    private void configureAppearence(JComponent component) {
+    private void configureAppearance(JComponent component) {
         component.setFont(jEdit.getFontProperty("view.font"));
         component.setBackground(jEdit.getColorProperty("view.bgColor"));
         component.setForeground(jEdit.getColorProperty("view.fgColor"));
@@ -344,10 +338,6 @@ public final class RDocViewer extends JPanel
         if (mismatchCharacters > 0) {
             mismatchCharacters--;
         }
-    }
-
-    public final int getListSize() {
-        return resultList.getModel().getSize();
     }
 
     public final void incrementSelection(int increment) {

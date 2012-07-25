@@ -22,7 +22,6 @@ package org.jedit.ruby.structure;
 import org.gjt.sp.jedit.Buffer;
 import sidekick.Asset;
 
-import javax.swing.text.Position;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.Icon;
 
