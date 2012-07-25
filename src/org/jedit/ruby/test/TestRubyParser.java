@@ -28,7 +28,6 @@ import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.ast.RubyMembers;
 import org.jedit.ruby.ast.ClassMember;
 import org.jedit.ruby.ast.MethodCallWithSelfAsAnImplicitReceiver;
-import org.jrubyparser.IRubyWarnings;
 import org.jrubyparser.SourcePosition;
 
 import java.util.List;

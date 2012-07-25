@@ -261,10 +261,6 @@ public final class RubyPlugin extends EBPlugin {
         show(title, message, view, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    public static void showMessage(String messageKey, View view) {
-        showMessage(null, messageKey, view);
-    }
-
     private static void show(String title, String message, View view, int type) {
         GUIUtilities.hideSplashScreen();
         JOptionPane.showMessageDialog(view, message, title, type);

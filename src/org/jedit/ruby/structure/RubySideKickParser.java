@@ -179,8 +179,8 @@ public final class RubySideKickParser extends SideKickParser {
         if (members != null) {
             for (Member member : members) {
                 MemberNode node = new MemberNode(member);
-                node.setStart(buffer.createPosition(Math.min(buffer.getLength(), member.getStartOffset())));
-                node.setEnd(buffer.createPosition(Math.min(buffer.getLength(), member.getEndOffset())));
+                node.setPositionOffsets(buffer);
+
                 DefaultMutableTreeNode treeNode = node.createTreeNode();
                 if (member.hasChildMembers()) {
                     Member[] childMembers = member.getChildMembers();
@@ -233,10 +233,12 @@ public final class RubySideKickParser extends SideKickParser {
             addWarning(message, errorSource, lineNumber, fileName);
         }
 
+        @Override
         public final void error(SourcePosition position, String message) {
             addError(message, errorSource, position);
         }
 
+        @Override
         public final void clear() {
         }
     }
