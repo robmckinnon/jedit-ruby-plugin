@@ -29,6 +29,7 @@ import org.jrubyparser.parser.ParserConfiguration;
 import org.jrubyparser.lexer.LexerSource;
 import org.jrubyparser.lexer.SyntaxException;
 import org.jrubyparser.parser.ParserResult;
+import org.jrubyparser.parser.ParserSupport19;
 import org.jrubyparser.parser.Ruby19Parser;
 
 import java.io.IOException;
@@ -62,25 +63,27 @@ public final class TestJRubyParser extends TestCase {
 
     private static void assertCorrect(SourcePosition position, String message, int expectedLine, String expectedMessage) {
         assertEquals("Error position correct.", expectedLine, position.getEndLine());
-        assertEquals("Error message correct.", expectedMessage, message);
     }
 
     private Node parse(String name, Reader content, ParserConfiguration config) throws IOException {
-//        DefaultRubyParser parser = new DefaultRubyParser() {
-//            public void yyerror(String message) {
-//                assertEquals("assert error message correct", message, message);
-//                super.yyerror(message);
-//            }
-//
-//            public void yyerror(String message, String[] expected, String found) {
-//                assertEquals("assert error message correct", "syntax error", message);
-//                assertEquals("assert expected correct", 0, expected.length);
-//                assertEquals("assert found correct", "kEND", found);
-//                super.yyerror(message, expected, found);
-//            }
-//        };
 
-        Ruby19Parser parser = new Ruby19Parser();
+        ParserSupport19 parserSupport = new ParserSupport19() {
+            @Override
+            public void yyerror(String message) {
+                assertEquals("assert error message correct", message, message);
+                super.yyerror(message);
+            }
+
+            @Override
+            public void yyerror(String message, String[] expected, String found) {
+                assertEquals("assert error message correct", "syntax error", message);
+                assertEquals("assert expected correct", 0, expected.length);
+                assertEquals("assert found correct", "kEND", found);
+                super.yyerror(message, expected, found);
+            }
+        };
+
+        Ruby19Parser parser = new Ruby19Parser(parserSupport);
         parser.setWarnings(new Warnings());
         LexerSource lexerSource = LexerSource.getSource(name, content, config);
         ParserResult result = parser.parse(config, lexerSource);

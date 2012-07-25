@@ -524,7 +524,7 @@ final class RubyNodeRubyVisitor extends AbstractRubyVisitor implements NodeVisit
             int start = lineCounter.getStartOffset(endLine);
             int beginIndex = end - start;
             String text = line.substring(beginIndex);
-            if (text.indexOf("end") != -1) {
+            if (text.contains("end")) {
                 return text.indexOf("end") + 3 + beginIndex;
             } else {
                 return position.getEndOffset();

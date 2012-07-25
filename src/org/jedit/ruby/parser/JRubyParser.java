@@ -2,17 +2,14 @@ package org.jedit.ruby.parser;
 
 import org.jrubyparser.SourcePosition;
 import org.jrubyparser.ast.*;
-//import org.jruby.lexer.yacc.LexerSource;
 import org.jrubyparser.lexer.LexerSource;
 import org.jrubyparser.lexer.SyntaxException;
-//import org.jruby.parser.DefaultRubyParser;
-//import org.jruby.parser.RubyParserResult;
 import org.jrubyparser.parser.ParserConfiguration;
-import org.jrubyparser.Parser.NullWarnings;
 import org.jrubyparser.IRubyWarnings;
 import org.jedit.ruby.ast.Member;
 import org.jedit.ruby.RubyPlugin;
 import org.jrubyparser.parser.ParserResult;
+import org.jrubyparser.parser.ParserSupport19;
 import org.jrubyparser.parser.Ruby19Parser;
 
 import java.io.IOException;
@@ -82,19 +79,20 @@ public final class JRubyParser {
     }
 
     private Node parse(String name, Reader content, ParserConfiguration config) throws IOException {
-//        DefaultRubyParser parser = new DefaultRubyParser() {
-//            /** Hack to ensure we get original error message */
-//            public void yyerror(String message, String[] expected, String found) {
-//                try {
-//                    super.yyerror(message, expected, found);
-//                } catch (SyntaxException e) {
-//                    String errorMessage = formatErrorMessage(message, expected, found);
-//                    throw new SyntaxException(e.getPosition(), errorMessage);
-//                }
-//            }
-//        };
+        ParserSupport19 parserSupport = new ParserSupport19() {
+            /** Hack to ensure we get original error message */
+            @Override
+            public void yyerror(String message, String[] expected, String found) {
+                try {
+                    super.yyerror(message);
+                } catch (SyntaxException e) {
+                    String errorMessage = formatErrorMessage(message, expected, found);
+                    throw new SyntaxException(e.getPid(), e.getPosition(), errorMessage);
+                }
+            }
+        };
 
-        Ruby19Parser parser = new Ruby19Parser();
+        Ruby19Parser parser = new Ruby19Parser(parserSupport);
         parser.setWarnings(warnings);
         LexerSource lexerSource = LexerSource.getSource(name, content, config);
         ParserResult result = parser.parse(config, lexerSource);
