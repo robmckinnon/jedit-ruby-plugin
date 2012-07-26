@@ -19,6 +19,7 @@
  */
 package org.jedit.ruby.structure;
 
+import org.gjt.sp.jedit.Buffer;
 import sidekick.Asset;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -33,11 +34,13 @@ import org.jedit.ruby.icons.MemberIcon;
 final class MemberNode extends Asset {
 
     private final Icon icon;
+    private final Member member;
 
     public MemberNode(Member member) {
         super(member.getDisplayName());
         MemberIcon memberIcon = new MemberIcon(member);
         icon = memberIcon.getIcon();
+        this.member = member;
     }
 
     public final DefaultMutableTreeNode createTreeNode() {
@@ -60,4 +63,12 @@ final class MemberNode extends Asset {
         return getName() + " " + getStart() + " " + getEnd();
     }
 
+    void setPositionOffsets(Buffer buffer) {
+        int bufferLength = buffer.getLength();
+        int startOffset  = Math.min(bufferLength, member.getStartOffset());
+        int endOffset    = Math.min(bufferLength, member.getEndOffset());
+
+        setStart(buffer.createPosition(startOffset));
+        setEnd(buffer.createPosition(endOffset));
+    }
 }

@@ -24,8 +24,8 @@ import org.gjt.sp.jedit.Buffer;
 import org.jedit.ruby.RubyPlugin;
 import org.jedit.ruby.ast.*;
 import org.jedit.ruby.ast.Error;
-import org.jruby.lexer.yacc.ISourcePosition;
-import org.jruby.common.IRubyWarnings;
+import org.jrubyparser.IRubyWarnings;
+import org.jrubyparser.SourcePosition;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -174,7 +174,7 @@ public final class RubyParser {
      */
     public static interface WarningListener extends IRubyWarnings {
 
-        void error(ISourcePosition position, String message);
+        void error(SourcePosition position, String message);
 
         void clear();
     }
@@ -191,27 +191,44 @@ public final class RubyParser {
             return false;
         }
 
-        public final void warn(ISourcePosition position, String message) {
+        @Override
+        public void warn(ID id, SourcePosition position, String message, Object... data) {
             problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
 
-        public final void warn(String message) {
+        @Override
+        public void warn(ID id, String fileName, int lineNumber, String message, Object... data) {
+            problems.add(new Warning(message, lineNumber));
+            RubyPlugin.log("warn:  " + message, getClass());
+        }
+
+        @Override
+        public void warn(ID id, String message, Object... data) {
             problems.add(new Warning(message, 0));
             RubyPlugin.log("warn:  " + message, getClass());
         }
 
-        public final void warning(ISourcePosition position, String message) {
+        @Override
+        public void warning(ID id, String message, Object... data) {
+            problems.add(new Warning(message, 0));
+            RubyPlugin.log("warn:  " + message, getClass());
+        }
+
+        @Override
+        public void warning(ID id, SourcePosition position, String message, Object... data) {
             problems.add(new Warning(message, getLine(position)));
             log(position, message);
         }
 
-        public final void warning(String message) {
+        @Override
+        public void warning(ID id, String fileName, int lineNumber, String message, Object... data) {
+            problems.add(new Warning(message, lineNumber));
             RubyPlugin.log("warn:  " + message, getClass());
-            problems.add(new Warning(message, 0));
         }
 
-        public final void error(ISourcePosition position, String message) {
+        @Override
+        public final void error(SourcePosition position, String message) {
             RubyPlugin.log("error: " + position.getFile() + " " + position.getEndLine() + " " + message, getClass());
             problems.add(new Error(message, getLine(position)));
         }
@@ -220,11 +237,11 @@ public final class RubyParser {
             problems.clear();
         }
 
-        private void log(ISourcePosition position, String message) {
+        private void log(SourcePosition position, String message) {
             RubyPlugin.log("warn:  " + position.getFile() + " " + position.getEndLine() + " " + message, getClass());
         }
 
-        private int getLine(ISourcePosition position) {
+        private int getLine(SourcePosition position) {
             return position == null ? 0 : position.getEndLine();
         }
 

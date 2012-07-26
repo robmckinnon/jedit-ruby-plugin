@@ -60,12 +60,13 @@ public final class RubyCompletion extends SideKickCompletion {
         frame.setFocusable(false);
         JTextPane textPane = new JTextPane();
         textPane.setEditorKit(new HTMLEditorKit());
-        JScrollPane scroller = new JScrollPane(textPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        frame.getContentPane().add(scroller, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(textPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
         frame.setSize(400, 400);
         editorView = view;
     }
 
+    @Override
     public ListCellRenderer getRenderer() {
         return COMPLETION_NAME_RENDERER;
     }
@@ -81,6 +82,7 @@ public final class RubyCompletion extends SideKickCompletion {
     /**
      * Returns true if should continue completing.
      */
+    @Override
     public final boolean handleKeystroke(int selectedIndex, char keyChar) {
         RubyPlugin.log("handle keystroke", getClass());
         final boolean emptyPopup = selectedIndex == -1;
@@ -109,6 +111,7 @@ public final class RubyCompletion extends SideKickCompletion {
         return continueCompleting;
     }
 
+    @Override
     public final void insert(int index) {
         setContinueCompleting(insert(members.get(index), false, false));
     }
@@ -151,9 +154,10 @@ public final class RubyCompletion extends SideKickCompletion {
     }
 
     /**
-     * Overriden super class method in order
+     * Override super class method in order
      * to set Ruby docs in Ruby doc viewer
      */
+    @Override
     public final String getCompletionDescription(int index) {
         RDocViewer.setMemberInViewer(members.get(index));
         return null;
@@ -175,17 +179,20 @@ public final class RubyCompletion extends SideKickCompletion {
             return completor;
         }
 
+        @Override
         public final void handleDefault(Member member) {
             completor = new Completor(member, member.getFullName(), 0, true, partialClass);
             CodeCompletor.setLastCompleted(partialClass, member);
         }
 
+        @Override
         public void handleKeyword(KeywordMember keyword) {
             String partial = partialMethod != null ? partialMethod : partialClass;
             completor = new Completor(keyword, keyword.getFullName(), 0, true, partial);
             CodeCompletor.setLastCompleted(partial, keyword);
         }
 
+        @Override
         public final void handleMethod(Method method) {
             String name = method.getName();
 
@@ -253,6 +260,7 @@ public final class RubyCompletion extends SideKickCompletion {
             }
         }
 
+        @Override
         public void handleMethod(Method method) {
             this.continueCompleting = true;
             Set<Member> returnTypes = method.getReturnTypes();
@@ -285,6 +293,7 @@ public final class RubyCompletion extends SideKickCompletion {
     private static class CompletionNameRenderer extends DefaultListCellRenderer implements MemberVisitor {
         String text;
 
+        @Override
         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             if (value instanceof Member) {
                 Member member = (Member)value;
@@ -295,14 +304,17 @@ public final class RubyCompletion extends SideKickCompletion {
             return super.getListCellRendererComponent(list, text, index, isSelected, cellHasFocus);
         }
 
+        @Override
         public void handleModule(Module module) {
             text = module.getFullName();
         }
 
+        @Override
         public void handleClass(ClassMember classMember) {
             text = classMember.getFullName();
         }
 
+        @Override
         public void handleMethod(Method method) {
             if (method.getNamespace() != null) {
                 text = method.getName() + "  (" + method.getNamespace() + ")";
@@ -311,19 +323,24 @@ public final class RubyCompletion extends SideKickCompletion {
             }
         }
 
+        @Override
         public void handleMethodCallWithSelfAsAnImplicitReceiver(MethodCallWithSelfAsAnImplicitReceiver methodCall) {
         }
 
+        @Override
         public void handleKeyword(KeywordMember keywordMember) {
             text = keywordMember.getName();
         }
 
+        @Override
         public void handleWarning(Warning warning) {
         }
 
+        @Override
         public void handleError(Error warning) {
         }
 
+        @Override
         public void handleRoot(Root root) {
         }
     }

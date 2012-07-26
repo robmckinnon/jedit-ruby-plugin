@@ -67,7 +67,7 @@ final class RDocStyleSheet extends StyleSheet {
     private Rule body() {
         Rule r = new Rule("body");
         r.add("font-size", getViewFontSize());
-        r.add("background-color", getColor("view.bgColor"));
+//        r.add("background-color", getColor("view.bgColor")); to fix bug that set background on other panels
         r.add("color", getColor("view.fgColor"));
         return r;
     }
@@ -86,7 +86,6 @@ final class RDocStyleSheet extends StyleSheet {
 
     private Rule em() {
         Rule r = new Rule("em");
-//        r.addMembers("font-style", "italic");
         r.add("color", getColor(Token.KEYWORD1));
         return r;
     }

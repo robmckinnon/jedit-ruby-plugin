@@ -21,15 +21,18 @@ package org.jedit.ruby.test;
 
 import junit.framework.TestCase;
 import org.jedit.ruby.cache.RubyCache;
-import org.jruby.ast.Node;
-import org.jruby.parser.RubyParserConfiguration;
-import org.jruby.parser.DefaultRubyParser;
-import org.jruby.parser.RubyParserResult;
-import org.jruby.lexer.yacc.SyntaxException;
-import org.jruby.lexer.yacc.LexerSource;
-import org.jruby.lexer.yacc.ISourcePosition;
-import org.jruby.common.NullWarnings;
 
+import org.jrubyparser.Parser;
+import org.jrubyparser.SourcePosition;
+import org.jrubyparser.ast.*;
+import org.jrubyparser.parser.ParserConfiguration;
+import org.jrubyparser.lexer.LexerSource;
+import org.jrubyparser.lexer.SyntaxException;
+import org.jrubyparser.parser.ParserResult;
+import org.jrubyparser.parser.ParserSupport19;
+import org.jrubyparser.parser.Ruby19Parser;
+
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -50,24 +53,28 @@ public final class TestJRubyParser extends TestCase {
     public final void testErrors() {
         Reader content = new StringReader(ERROR_CODE);
         try {
-            parse("/home/rob.rb", content, new RubyParserConfiguration());
+            parse("/home/rob.rb", content, new ParserConfiguration());
         } catch (SyntaxException e) {
             assertCorrect(e.getPosition(), e.getMessage(), 2, "syntax error");
+        } catch (IOException e) {
+            failTest("IOException: " + e.toString());
         }
     }
 
-    private static void assertCorrect(ISourcePosition position, String message, int expectedLine, String expectedMessage) {
+    private static void assertCorrect(SourcePosition position, String message, int expectedLine, String expectedMessage) {
         assertEquals("Error position correct.", expectedLine, position.getEndLine());
-        assertEquals("Error message correct.", expectedMessage, message);
     }
 
-    private Node parse(String name, Reader content, RubyParserConfiguration config) {
-        DefaultRubyParser parser = new DefaultRubyParser() {
+    private Node parse(String name, Reader content, ParserConfiguration config) throws IOException {
+
+        ParserSupport19 parserSupport = new ParserSupport19() {
+            @Override
             public void yyerror(String message) {
                 assertEquals("assert error message correct", message, message);
                 super.yyerror(message);
             }
 
+            @Override
             public void yyerror(String message, String[] expected, String found) {
                 assertEquals("assert error message correct", "syntax error", message);
                 assertEquals("assert expected correct", 0, expected.length);
@@ -76,9 +83,10 @@ public final class TestJRubyParser extends TestCase {
             }
         };
 
+        Ruby19Parser parser = new Ruby19Parser(parserSupport);
         parser.setWarnings(new Warnings());
-        LexerSource lexerSource = LexerSource.getSource(name, content, 0, true);
-        RubyParserResult result = parser.parse(config, lexerSource);
+        LexerSource lexerSource = LexerSource.getSource(name, content, config);
+        ParserResult result = parser.parse(config, lexerSource);
         return result.getAST();
     }
 
@@ -86,20 +94,33 @@ public final class TestJRubyParser extends TestCase {
         fail("Unexpected callback: " + message);
     }
 
-    private final class Warnings extends NullWarnings {
+    private final class Warnings extends Parser.NullWarnings {
         public Warnings() {
         }
-        public final void warn(String message) {
+
+        public void warn(ID id, String message, Object... data) {
             failTest(message);
         }
-        public final void warning(String message) {
+
+        public void warning(ID id, String message, Object... data) {
             failTest(message);
         }
-        public void warn(ISourcePosition position, String message) {
+
+        public void warn(ID id, SourcePosition position, String message, Object... data) {
             System.out.println(message);
         }
-        public void warning(ISourcePosition position, String message) {
+
+        public void warn(ID id, String fileName, int lineNumber, String message, Object... data) {
             System.out.println(message);
         }
+
+        public void warning(ID id, SourcePosition position, String message, Object... data) {
+            System.out.println(message);
+        }
+
+        public void warning(ID id, String fileName, int lineNumber, String message, Object...data) {
+            System.out.println(message);
+        }
+
     }
 }
