@@ -49,7 +49,7 @@
 
   <target name="init">
     <mkdir dir="${build.dir}"/>
-    <copy file="${lib.dir}/jruby.jar" todir="${install.dir}"/>
+    <copy file="${lib.dir}/jruby-parser.jar" todir="${install.dir}"/>
   </target>
 
   <target name="compile" depends="init">
