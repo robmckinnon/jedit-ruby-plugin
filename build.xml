@@ -84,8 +84,8 @@
   <target name="convert_rdoc">
     <java classname="org.jedit.ruby.ri.XmlToBinary"
       classpath="${build.dir}">
-        <arg path="/Users/x/apps/jedit/plugins/RubyPlugin/ri/java-xml"/>
-        <arg path="/Users/x/apps/jedit/plugins/RubyPlugin/ri/rdoc"/>
+        <arg path="/Users/x/apps/jedit-ruby-plugin/ri/java-xml"/>
+        <arg path="/Users/x/apps/jedit-ruby-plugin/ri/rdoc"/>
     </java>
   </target>
 
