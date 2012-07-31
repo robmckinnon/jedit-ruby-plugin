@@ -29,7 +29,7 @@ end
 def write_docs d
   erb = ERB.new(IO.read("./cdesc.erb"))
   result = erb.result(binding)
-  result_dir = "./java-xml/1.9.3/#{d.name}"
+  result_dir = "#{`pwd`.strip}/java-xml/ruby-1.9.3_rails-3.2.6/#{d.name}"
 
   FileUtils.mkdir_p(result_dir)
 
@@ -38,6 +38,37 @@ def write_docs d
   File.open(file.to_s, "w") do |file|
     file.puts result
   end
+end
+
+def get_rails
+  get_ruby_stdlib
+  # setup
+
+  packages = [
+  ['http://www.ruby-doc.org/gems/docs/a/actionmailer-3.2.6/',   'actionmailer'],
+  ['http://www.ruby-doc.org/gems/docs/a/actionpack-3.2.6/',     'actionpack'],
+  ['http://www.ruby-doc.org/gems/docs/a/activemodel-3.2.6/',    'activemodel'],
+  ['http://www.ruby-doc.org/gems/docs/a/activerecord-3.2.6/',   'activerecord'],
+  ['http://www.ruby-doc.org/gems/docs/a/activeresource-3.2.6/', 'activeresource'],
+  ['http://www.ruby-doc.org/gems/docs/a/activesupport-3.2.6/',  'activesupport'],
+  ['http://www.ruby-doc.org/gems/docs/r/railties-3.2.6/',       'railties'],
+  ['http://www.ruby-doc.org/gems/docs/n/nokogiri-1.5.5/',       'nokogiri']
+  ]
+
+  packages.each do |uri, name|
+    process_page URI.parse(uri), name
+  end
+
+  @items.each do |k,v|
+    puts k.inspect
+    begin
+      write_docs v
+    rescue Exception => e
+      puts e.to_s
+    end
+    nil
+  end
+  nil
 end
 
 def get_ruby_stdlib
@@ -53,7 +84,6 @@ def get_ruby_stdlib
     process_page base_uri.merge(item.uri), item.text
   end
 
-  @items.each {|k,v| write_docs v }
 end
 
 
@@ -75,16 +105,20 @@ def process_page base_uri, package=nil
 
   classes = response.links.select {|x| x.uri.to_s[/\.html$/] && !x.uri.to_s[/_(rb|c|txt).html/] }
 
+  classes = classes.select {|x| !x.uri.to_s[/(MIT-LICENSE|USAGE|README|Rakefile|Gemfile|gitignore|rails.html|robots_txt|C_CODING_STYLE|test_all|Manifest_txt|build_all|depend.html)/]}
+
   classes.each do |item|
     uri = base_uri.merge(item.uri)
     puts uri.to_s
     d = get_docs uri, package
 
-    if @items[d.name]
-      @items[d.name].c_methods = @items[d.name].c_methods + d.c_methods
-      @items[d.name].i_methods = @items[d.name].i_methods + d.i_methods
-    else
-      @items[d.name] = d
+    unless d.nil?
+      if @items[d.name]
+        @items[d.name].c_methods = @items[d.name].c_methods + d.c_methods
+        @items[d.name].i_methods = @items[d.name].i_methods + d.i_methods
+      else
+        @items[d.name] = d
+      end
     end
 
     nil
@@ -111,17 +145,22 @@ def get_docs uri, package
 
   name = @r.at('h1.class') || @r.at('h1.module')
 
-  docs.name = normalize(name.text.sub('Syck', 'YAML'))
-  docs.html_comment = normalize(@r.at('#description').inner_html)
-  docs.full_name = docs.name
+  begin
+    docs.name = normalize(name.text.sub('Syck', 'YAML'))
+    docs.html_comment = normalize(@r.at('#description').inner_html)
+    docs.full_name = docs.name
 
-  docs.i_methods = get_methods('instance', docs.name, package)
-  docs.c_methods = get_methods('class', docs.name, package)
+    docs.i_methods = get_methods('instance', docs.name, package)
+    docs.c_methods = get_methods('class', docs.name, package)
 
-  docs.attributes = []
-  docs.constants = []
-  docs.includes = []
-  docs
+    docs.attributes = []
+    docs.constants = []
+    docs.includes = []
+    docs
+  rescue Exception => e
+    puts e.to_s
+    nil
+  end
 end
 
 def get_namespace
@@ -194,7 +233,7 @@ def get_method name, anchor, type, class_name, package
   method.name = normalize(name.sub(/^(#|::)/,''))
 
   remove_source_code p
-  if description_blank?(p) && package
+  if description_blank?(p) && package && !%w[actionmailer actionpack activemodel activerecord activeresource activesupport railties nokogiri].include?(package)
     return nil
   end
 
@@ -219,4 +258,5 @@ def get_method name, anchor, type, class_name, package
 end
 
 # d = get_ruby_core
-d = get_ruby_stdlib
+# d = get_ruby_stdlib
+d = get_rails
