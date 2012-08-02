@@ -48,6 +48,8 @@ final class RDocStyleSheet extends StyleSheet {
         addRule(p());
         addRule(h2());
         addRule(li());
+        addRule(dt());
+        addRule(dd());
     }
 
     private Rule h2() {
@@ -62,6 +64,20 @@ final class RDocStyleSheet extends StyleSheet {
         Rule r = new Rule("p");
         r.add("margin-top", "0.5em");
         r.add("margin-bottom", "0.5em");
+        return r;
+    }
+
+    private Rule dt() {
+        Rule r = new Rule("dt", dd().attributes);
+        r.add("color", getColor(Token.KEYWORD2));
+        r.add("font-weight", "bold");
+        return r;
+    }
+
+    private Rule dd() {
+        Rule r = new Rule("dd");
+        r.add("padding-top", "1em");
+        r.add("padding-bottom", "1em");
         return r;
     }
 

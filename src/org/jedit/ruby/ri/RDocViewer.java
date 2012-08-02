@@ -69,7 +69,7 @@ public final class RDocViewer extends JPanel
         documentationScrollPane = wrapInScrollPane(documentationPane);
 
         add(initSplitPane(position, searchPanel, documentationScrollPane));
-        add(initRailsPanel(), BorderLayout.SOUTH);
+//        add(initRailsPanel(), BorderLayout.SOUTH);
 
         viewers.put(this, null);
         setListData(RubyCache.instance().getAllImmediateMembers());
