@@ -28,10 +28,8 @@
   <property name="src.dir" value="src"/>
   <property name="build.dir" value="build"/>
   <property name="install.dir" value=".."/>
-  <!-- <property name="jedit.install.dir"  value="../.."/> -->
-  <property name="jedit.install.dir"  value="${lib.dir}"/>
-  <!-- <property name="jedit.plugins.dir" value="${install.dir}" /> -->
-  <property name="jedit.plugins.dir" value="${jedit.install.dir}" />
+  <property name="jedit.install.dir"  value=".."/>
+  <property name="jedit.plugins.dir" value="${install.dir}" />
 
   <path id="project.class.path">
     <pathelement location="${jedit.install.dir}/jedit.jar"/>
