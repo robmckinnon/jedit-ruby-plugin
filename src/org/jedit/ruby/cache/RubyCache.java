@@ -118,7 +118,7 @@ public final class RubyCache {
         for (ParentMember member : allParents) {
             member.accept(new MemberVisitorAdapter() {
                 public void handleClass(ClassMember classMember) {
-                    populateSuperClassMethods(classMember, classMember);
+//                    populateSuperClassMethods(classMember, classMember);
                 }
             });
         }
