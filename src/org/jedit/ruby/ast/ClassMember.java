@@ -66,13 +66,14 @@ public final class ClassMember extends ParentMember {
     }
 
     private void appendSuperClassToDocumentation(String superClassName, StringBuffer buffer) {
-        if (superClassName != null && superClassName.trim().length() > 0) {
-            ClassMember superClass = RubyCache.instance().getClass(superClassName);
-            if (superClass != null && !superClass.getFullName().equals("Object")) {
-                buffer.append(" &lt; ").append(superClass.getFullName());
-                appendSuperClassToDocumentation(superClass.getSuperClassName(), buffer);
-            }
-        }
+
+//        if (superClassName != null && superClassName.trim().length() > 0) {
+//            ClassMember superClass = RubyCache.instance().getClass(superClassName);
+//            if (superClass != null && !superClass.getFullName().equals("Object")) {
+//                buffer.append(" &lt; ").append(superClass.getFullName());
+//                appendSuperClassToDocumentation(superClass.getSuperClassName(), buffer);
+//            }
+//        }
     }
 
 }

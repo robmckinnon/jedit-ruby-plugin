@@ -43,7 +43,30 @@ final class RDocStyleSheet extends StyleSheet {
         addRule(preparam());
         addRule(hr());
         addRule(tt());
+        addRule(code());
         addRule(em());
+        addRule(p());
+        addRule(h2());
+        addRule(li());
+    }
+
+    private Rule h2() {
+        Rule r = new Rule("h2");
+        r.add("padding-top", "1em");
+        r.add("padding-bottom", "0.5em");
+        r.add("font-weight", "bold");
+        return r;
+    }
+
+    private Rule p() {
+        Rule r = new Rule("p");
+        r.add("margin-top", "0.5em");
+        r.add("margin-bottom", "0.5em");
+        return r;
+    }
+
+    private Rule li() {
+        return new Rule("li", p().attributes);
     }
 
     private Rule preparam() {
@@ -82,6 +105,10 @@ final class RDocStyleSheet extends StyleSheet {
 
     private Rule tt() {
         return new Rule("tt", pre().attributes);
+    }
+
+    private Rule code() {
+        return new Rule("code", pre().attributes);
     }
 
     private Rule em() {
