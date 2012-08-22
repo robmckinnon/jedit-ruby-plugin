@@ -424,12 +424,25 @@ final class RubyNodeRubyVisitor extends AbstractRubyVisitor implements NodeVisit
             parent.addChildMember(call);
             currentMember.add(call);
             methodCall = call;
-            if (node.getArgs() != null) {
-                node.getArgs().accept(this);
+
+            Node nodeArgs = node.getArgs();
+
+            if (nodeArgs != null) {
+                if (nodeArgs instanceof ListNode) {
+                    ListNode list = (ListNode) nodeArgs;
+                    for (Node child : list.childNodes()) {
+                        child.accept(this);
+                    }
+                    return null;
+                } else {
+                    nodeArgs.accept(this);
+                }
             }
+
             if (node.getIter() != null) {
                 node.getIter().accept(this);
             }
+
             methodCall = null;
             currentMember.removeLast();
         }
